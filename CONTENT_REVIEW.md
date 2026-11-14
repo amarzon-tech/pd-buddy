@@ -524,6 +524,31 @@ The quotes were checked against the full-text PDFs.
 - [ ] Sign-off: prescription summary adds the predicted daily UF line (labelled experimental, with its glucose assumptions)
 
 
+## 23. Stronger CCPD candidates (0.4.1-draft)
+
+Approved by Dr D after the 0.4.0 example showed no CCPD option reaching Kt/V 1.7. Same Garred model, same targets; the candidate set (js/formulas.js `CANDIDATE_OPTIONS`) grows from 8 to 72 CCPD regimens: 4 or 5 cycles × 2.0 / 2.5 / 3.0 L night fills × 9 / 10 / 11 h on the cycler × {dry day; 2.0 L day dwell of 24 h − cycler time; midday exchange 2 × 2.0 L; midday exchange 2 × 2.5 L}. Night dwell = cycler time ÷ cycles (fill/drain time 0, as before).
+
+- **Midday exchange.** Last fill plus one manual daytime exchange; the day (24 h − cycler time) is split equally: 9 h → 2 × 7.5 h, 10 h → 2 × 7 h, 11 h → 2 × 6.5 h. Published basis: Akonur 2016 Figs 4–5 APD rows with “2x2L” day dwells (Baxter guide: “an extra daytime exchange (in addition to the last bag fill) was also included in selected situations”), and the “midday exch” column of Akonur 2013 Table 3 (average H/HA/LA anuric typical patient, quoted 24-h weekly Kt/V 2.07 vs 1.67 standard). The equal split and the 2.0 / 2.5 L volumes are judgment.
+- **Extraneal.** Offered as before for every option with ONE long day dwell (dry and midday options excluded). The split midday dwells (6.5–7.5 h) are shorter than the labelled “long (8- to 16- hour) dwell” and no icodextrin UF is published for them, so no Extraneal variant is shown. For 10- and 11-h cycler days the day dwell is 14 / 13 h; its Extraneal UF is the published APD 15-h value (Akonur 2016 Table 3), not adjusted.
+- **UF (experimental).** Midday options simulate both day dwells as 2.5% dextrose (Akonur grid code “(g)”), cycles 1.5%, same three-pore model and defaults. For Kt/V, an entered long-dwell UF is applied to the second (midday) dwell only.
+- **3.0 L night fills.** Beyond the quoted cycler volumes (“Cycler dwell volumes - 2 to 2.5 L”, ISPD teaching slides / Handbook of Dialysis). Flagged on every card (“Large fill … check tolerance”) and in the prescription choices; not excluded from ranking.
+- **Burden order (CCPD).** No midday exchange before a midday exchange → dry day before a day dwell → cycler time 9 < 10 < 11 h → fewer cycles → smaller night fill → smaller day volume. Large fill is not ranked as extra burden (only flagged).
+- **Troubleshoot (step 4).** New one-step CCPD changes: longer cycler time (+1 h), add a midday exchange (2 × 2.0 L), larger midday volumes (2 × 2.5 L). Other steps keep cycler time and day pattern unchanged.
+- **Example patient** (male 55 y, 5 ft 10 in, 80 kg, high-average, 500 mL urine not counted; V 43.2 L, BSA 1.99 m²):
+  - Type only (typical HA MTACs urea 23.14, Cr 11.92): CCPD Top 3 now meet 1.7 — 5 × 3.0 L 10 h + 2.0 L day (Kt/V 1.79, CrCl 46.8, UF 0.06 L/d; Extraneal 0.96); 4 × 3.0 L 11 h + day (1.72, 47.2, 0.03; Extraneal 0.86); 5 × 2.5 L 11 h + day (1.75, 47.6, 0.03; Extraneal 0.85). All rely on a 3.0 L fill or 11 h.
+  - PET D/P Cr 0.70, D/P urea 0.75: none reach 1.7; best 5 × 3.0 L 11 h + midday 2 × 2.5 L (1.67, 57.2, 0.92), 5 × 2.5 L 11 h + midday 2 × 2.5 L (1.63, 55.9, 0.81), 5 × 3.0 L 10 h + midday 2 × 2.5 L (1.62, 55.5, 0.86).
+  - Tests: `tests/ccpd.test.js`, `tests/ranking.test.js`.
+
+- [ ] Sign-off: CCPD midday-exchange candidates (last fill + one manual exchange, 2 × 2.0 L and 2 × 2.5 L, day split equally 7.5 / 7 / 6.5 h) and their sources
+- [ ] Sign-off: 3.0 L CCPD night fills (large fills, flagged on cards, still ranked)
+- [ ] Sign-off: 10- and 11-h cycler time candidates (in addition to 9 h)
+- [ ] Sign-off: CCPD burden order (midday > day dwell > cycler time > cycles > night fill > day volume); large fill not counted as burden
+- [ ] Sign-off: no Extraneal variant for split midday dwells; published 15-h Extraneal UF reused for 13–14-h day dwells
+- [ ] Sign-off: midday UF modelled with two 2.5% dextrose day dwells; entered long-dwell UF applied to the midday dwell only (Kt/V)
+- [ ] Sign-off: new troubleshoot steps (longer cycler time, add midday exchange, larger midday volumes)
+- [ ] Sign-off: prescription summary for midday exchange (day dwell 1, manual midday exchange, day dwell 2)
+- [ ] Sign-off: release 0.4.1-draft, service-worker cache pd-buddy-v5, DRAFT=true, noindex unchanged
+
 ---
 
 ## Status

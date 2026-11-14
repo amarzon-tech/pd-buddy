@@ -193,7 +193,7 @@
     const o = opts || {};
     const g15 = GLUCOSE_MMOL["1.5"], g25 = GLUCOSE_MMOL["2.5"];
     const fillMl = opt.fillL * 1000;
-    let shortDwells = [], longDwell = null, mod = opt.mod;
+    let shortDwells = [], longDwell = null, dayPair = null, mod = opt.mod;
     if (mod === "capd") {
       const n = opt.exchanges, longH = opt.longDwellH || 8;
       const restMin = ((24 - longH) * 60) / (n - 1);
@@ -202,7 +202,29 @@
     } else {
       const nightMin = (opt.therapyH * 60) / opt.cycles;
       for (let i = 0; i < opt.cycles; i++) shortDwells.push({ fillMl, minutes: nightMin, glucoseMmol: g15 });
-      if (opt.lastFillL > 0) longDwell = { fillMl: opt.lastFillL * 1000, minutes: (24 - opt.therapyH) * 60, glucoseMmol: g25 };
+      if (opt.lastFillL > 0 && opt.dayDwells === 2) {
+        // Midday exchange: two equal 2.5% day dwells (Akonur 2016 Figs 4-5 "2x2L(g)").
+        const half = ((24 - opt.therapyH) * 60) / 2;
+        dayPair = [0, 1].map(() => ({ fillMl: opt.lastFillL * 1000, minutes: half, glucoseMmol: g25 }));
+      } else if (opt.lastFillL > 0) longDwell = { fillMl: opt.lastFillL * 1000, minutes: (24 - opt.therapyH) * 60, glucoseMmol: g25 };
+    }
+    if (dayPair) {
+      if (longSolution === "icodextrin") return null; // no published icodextrin UF for split day dwells
+      const seqM = shortDwells.concat(dayPair);
+      const twoM = simulateSequence(p, seqM.concat(seqM), o);
+      const d2 = twoM.rows.slice(seqM.length);
+      const sh = d2.slice(0, shortDwells.length).reduce((a, r) => a + r.ufMl, 0);
+      const dayUf = d2.slice(shortDwells.length).reduce((a, r) => a + r.ufMl, 0);
+      return {
+        dailyUfMl: sh + dayUf,
+        shortUfMl: sh,
+        longUfMl: dayUf,
+        longSource: "model",
+        dayDwells: 2,
+        icoDwellH: null,
+        glucoseAbsorbedG: d2.reduce((a, r) => a + r.gluAbsorbedG, 0),
+        status: UF_STATUS,
+      };
     }
     const ico = longSolution === "icodextrin" && longDwell;
     const seq = shortDwells.concat(longDwell && !ico ? [longDwell] : []);

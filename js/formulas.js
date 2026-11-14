@@ -336,13 +336,19 @@
     for (let i = 0; i < n; i++) dwells.push({ kind: "cycle", fillL: fill, minutes: nightMin, ufMl: uf });
     if (isNum(o.lastFillL) && o.lastFillL > 0) {
       const dayH = isNum(o.dayDwellH) && o.dayDwellH > 0 ? o.dayDwellH : 24 - ttt;
+      // dayDwells 2 = last fill plus one manual midday exchange; the day is split equally
+      // (e.g. 24 − 9 h = 15 h → 2 × 7.5 h). The entered long-dwell UF goes on the second
+      // (midday) dwell only; the first counts net UF 0, like other short dwells.
+      const nDay = o.dayDwells === 2 ? 2 : 1;
       if (dayH > 0) {
-        dwells.push({
-          kind: "day",
-          fillL: o.lastFillL,
-          minutes: dayH * 60,
-          ufMl: isNum(o.lastFillUfMl) ? o.lastFillUfMl : 0,
-        });
+        for (let i = 0; i < nDay; i++) {
+          dwells.push({
+            kind: nDay === 2 ? (i === 0 ? "day" : "midday") : "day",
+            fillL: o.lastFillL,
+            minutes: (dayH * 60) / nDay,
+            ufMl: i === nDay - 1 && isNum(o.lastFillUfMl) ? o.lastFillUfMl : 0,
+          });
+        }
       }
     }
     return dwells;
@@ -416,7 +422,7 @@
   function optionDwells(opt, longUfMl) {
     const uf = isNum(longUfMl) ? longUfMl : 0;
     if (opt.mod === "capd") return capdDwells({ exchanges: opt.exchanges, fillL: opt.fillL, longDwellH: opt.longDwellH, longDwellUfMl: uf, ufPerExchangeMl: 0 });
-    return apdDwells({ cycles: opt.cycles, fillL: opt.fillL, therapyH: opt.therapyH, lastFillL: opt.lastFillL, lastFillUfMl: uf, ufPerCycleMl: 0 });
+    return apdDwells({ cycles: opt.cycles, fillL: opt.fillL, therapyH: opt.therapyH, lastFillL: opt.lastFillL, dayDwells: opt.dayDwells, lastFillUfMl: uf, ufPerCycleMl: 0 });
   }
 
   /**
@@ -464,20 +470,47 @@
           out.push(Object.freeze({ id: "capd-" + n + "x" + f.toFixed(1), mod: "capd", label: "CAPD " + n + " × " + f.toFixed(1) + " L", exchanges: n, fillL: f, longDwellH: 8 }))
         )
       );
-      [false, true].forEach((day) =>
-        [4, 5].forEach((n) =>
-          [2.0, 2.5].forEach((f) =>
-            out.push(
-              Object.freeze({
-                id: "ccpd-" + n + "x" + f.toFixed(1) + (day ? "-day" : "-dry"),
-                mod: "ccpd",
-                label: "CCPD " + n + " × " + f.toFixed(1) + " L, 9 h" + (day ? " + 2.0 L day dwell" : ", dry day"),
-                cycles: n,
-                fillL: f,
-                therapyH: 9,
-                lastFillL: day ? 2.0 : 0,
-              })
-            )
+      // CCPD (0.4.1, approved by Dr D because no 9-h, ≤ 2.5 L option reached Kt/V 1.7 for the
+      // example patient): 4–5 cycles × 2.0 / 2.5 / 3.0 L, 9 / 10 / 11 h on the cycler, with
+      //   dry day | one 2.0 L day dwell (24 h − cycler time) |
+      //   midday exchange: last fill + one manual exchange, 2 × 2.0 L or 2 × 2.5 L,
+      //   the day split equally (9 h → 2 × 7.5 h; 10 h → 2 × 7 h; 11 h → 2 × 6.5 h).
+      // Midday split: Akonur 2016 Figs 4-5 APD rows "…+2x2L" (last fill plus one daytime
+      // exchange) and Akonur 2013 Table 3 "midday exch" column. 3.0 L night fills are large
+      // fills (flagged: largeFill). Judgment to confirm (CONTENT_REVIEW §23).
+      const DAYS = [
+        { key: "dry", lastFillL: 0, dayDwells: 0 },
+        { key: "day", lastFillL: 2.0, dayDwells: 1 },
+        { key: "mid2.0", lastFillL: 2.0, dayDwells: 2 },
+        { key: "mid2.5", lastFillL: 2.5, dayDwells: 2 },
+      ];
+      [9, 10, 11].forEach((h) =>
+        DAYS.forEach((d) =>
+          [4, 5].forEach((n) =>
+            [2.0, 2.5, 3.0].forEach((f) => {
+              const dayH = 24 - h;
+              const dayTxt =
+                d.dayDwells === 0
+                  ? ", dry day"
+                  : d.dayDwells === 1
+                  ? " + " + d.lastFillL.toFixed(1) + " L day dwell"
+                  : " + midday exchange (2 × " + d.lastFillL.toFixed(1) + " L day dwells, " + String(dayH / 2) + " h each)";
+              out.push(
+                Object.freeze({
+                  // 9-h ids unchanged from 0.4.0 (ccpd-5x2.5-day etc.)
+                  id: "ccpd-" + n + "x" + f.toFixed(1) + (h === 9 ? "" : "-" + h + "h") + "-" + d.key,
+                  mod: "ccpd",
+                  label: "CCPD " + n + " × " + f.toFixed(1) + " L, " + h + " h" + dayTxt,
+                  cycles: n,
+                  fillL: f,
+                  therapyH: h,
+                  lastFillL: d.lastFillL,
+                  dayDwells: d.dayDwells,
+                  midday: d.dayDwells === 2,
+                  largeFill: f >= 3.0,
+                })
+              );
+            })
           )
         )
       );
@@ -488,11 +521,13 @@
   /**
    * Burden order (lower = less burdensome), compared left to right:
    *  CAPD: exchanges/day, then fill volume.
-   *  CCPD: dry day before a day dwell, then cycles, then fill volume.
+   *  CCPD: midday manual exchange (no before yes), then dry day before a day dwell,
+   *    then cycler time (9 < 10 < 11 h), then cycles, then night fill volume, then
+   *    day-dwell volume.
    */
   function burdenKey(opt) {
     if (opt.mod === "capd") return [opt.exchanges, opt.fillL];
-    return [opt.lastFillL > 0 ? 1 : 0, opt.cycles, opt.fillL];
+    return [opt.dayDwells === 2 ? 1 : 0, opt.lastFillL > 0 ? 1 : 0, opt.therapyH || 9, opt.cycles, opt.fillL, opt.lastFillL || 0];
   }
   function cmpKey(a, b) {
     for (let i = 0; i < Math.max(a.length, b.length); i++) {
@@ -519,14 +554,17 @@
       };
     };
     for (const opt of opts) {
-      const hasLong = opt.mod === "capd" || opt.lastFillL > 0;
+      // Extraneal only where there is ONE long dwell: the split midday dwells (6.5–7.5 h)
+      // are shorter than the labelled 8–16-h long dwell and have no published icodextrin UF.
+      const hasLong = opt.mod === "capd" || (opt.lastFillL > 0 && opt.dayDwells !== 2);
+      const hasDay = opt.mod === "ccpd" && opt.lastFillL > 0;
       const base = { baseId: opt.id, mod: opt.mod, label: opt.label, opt, burden: burdenKey(opt) };
       // Predicted UF (optional): o.ufFn(opt, longSolution) → { dailyUfMl, ... } from js/threepore.js.
       // Kt/V deliberately does NOT use the predicted UF (it stays the Garred estimate with
       // short-dwell UF 0 and the long-dwell UF the user enters), so an experimental UF
       // prediction never changes the clearance ranking.
       const uf = (sol) => (typeof o.ufFn === "function" ? o.ufFn(opt, sol) : null);
-      out.push(Object.assign({ id: opt.id }, base, { longSolution: hasLong ? "dextrose" : null, uf: uf(hasLong ? "dextrose" : null) }, est(opt, o.longUfDextroseMl)));
+      out.push(Object.assign({ id: opt.id }, base, { longSolution: hasLong || hasDay ? "dextrose" : null, uf: uf(hasLong || hasDay ? "dextrose" : null) }, est(opt, o.longUfDextroseMl)));
       if (hasLong) out.push(Object.assign({ id: opt.id + "-ico" }, base, { longSolution: "icodextrin", uf: uf("icodextrin") }, est(opt, o.longUfIcodextrinMl)));
     }
     return out;

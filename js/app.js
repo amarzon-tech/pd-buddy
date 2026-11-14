@@ -285,12 +285,16 @@
     const p = o.opt;
     const ico = o.longSolution === "icodextrin";
     if (p.mod === "capd") return p.exchanges + " exchanges a day × " + fmt(p.fillL, 1) + " L, one 8-h overnight dwell" + (ico ? " with Extraneal" : "");
-    return p.cycles + " cycles × " + fmt(p.fillL, 1) + " L over 9 h, " + (p.lastFillL > 0 ? "plus a " + fmt(p.lastFillL, 1) + " L day dwell (15 h)" + (ico ? " with Extraneal" : "") : "dry day");
+    const th = p.therapyH || 9, dayH = 24 - th;
+    const base = p.cycles + " cycles × " + fmt(p.fillL, 1) + " L over " + th + " h, ";
+    if (p.dayDwells === 2) return base + "last fill " + fmt(p.lastFillL, 1) + " L plus one manual midday exchange (2 × " + fmt(p.lastFillL, 1) + " L day dwells, " + fmt(dayH / 2, 1).replace(/\.0$/, "") + " h each)";
+    return base + (p.lastFillL > 0 ? "plus a " + fmt(p.lastFillL, 1) + " L day dwell (" + dayH + " h)" + (ico ? " with Extraneal" : "") : "dry day");
   }
   function shortName(o) {
     const p = o.opt;
     if (p.mod === "capd") return "CAPD " + p.exchanges + " × " + fmt(p.fillL, 1) + " L";
-    return "CCPD " + p.cycles + " × " + fmt(p.fillL, 1) + " L" + (p.lastFillL > 0 ? " + day dwell" : ", dry day");
+    const th = p.therapyH && p.therapyH !== 9 ? ", " + p.therapyH + " h" : "";
+    return "CCPD " + p.cycles + " × " + fmt(p.fillL, 1) + " L" + th + (p.dayDwells === 2 ? " + midday exchange (2 × " + fmt(p.lastFillL, 1) + " L)" : p.lastFillL > 0 ? " + day dwell" : ", dry day");
   }
   function fullName(o) {
     return shortName(o) + (o.longSolution === "icodextrin" ? " · Extraneal" : "");
@@ -321,6 +325,8 @@
       '<span class="tn' + (rank.metric === "crcl" ? " lead" : "") + '"><b class="' + (rank.metric === "crcl" ? (o.meets ? "v-ok" : "v-warn") : "") + '">' + fmt(o.crcl, 1) + "</b><i>CrCl L/wk/1.73 m²</i></span>" +
       '<span class="tn uf"><b>' + esc(ufText(o)) + "</b><i>" + esc(ufSub) + ' <em class="exp">experimental</em></i></span></span>' +
       sibTxt +
+      (o.opt && o.opt.mod === "ccpd" && o.opt.dayDwells === 2 ? '<span class="ico-line">No Extraneal variant: the split day dwells are shorter than the labelled 8–16-h long dwell and no icodextrin UF is published for them.</span>' : "") +
+      (o.opt && o.opt.mod === "ccpd" && o.opt.largeFill ? '<span class="flag-line">Large fill: 3.0 L night fills are beyond the usual 2–2.5 L cycler volumes; check tolerance (awaiting Dr D’s review).</span>' : "") +
       '<span class="top-foot">' + badge + '<span class="est-mini">model estimate, not measured</span></span></span></' + tag + "></li>"
     );
   }
@@ -375,7 +381,7 @@
     if (!r.cat) { el.textContent = "Pick a transport type to see predicted UF."; return; }
     el.innerHTML =
       "Daily peritoneal UF on the cards comes from an open three-pore model (Rippe; Öberg &amp; Rippe 2017) with the published typical-patient membrane parameters for a " + esc(r.cat.label.toLowerCase()) + " transporter (Akonur 2016). It assumes 1.5% dextrose for exchanges and cycles and 2.5% dextrose for the long dwell, fluid absorption 0.6 mL/min and residual volume 10% of fill (PD Adequest defaults). " +
-      "<b>Experimental:</b> against the published Akonur 2016 predictions it differs by up to about 250 mL per period (RMSE about 110 mL), so it is not validated. Extraneal UF is the published typical value for the long dwell (" + TPM.ICO_PUBLISHED_UF.capd[r.cat.key] + " mL CAPD 9-h; " + TPM.ICO_PUBLISHED_UF.ccpd[r.cat.key] + " mL APD 15-h; Akonur 2016 Table 3), not simulated. UF never changes Kt/V or the ranking.";
+      "<b>Experimental:</b> against the published Akonur 2016 predictions it differs by up to about 250 mL per period (RMSE about 110 mL), so it is not validated. Extraneal UF is the published typical value for the long dwell (" + TPM.ICO_PUBLISHED_UF.capd[r.cat.key] + " mL CAPD 9-h; " + TPM.ICO_PUBLISHED_UF.ccpd[r.cat.key] + " mL APD 15-h, also used for 13–14-h day dwells; Akonur 2016 Table 3), not simulated. Midday-exchange options model both day dwells as 2.5% dextrose. UF never changes Kt/V or the ranking.";
   }
 
   function renderGrid(r) {
@@ -412,10 +418,10 @@
     r.options.forEach((o) => {
       if (o.mod !== grp) {
         grp = o.mod;
-        out.push('<div class="op-row grp"><span>' + (grp === "capd" ? "CAPD · 8-h overnight long dwell" : "CCPD · 9 h on cycler") + "</span></div>");
+        out.push('<div class="op-row grp"><span>' + (grp === "capd" ? "CAPD · 8-h overnight long dwell" : "CCPD · 9, 10 or 11 h on cycler") + "</span></div>");
       }
       const ico = o.longSolution === "icodextrin";
-      const label = ico ? "+ Extraneal long dwell" : o.label.replace(/^(CAPD|CCPD) /, "").replace(", 9 h", "").replace(" + 2.0 L day dwell", " + 2 L day") + (o.longSolution === "dextrose" ? " · dextrose" : "");
+      const label = ico ? "+ Extraneal long dwell" : o.label.replace(/^(CAPD|CCPD) /, "").replace(", 9 h", "").replace(" + 2.0 L day dwell", " + 2 L day").replace(/ \+ midday exchange \(2 × ([\d.]+) L day dwells, [\d.]+ h each\)/, " + midday 2 × $1 L") + (o.longSolution === "dextrose" ? " · dextrose" : "");
       out.push('<div class="op-row four' + (ico ? " ico" : "") + '"><span class="ol">' + esc(label) + "</span><span>" + kt(o.ktv) + "</span><span>" + fmt(o.crcl, 1) + "</span><span>" + esc(ufText(o)) + "</span></div>");
     });
     el.innerHTML = out.join("");
@@ -437,7 +443,7 @@
     const rx = RX.build({
       modality: p && p.mod === "ccpd" ? "apd" : "capd",
       capd: p && p.mod === "capd" ? { exchanges: p.exchanges, fillL: p.fillL, longDwellH: p.longDwellH, longSolution: ico ? "ico" : "same" } : {},
-      apd: p && p.mod === "ccpd" ? { cycles: p.cycles, fillL: p.fillL, therapyH: p.therapyH, lastFillL: p.lastFillL, lastSolution: ico ? "ico" : null } : {},
+      apd: p && p.mod === "ccpd" ? { cycles: p.cycles, fillL: p.fillL, therapyH: p.therapyH, lastFillL: p.lastFillL, dayDwells: p.dayDwells, lastSolution: ico ? "ico" : null } : {},
       estimate: est,
       uf: o && o.uf ? o.uf : null,
       transport: r.cat ? r.cat.label : null,
@@ -763,16 +769,16 @@
       title: "Options compared and how they are ranked",
       html: `<h4>Candidate set</h4>
         <p class="eq">CAPD 3, 4 or 5 exchanges × 2.0, 2.5 or 3.0 L, 8-h overnight long dwell<br>
-        CCPD 4 or 5 cycles × 2.0 or 2.5 L over 9 h, dry day or a 2.0 L day dwell (15 h)<br>
-        Each option with a long dwell also with an Extraneal long dwell</p>
+        CCPD 4 or 5 cycles × 2.0, 2.5 or 3.0 L over 9, 10 or 11 h, with a dry day, a 2.0 L day dwell (24 h − cycler time), or a manual midday exchange (last fill + one exchange, 2 × 2.0 L or 2 × 2.5 L, the day split equally: 7.5 / 7 / 6.5 h each)<br>
+        Each option with one long dwell also with an Extraneal long dwell (not the split midday dwells)</p>
         <h4>Ranking</h4>
         <p>Metric: total weekly Kt/V (peritoneal + renal) when a D/P urea is available; otherwise weekly CrCl (L/week/1.73 m²). Target: Kt/V ≥ 1.7 by default (KDOQI 2006 minimum), or CrCl ≥ 60 (historical CANUSA-based CAPD figure, also used for CCPD here).</p>
-        <p>Options meeting the target come first, least burdensome first. CAPD: fewer exchanges, then smaller fills. CCPD: dry day before a day dwell, then fewer cycles, then smaller fills. If fewer than 3 meet it, the rest are the highest-clearance options below target. The dextrose and Extraneal versions of a regimen count once (dextrose unless only Extraneal meets the target).</p>
+        <p>Options meeting the target come first, least burdensome first. CAPD: fewer exchanges, then smaller fills. CCPD: no midday exchange before a midday exchange, then dry day before a day dwell, then shorter cycler time (9 &lt; 10 &lt; 11 h), then fewer cycles, then smaller night fills, then smaller day dwells. If fewer than 3 meet it, the rest are the highest-clearance options below target. The dextrose and Extraneal versions of a regimen count once (dextrose unless only Extraneal meets the target).</p>
         <h4>Sources</h4>
-        <p>Handbook of Dialysis, 4th ed. (Daugirdas, Blake, Ing 2006), as reproduced in ISPD teaching slides: “4 x 2L ... is the typical prescription. 4 x 2.5L in larger patients with small RRF or anuric patients who weigh &gt;75 kg. 3 x 2L in smaller patients or in patients with good RRF.” CCPD: “3 to 5 cycles per 9 hour cycling session”, “Cycler dwell volumes - 2 to 2.5 L”, “Can start with NIPD if patient has good residual volume.” ADEMEX (Paniagua R et al. <em>J Am Soc Nephrol.</em> 2002;13:1307-1320) control arm: “four daily exchanges with 2 L”. Core Curriculum 2023 (<em>Am J Kidney Dis</em>): no more than 5 exchanges per night on the cycler. 3.0 L fills and 5 CAPD exchanges go beyond these quotes and are awaiting Dr D’s review.</p>
+        <p>Handbook of Dialysis, 4th ed. (Daugirdas, Blake, Ing 2006), as reproduced in ISPD teaching slides: “4 x 2L ... is the typical prescription. 4 x 2.5L in larger patients with small RRF or anuric patients who weigh &gt;75 kg. 3 x 2L in smaller patients or in patients with good RRF.” CCPD: “3 to 5 cycles per 9 hour cycling session”, “Cycler dwell volumes - 2 to 2.5 L”, “Can start with NIPD if patient has good residual volume.” ADEMEX (Paniagua R et al. <em>J Am Soc Nephrol.</em> 2002;13:1307-1320) control arm: “four daily exchanges with 2 L”. Core Curriculum 2023 (<em>Am J Kidney Dis</em>): no more than 5 exchanges per night on the cycler. 3.0 L fills and 5 CAPD exchanges go beyond these quotes and are awaiting Dr D’s review. CCPD midday exchange: PD Adequest-modelled APD prescriptions with “2x2L” day dwells (last fill plus one daytime exchange; Akonur A et al. <em>Perit Dial Int.</em> 2016;36:188-195, Figs 4–5) and the “midday exchange” option in Akonur A et al. <em>Perit Dial Int.</em> 2013 (Table 3). 10- and 11-h cycler times, 3.0 L cycler fills and the equal day split are judgments awaiting Dr D’s review.</p>
         <h4>Extraneal (icodextrin 7.5%)</h4>
         <p>Used once a day for the long dwell (CAPD overnight, CCPD day dwell). For Kt/V the Extraneal dwell is the same diffusion dwell (differs only if you enter a measured long-dwell UF). Its UF on the cards is the published typical-patient value by transport type (Akonur 2016 Table 3), not simulated.</p>
-        <h4>Caveats</h4><p>Same Garred model and limits as the estimate. For Kt/V, short-dwell net UF counts as 0. CCPD fill/drain time counts as 0, which overstates dwell time. The 8-h CAPD overnight dwell is the low end of the usual 8–10 h. Burden ordering is a judgment, not a published rule.</p>`,
+        <h4>Caveats</h4><p>Same Garred model and limits as the estimate. For Kt/V, short-dwell net UF counts as 0. CCPD fill/drain time counts as 0, which overstates dwell time. The 8-h CAPD overnight dwell is the low end of the usual 8–10 h. The Extraneal UF for 10- and 11-h cycler days (13–14-h day dwell) is the published 15-h value. Burden ordering is a judgment, not a published rule.</p>`,
     },
     uf: {
       title: "Predicted UF (experimental)",

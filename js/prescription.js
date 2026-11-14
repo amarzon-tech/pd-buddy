@@ -31,7 +31,14 @@
       lines.push("Night solution: " + sol(a.solution));
       if (isNum(a.lastFillL) && a.lastFillL > 0) {
         lines.push("Last fill: " + L(a.lastFillL) + ", " + sol(a.lastSolution));
-        lines.push("Day dwell: " + H(isNum(a.dayDwellH) && a.dayDwellH > 0 ? a.dayDwellH : isNum(a.therapyH) ? 24 - a.therapyH : null));
+        const dayH = isNum(a.dayDwellH) && a.dayDwellH > 0 ? a.dayDwellH : isNum(a.therapyH) ? 24 - a.therapyH : null;
+        if (a.dayDwells === 2) {
+          lines.push("Day dwell 1 (last fill): " + H(isNum(dayH) ? dayH / 2 : null));
+          lines.push("Midday exchange (manual): drain, then " + L(a.lastFillL) + ", " + sol(a.lastSolution));
+          lines.push("Day dwell 2: " + H(isNum(dayH) ? dayH / 2 : null) + ", drained at the start of the next cycler session");
+        } else {
+          lines.push("Day dwell: " + H(dayH));
+        }
       } else {
         lines.push("Last fill: None (dry day)");
       }
@@ -58,7 +65,7 @@
     }
     const u = s.uf;
     if (u && isNum(u.dailyUfMl)) {
-      lines.push("Predicted daily UF (experimental three-pore model): " + (u.dailyUfMl / 1000).toFixed(2) + " L" + (u.longSource === "published" ? ", assuming 1.5% dextrose exchanges; Extraneal long dwell = published value" : u.longSource === "model" ? ", assuming 1.5% dextrose exchanges and a 2.5% dextrose long dwell" : ", assuming 1.5% dextrose cycles"));
+      lines.push("Predicted daily UF (experimental three-pore model): " + (u.dailyUfMl / 1000).toFixed(2) + " L" + (u.longSource === "published" ? ", assuming 1.5% dextrose exchanges; Extraneal long dwell = published value" : u.longSource === "model" && u.dayDwells === 2 ? ", assuming 1.5% dextrose cycles and two 2.5% dextrose day dwells" : u.longSource === "model" ? ", assuming 1.5% dextrose exchanges and a 2.5% dextrose long dwell" : ", assuming 1.5% dextrose cycles"));
     }
     if (s.transport) lines.push("PET transport: " + s.transport + (s.basis ? " (typical values)" : ""));
     if (s.basis) lines.push(s.basis);
