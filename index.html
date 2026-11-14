@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#1e63d6">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="PD Buddy">
+  <meta name="description" content="Draft educational PD prescribing tool for nephrologists: PET transport, weekly Kt/V and creatinine clearance. Offline, no login, no data collection. Not for clinical use until reviewed by Dr D.">
+  <meta name="robots" content="noindex, nofollow">
+  <title>PD Buddy — Draft</title>
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" type="image/png" href="./icons/favicon.png">
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="./css/styles.css">
+  <link rel="stylesheet" href="./css/standalone.css">
+  <link rel="stylesheet" href="./css/pd.css">
+</head>
+<body>
+  <div class="draft-banner" id="draft-banner" role="status">Draft – not for clinical use until reviewed by Dr D</div>
+
+  <header class="top">
+    <div class="top-row">
+      <div>
+        <p class="eyebrow">Wellness Tech LLC</p>
+        <h1>PD Buddy</h1>
+        <p class="subhead">Educational PD prescribing tool for nephrologists. PET, weekly Kt/V and CrCl. Offline · no data collected.</p>
+      </div>
+      <button class="icon-btn" id="theme-btn" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">
+        <svg id="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <path d="M21 14.5A8.5 8.5 0 1 1 9.5 3 7 7 0 0 0 21 14.5z"/>
+        </svg>
+      </button>
+    </div>
+    <nav class="stepper" id="stepper" aria-label="Steps">
+      <button type="button" class="stepper-item is-on" data-go="1" aria-current="step"><span class="stepper-num">1</span><span class="stepper-lbl">Patient</span></button>
+      <button type="button" class="stepper-item" data-go="2"><span class="stepper-num">2</span><span class="stepper-lbl">PET</span></button>
+      <button type="button" class="stepper-item" data-go="3"><span class="stepper-num">3</span><span class="stepper-lbl">Labs &amp; urine</span></button>
+      <button type="button" class="stepper-item" data-go="4"><span class="stepper-num">4</span><span class="stepper-lbl">Regimen</span></button>
+      <button type="button" class="stepper-item" data-go="5"><span class="stepper-num">5</span><span class="stepper-lbl">Prescription</span></button>
+    </nav>
+  </header>
+
+  <section class="wrap panel active" id="panel-pd">
+    <div class="col-main">
+
+      <!-- Step 1: patient -->
+      <div class="step is-on" id="step-1" data-step="1">
+        <article class="card" id="patient-card">
+          <div class="card-h"><h2>Patient</h2><button type="button" class="about-btn" data-about="v">About V &amp; BSA</button></div>
+          <span class="field-label">Sex</span>
+          <div class="chips big" id="p-sex" role="radiogroup" aria-label="Sex"><button type="button" class="chip is-on" role="radio" aria-checked="true" data-sex="male">Male</button><button type="button" class="chip" role="radio" aria-checked="false" data-sex="female">Female</button></div>
+          <div class="grid-3 simple" style="margin-top:14px">
+            <label class="field" id="p-age-wrap">
+              <span class="field-label">Age <span class="tag req">required</span></span>
+              <div class="field-control">
+                <input id="p-age" type="text" inputmode="numeric" autocomplete="off" placeholder="—" aria-label="Age">
+                <span class="unit-pill">yr</span>
+              </div>
+            </label>
+            <label class="field" id="p-ht-wrap">
+              <span class="field-label">Height <span class="tag req">required</span></span>
+              <div class="field-control">
+                <input id="p-ht" type="text" inputmode="decimal" autocomplete="off" placeholder="—" aria-label="Height">
+                <span class="unit-pill">cm</span>
+              </div>
+            </label>
+            <label class="field" id="p-wt-wrap">
+              <span class="field-label">Weight <span class="tag req">required</span></span>
+              <div class="field-control">
+                <input id="p-wt" type="text" inputmode="decimal" autocomplete="off" placeholder="—" aria-label="Weight">
+                <span class="unit-pill">kg</span>
+              </div>
+            </label>
+          </div>
+          <div class="mod-h"><span class="field-label">Urea volume (V)</span></div>
+          <div class="chips big" id="p-vmethod" role="radiogroup" aria-label="Urea distribution volume method"><button type="button" class="chip is-on" role="radio" aria-checked="true" data-vm="watson">Watson</button><button type="button" class="chip" role="radio" aria-checked="false" data-vm="hume">Hume-Weyers</button></div>
+          <div class="metric-grid two" style="margin-top:12px">
+            <div class="metric" id="m-o-v"><div class="mv" id="o-v">—</div><div class="ml">V (total body water)</div></div>
+            <div class="metric" id="m-o-bsa"><div class="mv" id="o-bsa">—</div><div class="ml">BSA (Mosteller)</div></div>
+          </div>
+          <p class="note" id="p-msg">Enter age, height and weight to continue. KDOQI 2006 accepts Watson or Hume for V in adults.</p>
+        </article>
+      </div>
+
+      <!-- Step 2: PET -->
+      <div class="step" id="step-2" data-step="2">
+        <article class="card" id="pet-card">
+          <div class="card-h"><h2>4-hour PET</h2><button type="button" class="about-btn" data-about="pet">About PET</button></div>
+          <span class="field-label">PET solution</span>
+          <div class="chips big" id="pet-sol" role="radiogroup" aria-label="PET solution"><button type="button" class="chip is-on" role="radio" aria-checked="true" data-petsol="2.5">2.5% dextrose</button><button type="button" class="chip" role="radio" aria-checked="false" data-petsol="4.25">4.25% dextrose</button></div>
+          <div class="grid-2 simple" style="margin-top:14px">
+            <label class="field" id="pet-dpcr-wrap">
+              <span class="field-label">4-h D/P creatinine <span class="tag req">required</span></span>
+              <div class="field-control">
+                <input id="pet-dpcr" type="text" inputmode="decimal" autocomplete="off" placeholder="—" aria-label="4-h D/P creatinine">
+                
+              </div>
+            </label>
+            <label class="field" id="pet-dd0-wrap">
+              <span class="field-label">4-h D/D₀ glucose <span class="tag">optional</span></span>
+              <div class="field-control">
+                <input id="pet-dd0" type="text" inputmode="decimal" autocomplete="off" placeholder="—" aria-label="4-h D/D₀ glucose">
+                
+              </div>
+            </label>
+            <label class="field" id="pet-fill-wrap">
+              <span class="field-label">Fill volume <span class="tag">standard 2.0</span></span>
+              <div class="field-control">
+                <input id="pet-fill" type="text" inputmode="decimal" autocomplete="off" placeholder="—" value="2.0" aria-label="Fill volume">
+                <span class="unit-pill">L</span>
+              </div>
+            </label>
+            <label class="field" id="pet-drain-wrap">
+              <span class="field-label">Drain volume <span class="tag">for model</span></span>
+              <div class="field-control">
+                <input id="pet-drain" type="text" inputmode="decimal" autocomplete="off" placeholder="—" aria-label="Drain volume">
+                <span class="unit-pill">mL</span>
+              </div>
+            </label>
+            <label class="field" id="pet-dpu-wrap">
+              <span class="field-label">4-h D/P urea <span class="tag">for Kt/V model</span></span>
+              <div class="field-control">
+                <input id="pet-dpu" type="text" inputmode="decimal" autocomplete="off" placeholder="—" aria-label="4-h D/P urea">
+                
+              </div>
+            </label>
+          </div>
+          <div class="metric-grid two" style="margin-top:12px">
+            <div class="metric" id="m-o-cat"><div class="mv" id="o-cat">—</div><div class="ml">Transport (D/P Cr)</div></div>
+            <div class="metric" id="m-o-gcat"><div class="mv" id="o-gcat">—</div><div class="ml">D/D₀ glucose</div></div>
+            <div class="metric" id="m-o-petuf"><div class="mv" id="o-petuf">—</div><div class="ml">PET net UF</div></div>
+            <div class="metric" id="m-o-mtac"><div class="mv" id="o-mtac">—</div><div class="ml">MTAC creatinine</div></div>
+          </div>
+          <p class="note" id="pet-msg">Enter the 4-hour D/P creatinine to continue.</p>
+          <p class="note" id="pet-uf-msg"></p>
+          <p class="note" id="pet-model-msg">Drain volume and D/P urea let the app estimate other regimens (Garred model). Without them, only transport type and measured clearances are shown.</p>
+        </article>
+      </div>
+
+      <!-- Step 3: labs, urine, measured dialysate -->
+      <div class="step" id="step-3" data-step="3">
+        <article class="card" id="labs-card">
+          <div class="card-h"><h2>Plasma &amp; 24-h urine</h2><button type="button" class="about-btn" data-about="rkf">About</button></div>
+          <p class="note" style="margin-top:0">All optional. Use the same units for urine, dialysate and plasma (ratios only).</p>
+          <div class="grid-2 simple">
+            <label class="field" id="l-pu-wrap">
+              <span class="field-label">Plasma urea (BUN) <span class="tag">optional</span></span>
+              <div class="field-control">
+                <input id="l-pu" type="text" inputmode="decimal" autocomplete="off" placeholder="—" aria-label="Plasma urea (BUN)">
+                
+              </div>
+            </label>
+            <label class="field" id="l-pcr-wrap">
+              <span class="field-label">Plasma creatinine <span class="tag">optional</span></span>
+              <div class="field-control">
+                <input id="l-pcr" type="text" inputmode="decimal" autocomplete="off" placeholder="—" aria-label="Plasma creatinine">
+                
+              </div>
+            </label>
+            <label class="field" id="l-uvol-wrap">
+              <span class="field-label">24-h urine volume <span class="tag">optional</span></span>
+              <div class="field-control">
+                <input id="l-uvol" type="text" inputmode="decimal" autocomplete="off" placeholder="—" aria-label="24-h urine volume">
+                <span class="unit-pill">mL</span>
+              </div>
+            </label>
+            <label class="field" id="l-uu-wrap">
+              <span class="field-label">Urine urea <span class="tag">optional</span></span>
+              <div class="field-control">
+                <input id="l-uu" type="text" inputmode="decimal" autocomplete="off" placeholder="—" aria-label="Urine urea">
+                
+              </div>
+            </label>
+            <label class="field" id="l-ucr-wrap">
+              <span class="field-label">Urine creatinine <span class="tag">optional</span></span>
+              <div class="field-control">
+                <input id="l-ucr" type="text" inputmode="decimal" autocomplete="off" placeholder="—" aria-label="Urine creatinine">
+                
+              </div>
+            </label>
+          </div>
+          <div class="metric-grid two" style="margin-top:12px">
+            <div class="metric" id="m-o-ktvr"><div class="mv" id="o-ktvr">—</div><div class="ml">Renal Kt/V (weekly)</div></div>
+            <div class="metric" id="m-o-rkf"><div class="mv" id="o-rkf">—</div><div class="ml">RKF, mean urea + Cr</div></div>
+          </div>
+          <p class="note" id="rkf-msg"></p>
+        </article>
+        <article class="card" id="meas-card">
+          <div class="card-h"><h2>Measured 24-h dialysate</h2><span class="tag">optional</span></div>
+          <div class="grid-3 simple">
+            <label class="field" id="m-drain-wrap">
+              <span class="field-label">24-h drain <span class="tag">optional</span></span>
+              <div class="field-control">
+                <input id="m-drain" type="text" inputmode="decimal" autocomplete="off" placeholder="—" aria-label="24-h drain">
+                <span class="unit-pill">L</span>
+              </div>
+            </label>
+            <label class="field" id="m-du-wrap">
+              <span class="field-label">Dialysate urea <span class="tag">optional</span></span>
+              <div class="field-control">
+                <input id="m-du" type="text" inputmode="decimal" autocomplete="off" placeholder="—" aria-label="Dialysate urea">
+                
+              </div>
+            </label>
+            <label class="field" id="m-dcr-wrap">
+              <span class="field-label">Dialysate creatinine <span class="tag">optional</span></span>
+              <div class="field-control">
+                <input id="m-dcr" type="text" inputmode="decimal" autocomplete="off" placeholder="—" aria-label="Dialysate creatinine">
+                
+              </div>
+            </label>
+          </div>
+          <div class="metric-grid two" style="margin-top:12px">
+            <div class="metric" id="m-o-ktvp-meas"><div class="mv" id="o-ktvp-meas">—</div><div class="ml">Peritoneal Kt/V, measured</div></div>
+            <div class="metric" id="m-o-crcl-meas"><div class="mv" id="o-crcl-meas">—</div><div class="ml">Total CrCl, measured</div></div>
+          </div>
+          <p class="note">Measured on the current prescription (KDOQI 2006 “delivered” dose). Needs plasma urea / creatinine above.</p>
+        </article>
+      </div>
+
+      <!-- Step 4: regimen -->
+      <div class="step" id="step-4" data-step="4">
+        <article class="card" id="reg-card">
+          <div class="card-h"><h2>Regimen</h2><button type="button" class="about-btn" data-about="model">About the estimate</button></div>
+          <div class="chips big" id="r-mod" role="radiogroup" aria-label="PD modality"><button type="button" class="chip is-on" role="radio" aria-checked="true" data-mod="capd">CAPD</button><button type="button" class="chip" role="radio" aria-checked="false" data-mod="apd">APD</button></div>
+
+          <div id="capd-block" style="margin-top:14px">
+            <div class="grid-2 simple">
+              <label class="field" id="c-n-wrap">
+              <span class="field-label">Exchanges / day <span class="tag">default 4</span></span>
+              <div class="field-control">
+                <input id="c-n" type="text" inputmode="numeric" autocomplete="off" placeholder="—" value="4" aria-label="Exchanges / day">
+                
+              </div>
+            </label>
+              <label class="field" id="c-fill-wrap">
+              <span class="field-label">Fill volume <span class="tag">default 2.0</span></span>
+              <div class="field-control">
+                <input id="c-fill" type="text" inputmode="decimal" autocomplete="off" placeholder="—" value="2.0" aria-label="Fill volume">
+                <span class="unit-pill">L</span>
+              </div>
+            </label>
+            </div>
+            <span class="field-label">Solution</span>
+            <div class="chips big" id="c-sol" role="radiogroup" aria-label="CAPD solution"><button type="button" class="chip" role="radio" aria-checked="false" data-sol="1.5">1.5%</button><button type="button" class="chip is-on" role="radio" aria-checked="true" data-sol="2.5">2.5%</button><button type="button" class="chip" role="radio" aria-checked="false" data-sol="4.25">4.25%</button></div>
+            <div class="grid-2 simple" style="margin-top:14px">
+              <label class="field" id="c-long-wrap">
+              <span class="field-label">Long dwell <span class="tag">optional</span></span>
+              <div class="field-control">
+                <input id="c-long" type="text" inputmode="decimal" autocomplete="off" placeholder="—" aria-label="Long dwell">
+                <span class="unit-pill">h</span>
+              </div>
+            </label>
+              <label class="field" id="c-uf-wrap">
+              <span class="field-label">Net UF per exchange <span class="tag">default 0</span></span>
+              <div class="field-control">
+                <input id="c-uf" type="text" inputmode="decimal" autocomplete="off" placeholder="—" value="0" aria-label="Net UF per exchange">
+                <span class="unit-pill">mL</span>
+              </div>
+            </label>
+            </div>
+            <div id="c-longsol-wrap">
+              <span class="field-label">Long-dwell solution</span>
+              <div class="chips big" id="c-longsol" role="radiogroup" aria-label="Long dwell solution"><button type="button" class="chip is-on" role="radio" aria-checked="true" data-lsol="same">Same</button><button type="button" class="chip" role="radio" aria-checked="false" data-lsol="ico">Icodextrin 7.5%</button></div>
+              <div class="grid-2 simple" style="margin-top:14px">
+                <label class="field" id="c-long-uf-wrap">
+              <span class="field-label">Long-dwell net UF <span class="tag">optional</span></span>
+              <div class="field-control">
+                <input id="c-long-uf" type="text" inputmode="decimal" autocomplete="off" placeholder="—" aria-label="Long-dwell net UF">
+                <span class="unit-pill">mL</span>
+              </div>
+            </label>
+              </div>
+            </div>
+            <p class="note">No long dwell: 24 h is split equally. With a long dwell, the other exchanges share the rest of the day.</p>
+          </div>
+
+          <div id="apd-block" class="hidden" style="margin-top:14px">
+            <div class="grid-2 simple">
+              <label class="field" id="a-n-wrap">
+              <span class="field-label">Night cycles <span class="tag req">required</span></span>
+              <div class="field-control">
+                <input id="a-n" type="text" inputmode="numeric" autocomplete="off" placeholder="—" aria-label="Night cycles">
+                
+              </div>
+            </label>
+              <label class="field" id="a-fill-wrap">
+              <span class="field-label">Fill volume <span class="tag req">required</span></span>
+              <div class="field-control">
+                <input id="a-fill" type="text" inputmode="decimal" autocomplete="off" placeholder="—" aria-label="Fill volume">
+                <span class="unit-pill">L</span>
+              </div>
+            </label>
+              <label class="field" id="a-ttt-wrap">
+              <span class="field-label">Total therapy time <span class="tag req">required</span></span>
+              <div class="field-control">
+                <input id="a-ttt" type="text" inputmode="decimal" autocomplete="off" placeholder="—" aria-label="Total therapy time">
+                <span class="unit-pill">h</span>
+              </div>
+            </label>
+              <label class="field" id="a-fd-wrap">
+              <span class="field-label">Fill + drain time / cycle <span class="tag">optional</span></span>
+              <div class="field-control">
+                <input id="a-fd" type="text" inputmode="decimal" autocomplete="off" placeholder="—" aria-label="Fill + drain time / cycle">
+                <span class="unit-pill">min</span>
+              </div>
+            </label>
+              <label class="field" id="a-uf-wrap">
+              <span class="field-label">Net UF per cycle <span class="tag">default 0</span></span>
+              <div class="field-control">
+                <input id="a-uf" type="text" inputmode="decimal" autocomplete="off" placeholder="—" value="0" aria-label="Net UF per cycle">
+                <span class="unit-pill">mL</span>
+              </div>
+            </label>
+            </div>
+            <span class="field-label">Night solution</span>
+            <div class="chips big" id="a-sol" role="radiogroup" aria-label="APD night solution"><button type="button" class="chip is-on" role="radio" aria-checked="true" data-asol="1.5">1.5%</button><button type="button" class="chip" role="radio" aria-checked="false" data-asol="2.5">2.5%</button><button type="button" class="chip" role="radio" aria-checked="false" data-asol="4.25">4.25%</button></div>
+            <div class="grid-2 simple" style="margin-top:14px">
+              <label class="field" id="a-last-wrap">
+              <span class="field-label">Last fill (day dwell) <span class="tag">0 = dry day</span></span>
+              <div class="field-control">
+                <input id="a-last" type="text" inputmode="decimal" autocomplete="off" placeholder="—" value="0" aria-label="Last fill (day dwell)">
+                <span class="unit-pill">L</span>
+              </div>
+            </label>
+              <label class="field" id="a-day-wrap">
+              <span class="field-label">Day dwell <span class="tag">default 24 − therapy</span></span>
+              <div class="field-control">
+                <input id="a-day" type="text" inputmode="decimal" autocomplete="off" placeholder="—" aria-label="Day dwell">
+                <span class="unit-pill">h</span>
+              </div>
+            </label>
+              <label class="field" id="a-last-uf-wrap">
+              <span class="field-label">Last-fill net UF <span class="tag">optional</span></span>
+              <div class="field-control">
+                <input id="a-last-uf" type="text" inputmode="decimal" autocomplete="off" placeholder="—" aria-label="Last-fill net UF">
+                <span class="unit-pill">mL</span>
+              </div>
+            </label>
+            </div>
+            <span class="field-label">Last-fill solution</span>
+            <div class="chips big" id="a-lsol" role="radiogroup" aria-label="Last fill solution"><button type="button" class="chip" role="radio" aria-checked="false" data-alsol="1.5">1.5%</button><button type="button" class="chip" role="radio" aria-checked="false" data-alsol="2.5">2.5%</button><button type="button" class="chip" role="radio" aria-checked="false" data-alsol="4.25">4.25%</button><button type="button" class="chip is-on" role="radio" aria-checked="true" data-alsol="ico">Icodextrin</button></div>
+            <p class="note" id="a-msg">Night dwell = (total therapy time − cycles × fill/drain time) ÷ cycles. Fill/drain time left blank counts as 0, which overstates dwell time.</p>
+          </div>
+
+          <div class="metric-grid two" style="margin-top:14px">
+            <div class="metric" id="m-o-ktv-pred"><div class="mv" id="o-ktv-pred">—</div><div class="ml">Weekly Kt/V, estimated total</div></div>
+            <div class="metric" id="m-o-crcl-pred"><div class="mv" id="o-crcl-pred">—</div><div class="ml">Weekly CrCl, estimated</div></div>
+          </div>
+          <div class="dwell-table" id="dwell-table"></div>
+          <p class="note" id="reg-msg"></p>
+        </article>
+      </div>
+
+      <!-- Step 5: results and prescription -->
+      <div class="step" id="step-5" data-step="5">
+        <article class="card" id="cmp-card">
+          <div class="card-h"><h2>Clearance vs targets</h2><button type="button" class="about-btn" data-about="targets">About targets</button></div>
+          <div class="result-rows" id="cmp-rows"></div>
+          <p class="note" id="cmp-note">ISPD 2020: “There is no specific clearance target that guarantees sufficient dialysis for an individual.” 1.7 is the KDOQI 2006 minimum, shown for reference, not as pass/fail.</p>
+        </article>
+
+        <article class="card rx-card" id="rx-card">
+          <div class="card-h rx-card-h">
+            <h2>Prescription <span class="draft-tag" id="rx-draft-tag">Draft</span></h2>
+            <div class="rx-actions no-print">
+              <button type="button" class="rx-btn" id="rx-copy">Copy</button>
+              <button type="button" class="rx-btn" id="rx-print">Print</button>
+            </div>
+          </div>
+          <div class="rx-sheet" id="rx-sheet"></div>
+        </article>
+
+        <article class="card" id="limits-card">
+          <div class="card-h"><h2>Limits of the estimate</h2></div>
+          <ul class="limits">
+            <li>The regimen estimate is the Garred simple diffusion model fitted to one PET. It has not been validated as a prescribing model.</li>
+            <li>Ultrafiltration is not predicted. UF counts only when you enter it.</li>
+            <li>It ignores residual volume, fill-volume and posture effects on transport, and APD fill/drain losses unless entered.</li>
+            <li>Confirm any change with a measured 24-h dialysate and urine collection.</li>
+          </ul>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <div class="step-bar" id="step-bar">
+    <button type="button" class="step-btn" id="step-back" disabled>Back</button>
+    <p class="step-hint" id="step-hint"></p>
+    <button type="button" class="step-btn primary" id="step-next">Next</button>
+  </div>
+
+  <footer class="foot">
+    <p>Wellness Tech LLC · Support:
+      <a href="mailto:amardamodar@gmail.com">amardamodar@gmail.com</a>.
+      Works offline, with no login or ads, and never stores or sends your inputs.
+      Every formula and source is in the About sheets and in
+      <a href="./CONTENT_REVIEW.md">CONTENT_REVIEW.md</a>.
+      <a href="./privacy.html">Privacy</a> · <a href="./support.html">Support</a>.
+      Draft. For nephrologists. Educational use only; not a substitute for clinical judgment or your unit protocol.
+    </p>
+  </footer>
+
+  <div class="overlay" id="overlay" hidden></div>
+  <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title" hidden>
+    <div class="sheet-handle" aria-hidden="true"></div>
+    <button type="button" class="sheet-close" id="sheet-close" aria-label="Close">×</button>
+    <h3 id="sheet-title"></h3>
+    <div id="sheet-body"></div>
+  </div>
+
+  <script src="./js/config.js"></script>
+  <script src="./js/formulas.js"></script>
+  <script src="./js/prescription.js"></script>
+  <script src="./js/app.js"></script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js"); });
+    }
+  </script>
+</body>
+</html>

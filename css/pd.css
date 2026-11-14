@@ -1,0 +1,20 @@
+/* PD Buddy additions on top of the CRRT Rx theme (blue #1E63D6). */
+.field-label + .chips { margin-top: 6px; }
+.chips + .grid-2, .chips + .grid-3 { margin-top: 14px; }
+#capd-block .field-label, #apd-block .field-label { display: block; margin-top: 12px; }
+.mod-h { margin-top: 14px; }
+.dwell-table { margin-top: 12px; display: grid; gap: 4px; font-size: 13.5px; }
+.dwell-table .dw-row { display: grid; grid-template-columns: 1.3fr 1fr 1fr 1fr; gap: 6px; padding: 6px 10px; border-radius: 10px; background: var(--teal-soft); color: var(--ink-primary, inherit); }
+.dwell-table .dw-row.head { background: transparent; font-weight: 700; color: var(--ink-secondary); font-size: 12px; text-transform: uppercase; letter-spacing: 0.03em; }
+.dwell-table .dw-row span:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
+.limits { margin: 4px 0 0; padding-left: 18px; line-height: 1.5; font-size: 14px; }
+.limits li + li { margin-top: 4px; }
+.result-row .rv .sub { display: block; font-size: 12px; font-weight: 600; opacity: 0.7; }
+.result-row.head .rk, .result-row.head .rv { font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 0.03em; opacity: 0.75; }
+.status-chip { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+.status-chip.ok { background: var(--green-bg); color: var(--green-ink); }
+.status-chip.warn { background: var(--amber-bg); color: var(--amber-ink); }
+.status-chip.info { background: var(--teal-soft); color: var(--teal-deep); }
+.sheet-body-src { font-size: 13px; opacity: 0.85; }
+#cmp-rows .result-row { display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 8px; align-items: center; }
+#cmp-rows .result-row .rv { text-align: right; }

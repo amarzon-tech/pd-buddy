@@ -1,0 +1,199 @@
+# Content review — PD Buddy (draft)
+
+**App:** PD Buddy, v0.1.0-draft · `DRAFT=true` · noindex · robots `Disallow: /`
+**Preview:** https://amarzon-tech.github.io/pd-buddy/
+**For:** Dr D (Amar Damodar). Nothing here is signed off. Every box below is unticked until Dr D ticks it in his own words.
+
+Educational PD prescribing tool for nephrologists. No login, ads, analytics or data collection; inputs are never stored.
+
+---
+
+## 0. What model this is, and what it is not
+
+Dr D asked for Adequest-style modeling (predict weekly Kt/V, CrCl and UF for CAPD/APD regimens from a PET). The commercial program's equations are proprietary and not published, so **this app does not reproduce it** and does not use its name in the app.
+
+What the app implements instead, from published sources only:
+
+1. **Transparent calculators** — V (Watson or Hume-Weyers), BSA (Mosteller), PET classification (Twardowski), ISPD 2021 UF screen, and measured weekly Kt/V and CrCl from 24-h dialysate and urine (KDOQI 2006 definitions).
+2. **A simple published-method regimen estimate** — the Garred simple diffusion model (volume-corrected form). The patient's own 4-h PET gives a mass transfer area coefficient (MTAC) for creatinine and, if D/P urea is entered, urea. The same equation is then solved forward for each dwell of a CAPD or APD regimen.
+
+**Why this model:** it is the one fully published, single-equation small-solute model that can be fitted from the PET values clinicians already have (D/P, fill, drain, 4 h). The three-pore model (Rippe) needs membrane parameters (hydraulic conductance, small/large pore fractions, lymphatic flow) that a standard PET does not give, so fitting it per patient would mean assuming population values; we did not do that.
+
+**What the app could NOT do from public data (shown in the app under “Limits of the estimate”):**
+
+- **No validated predictive model.** KDOQI 2006 notes that commercial kinetic-modeling programs “have been validated for clinical use”; this Garred-based estimate has **not** been validated against measured clearances.
+- **No UF prediction.** Regimen UF depends on osmotic conductance, glucose absorption and lymphatic flow (three-pore model). The app counts UF only when you enter it (default 0, which understates clearance).
+- **No urea MTAC without D/P urea.** There is no published fixed ratio from creatinine MTAC to urea MTAC that we could cite, so Kt/V is estimated only if 4-h D/P urea is entered.
+- **MTAC held constant:** no effect of fill volume, posture, or recruitment; no residual intraperitoneal volume; APD fill/drain time counts as 0 unless entered.
+- No icodextrin-specific kinetics, no middle-molecule, sodium or glucose-absorption estimates.
+
+- [ ] Sign-off: model choice (Garred, volume-corrected) and the stated limitations
+
+---
+
+## 1. Urea distribution volume (V)
+
+**Watson** (Watson PE, Watson ID, Batt RD. *Am J Clin Nutr.* 1980;33:27-39. doi:10.1093/ajcn/33.1.27)
+
+```
+Male:   V = 2.447 − 0.09516 × age + 0.1074 × height_cm + 0.3362 × weight_kg
+Female: V = −2.097 + 0.1069 × height_cm + 0.2466 × weight_kg   (no age term)
+```
+
+The male age coefficient is the published 0.09516 (a circulated variant uses 0.09156; not used).
+
+**Hume-Weyers** (Hume R, Weyers E. *J Clin Pathol.* 1971;24:234-238. doi:10.1136/jcp.24.3.234). Paper text: “The linear regression of total body water in litres on height (H) in centimetres and on weight (W) in kilograms is 0·194786H + 0·296785W − 14·012934” (males) and “0·344547H + 0·183809W − 35·270121” (females).
+
+**Guideline:** KDOQI 2006 PD Adequacy CPR 2.6: “When calculating Kt/V urea, one should estimate V from either the Watson or Hume equation in adults. In the absence of evidence, use of the patients' ideal or standard (rather than actual) weight should be considered in the calculation of V.” The app uses the weight entered (Watson default); Dr D to decide whether to label “use standard weight”.
+
+Worked examples (tests): male 60 y, 175 cm, 80 kg → Watson 42.43 L, Hume 43.82 L; female 165 cm, 65 kg → Watson 31.57 L, Hume 33.53 L.
+
+- [ ] Sign-off: Watson (default) and Hume-Weyers coefficients; actual weight used
+
+---
+
+## 2. Body surface area and normalisation
+
+- Mosteller RD. *N Engl J Med.* 1987;317:1098: BSA = √(height_cm × weight_kg / 3600). Used for CrCl normalisation.
+- Du Bois D, Du Bois EF. *Arch Intern Med.* 1916;17:863-871: 0.007184 × W^0.425 × H^0.725 (in formulas.js and tests; not shown on screen).
+- CrCl normalised to **1.73 m²**: CrCl (L/week/1.73 m²) = 7 × L/day × 1.73 / BSA (KDOQI 2006 units, “L/wk/1.73 m²”).
+
+- [ ] Sign-off: Mosteller BSA, 1.73 m² normalisation, 7 days/week
+
+---
+
+## 3. PET protocol and transport categories
+
+**Protocol** — Twardowski ZJ, Nolph KD, Khanna R, et al. Peritoneal equilibration test. *Perit Dial Bull.* 1987;7:138-147 (doi:10.1177/089686088700700306). Abstract: “Equilibration test was performed over a 4-hour dwell exchange with 2 L of 2.5% Dianeal solution.” → app constants: 240 min, 2.0 L default fill, 2.5% default PET solution.
+
+**4-h D/P creatinine** (Twardowski; table as reproduced by QxMD “PET calculations”, citing Twardowski ZJ, *Blood Purif.* 1989;7:95-108):
+
+| Category | D/P creatinine |
+|---|---|
+| High | 0.82–1.03 |
+| High-average | 0.65–0.81 |
+| Low-average | 0.50–0.64 |
+| Low | 0.34–0.49 |
+
+**4-h D/D₀ glucose** (Twardowski 1987 bands as reproduced in secondary PET references):
+
+| Category | D/D₀ glucose |
+|---|---|
+| High | 0.12–0.25 |
+| High-average | 0.26–0.38 |
+| Low-average | 0.39–0.49 |
+| Low | 0.50–0.61 |
+
+**Note for Dr D:** the earlier CRRT & PD Dosing draft used 0.12–0.26 / 0.27–0.38 for the top two glucose bands. Secondary sources found this time give 0.12–0.25 / 0.26–0.38, which this app uses. Please confirm against the original 1987 figure.
+
+Rules (judgment, stated): values are rounded to 2 decimals before banding; values below 0.34 or above 1.03 are reported in the end band with a note; category follows D/P creatinine, and disagreement with D/D₀ is flagged with “consider repeating the PET” (QxMD: “If discordance in D/P creatinine and D/D0 glucose is noted, it is recommended to repeat the PET.”).
+
+Worked example (Fresenius Medical Care, “Interpreting the PET”): “if the 4-hour D/P creatinine is 0.59 and the 4-hour D/D0 glucose is 0.47, the patient would be classified as low average.” — in tests.
+
+Context (Twardowski 1987 abstract, not used as advice text): “Patients with high peritoneal solute transfer rates were likely to have inadequate ultrafiltration on standard CAPD… Patients with low average, and particularly low peritoneal transport rates were likely to develop symptoms and signs of inadequate dialysis as their residual renal function became negligible”.
+
+Caveat: ISPD 2021 Guideline 2A uses the term PSTR and recommends a 4-h PET “using either 2.5%/2.27% or 4.25%/3.86% dextrose/glucose concentration and creatinine as the index solute.”
+
+- [ ] Sign-off: PET protocol constants, D/P creatinine bands, D/D₀ bands (please confirm 0.25/0.26), discordance flag
+
+---
+
+## 4. PET ultrafiltration screen
+
+Morelle J, Stachowska-Pietka J, Öberg C, et al. ISPD recommendations for the evaluation of peritoneal membrane dysfunction in adults. *Perit Dial Int.* 2021;41(4):352-372. doi:10.1177/0896860820982218. Guideline 3 (verbatim): “Insufficient UF should be suspected when either (a) the net UF from a 4-h PET is <400 ml (3.86% glucose/4.25% dextrose) or <100 ml (2.27% glucose /2.5% dextrose), (GRADE 1B) and/or (b) the daily UF is insufficient to maintain adequate fluid status.”
+
+App: net UF = drain − fill. Flag if < 400 mL (4.25%) or < 100 mL (2.5%).
+
+- [ ] Sign-off: PET net UF and ISPD 2021 thresholds 400 / 100 mL
+
+---
+
+## 5. Regimen estimate — Garred model
+
+**Equation.** Garred LJ, Canaud B, Farrell PC. A simple kinetic model for assessing peritoneal mass transfer in chronic ambulatory peritoneal dialysis. *ASAIO J.* 1983;6:131-137. Volume-corrected form as written in Asghar RB, Diskin AM, Spanel P, Smith D, Davies SJ. Measuring transport of water across the peritoneal membrane. *Kidney Int.* 2003;64:1911-1915 (doi:10.1046/j.1523-1755.2003.00253.x):
+
+```
+MTAC = (V(td) / td) × ln[ V(0) × (P − D(0)) / ( V(td) × (P − D(td)) ) ]
+```
+
+With fresh dialysate D(0) = 0 for urea and creatinine:
+
+```
+Fit from PET:   MTAC = (Vt / 240) × ln[ V0 / (Vt × (1 − D/P₄ₕ)) ]          (mL/min; volumes in mL)
+Each dwell:     D/P  = 1 − (V0 / Vt) × exp(−MTAC × t / Vt)                    (same equation solved for D)
+Daily Kt (L):   Σ D/P × drain volume, drain = fill + entered net UF
+Weekly Kt/V:    7 × (peritoneal Kt + renal urea clearance) / V
+Weekly CrCl:    7 × (Σ D/P_Cr × drain + RKF mean) × 1.73 / BSA
+```
+
+V0 = fill, Vt = end-of-dwell volume (PET: measured drain), t = dwell minutes. D/P is floored at 0.
+
+**Model family.** Waniewski J, Werynski A, Heimbürger O, Lindholm B. Simple models for description of small-solute transport in peritoneal dialysis. *Blood Purif.* 1991;9:129-141. Abstract: Garred is the “F = 0 (as in the widely used model of Garred and coworkers)” member; “The differences between the simple models were small from the clinical point of view for urea, creatinine, glucose, and potassium… For urea and creatinine the model with F = 0.5 yielded the best fit”. We use Garred (F = 0) because its form is the one written out in a retrievable source; Dr D may prefer F = 0.5.
+
+**Plausibility checks against published cohorts (tests, not validation):**
+
+- Asghar 2003 (full text, Results): mean intraperitoneal volume at 2 h “1957 ± 151 mL”; time constants “urea … 115 ± 21 minutes, creatinine … 178 ± 54 minutes”; MTAC “urea 18.2 ± 2.3 mL/min, creatinine 10.5 ± 2.04 mL/min”. Garred on a constant 1957 mL at 120 min returns V/τ = 17.0 (urea) and 11.0 (creatinine) mL/min, each within 1 SD of the reported means.
+- Pannekeet MM, Imholz AL, Struijk DG, et al. The standard peritoneal permeability analysis. *Kidney Int.* 1995;48:866-875 (doi:10.1038/ki.1995.363). Abstract: “MTACCr, 10.4 ml/min (5.7 to 19.3) … D/PCr, 0.76 (0.53 to 1.14) … NUF, −75 ml”. Garred on those medians (2 L, 4 h) gives 11.75 mL/min, inside the published range. Caveat: SPA used 1.36% glucose with dextran, and the medians are not from one patient.
+- Round trip: the fitted MTAC run forward on the PET dwell returns the PET D/P exactly.
+
+**Hand worked example (in tests):** D/P Cr 0.70, D/P urea 0.90, fill 2 L, drain 2.2 L → MTAC Cr 10.16, urea 20.23 mL/min. CAPD 4 × 2 L, 6-h dwells, UF 0 → peritoneal urea Kt 7.79 L/day → weekly peritoneal Kt/V 1.29 with V 42.43 L.
+
+**Guideline context.** KDOQI 2006 CPG 2 definitions: “‘Delivered’ peritoneal Kt/V urea refers to the actual dose the patient is receiving based on measurement… This is distinct from an estimated peritoneal Kt/V urea using a kinetic modeling program.” The app labels every model value “Estimated … (model, not measured)”.
+
+- [ ] Sign-off: Garred equation, D(0)=0, forward solution, Σ D/P × drain, labelled as estimate
+
+---
+
+## 6. Regimen inputs and dwell construction (no numbers invented)
+
+- **CAPD:** exchanges/day, fill (L), solution, optional long dwell (h), optional net UF per exchange and for the long dwell. No long dwell → 24 h split equally; with a long dwell → the other exchanges share 24 h − long dwell.
+- **APD:** night cycles, fill, total therapy time, optional fill + drain time per cycle (blank = 0, stated on screen as overstating dwell time), net UF per cycle, last fill (0 = dry day), day dwell (default 24 h − therapy time), last-fill UF.
+- **Defaults to confirm (Dr D):** CAPD 4 exchanges × 2.0 L. Source: the ADEMEX control arm, per KDOQI 2006: “CAPD patients were randomized to continue on 4 exchanges using 2 L per exchange”. APD numeric fields have no defaults (required). Net UF defaults to 0.
+- **Default solution chips (judgment, to confirm):** CAPD 2.5% dextrose; APD night 1.5%; last fill icodextrin; long dwell “same”. Solutions affect only the printed prescription, not the clearance estimate.
+- **Solution labels:** 1.5%, 2.5%, 4.25% dextrose and icodextrin 7.5% (standard bag labels).
+
+- [ ] Sign-off: dwell construction rules, 4 × 2.0 L CAPD default, default solution chips, UF default 0
+
+---
+
+## 7. Measured clearances and residual kidney function
+
+KDOQI 2006 PD Adequacy, Guideline 2 definitions (verbatim): total clearance “is based on a 24-hour collection of urine (kidney Kt/V urea; if volume >100 mL/d) and a 24-hour collection of effluent for CAPD and APD, a sample of the effluent, and the total drained effluent volume (peritoneal Kt/V urea; adding ultrafiltration with the infused dialysate volume). The term RKF is used to refer to estimated GFR, measured as the average of CCr and urea nitrogen clearance based on a 24-hour urine collection. Urine volume in 24 hours of 100 mL or less is considered to represent negligible RKF”.
+
+```
+Peritoneal Kt (L/day) = D_urea / P_urea × 24-h drain (L)
+Renal urea clearance (L/day) = U_urea / P_urea × 24-h urine (L)
+Weekly Kt/V = 7 × (peritoneal + renal) / V
+RKF (L/day) = ½ × (renal urea + renal creatinine clearance)  → added to CrCl
+mL/min = L/day × 1000 / 1440
+```
+
+Units: any, as long as urine/dialysate and plasma use the same unit (ratios only). Worked examples: D/P urea 0.9 × 10 L = 9 L/day, V 35 L → 1.80; U/P 5 × 0.5 L = 2.5 L/day; 10 L/day at BSA 1.73 → 70 L/week/1.73 m².
+
+Caveat: renal Kt/V uses urea clearance (not the mean), as in the KDOQI definition of kidney Kt/V urea; the mean is used for the CrCl total. No glucose correction of dialysate creatinine is applied (lab-dependent).
+
+- [ ] Sign-off: measured Kt/V, renal Kt/V, RKF mean for CrCl, 100 mL/day threshold
+
+---
+
+## 8. Targets (informational, never pass/fail)
+
+- **ISPD 2020** — Brown EA, Blake PG, Boudville N, et al. International Society for Peritoneal Dialysis practice recommendations: Prescribing high-quality goal-directed peritoneal dialysis. *Perit Dial Int.* 2020;40(3):244-253. doi:10.1177/0896860819895364. §3.4: “There is no specific clearance target that guarantees sufficient dialysis for an individual. Increasing small solute clearance to a Kt/V > 1.7 may improve uraemia-related symptoms, if present, but there is only low certainty evidence…” and “If symptoms, nutrition and volume are all controlled, no PD prescription change is needed for the sole purpose of reaching an arbitrary clearance target (practice point).”
+- **KDOQI 2006** CPG 2.1.1: “The minimal ‘delivered’ dose of total small-solute clearance should be a total (peritoneal and kidney) Kt/V urea of at least 1.7 per week. (B)” CPG 2.2.1 (no RKF): “a peritoneal Kt/V urea of at least 1.7 per week”. → app shows a “≥ 1.7” / “< 1.7” chip only.
+- **CrCl:** KDOQI 2006 CPR 2.7: peritoneal CCr “is of little added value for predicting risk for death; therefore, for simplicity, adequacy targets are based on urea kinetics only.” The older figure (“creatinine clearance (CCr) of 60 L/wk/1.73 m2 for CAPD patients”, from CANUSA extrapolations, quoted in KDOQI 2006) is in the About sheet as history only; CrCl has no on-screen target.
+
+- [ ] Sign-off: ISPD 2020 framing, 1.7 reference chip, CrCl shown without a target
+
+---
+
+## 9. Prescription summary
+
+Prints modality and regimen (exchanges × fill and solution, or cycles × fill, therapy time, night solution, last fill and day dwell), then “Estimated clearance (model, not measured)” — or “Measured clearance (24-h collections)” when only measured values exist — with weekly Kt/V (peritoneal + renal) and CrCl, the PET transport category, and the footer “Educational estimate only. Confirm with a measured 24-h collection.” No electrolyte composition. Blank values print as write-in lines.
+
+- [ ] Sign-off: prescription summary wording
+
+---
+
+## Status
+
+`DRAFT=true`. Not signed off. Draft banner, noindex and robots `Disallow: /` stay until Dr D signs off and asks, in his own words, to publish.
