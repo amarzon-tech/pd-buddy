@@ -404,6 +404,125 @@
   }
 
   /* ═══════════════════════════════════════════════════════════════════════
+   * Candidate set for the "Top 3" ranking (redesign agreed with Dr D)
+   * Same dwell rules and same Garred model as REGIMEN_OPTIONS; only the grid
+   * is wider. Judgment to confirm (CONTENT_REVIEW §13):
+   *  CAPD 3, 4, 5 exchanges × 2.0 / 2.5 / 3.0 L, 8-h overnight long dwell
+   *    (3.0 L and 5 exchanges go beyond the Handbook quote in REGIMEN_OPTIONS).
+   *  CCPD 4, 5 cycles × 2.0 / 2.5 L over 9 h, dry day or 2.0 L day dwell (15 h)
+   *    (Core Curriculum 2023: no more than 5 exchanges per night).
+   *  Every option with a long dwell also has an Extraneal variant (icodextrin
+   *    NOT modeled: identical unless the user enters a long-dwell UF).
+   * ═══════════════════════════════════════════════════════════════════════ */
+  const CANDIDATE_OPTIONS = Object.freeze(
+    (function () {
+      const out = [];
+      [3, 4, 5].forEach((n) =>
+        [2.0, 2.5, 3.0].forEach((f) =>
+          out.push(Object.freeze({ id: "capd-" + n + "x" + f.toFixed(1), mod: "capd", label: "CAPD " + n + " × " + f.toFixed(1) + " L", exchanges: n, fillL: f, longDwellH: 8 }))
+        )
+      );
+      [false, true].forEach((day) =>
+        [4, 5].forEach((n) =>
+          [2.0, 2.5].forEach((f) =>
+            out.push(
+              Object.freeze({
+                id: "ccpd-" + n + "x" + f.toFixed(1) + (day ? "-day" : "-dry"),
+                mod: "ccpd",
+                label: "CCPD " + n + " × " + f.toFixed(1) + " L, 9 h" + (day ? " + 2.0 L day dwell" : ", dry day"),
+                cycles: n,
+                fillL: f,
+                therapyH: 9,
+                lastFillL: day ? 2.0 : 0,
+              })
+            )
+          )
+        )
+      );
+      return out;
+    })()
+  );
+
+  /**
+   * Burden order (lower = less burdensome), compared left to right:
+   *  CAPD: exchanges/day, then fill volume.
+   *  CCPD: dry day before a day dwell, then cycles, then fill volume.
+   */
+  function burdenKey(opt) {
+    if (opt.mod === "capd") return [opt.exchanges, opt.fillL];
+    return [opt.lastFillL > 0 ? 1 : 0, opt.cycles, opt.fillL];
+  }
+  function cmpKey(a, b) {
+    for (let i = 0; i < Math.max(a.length, b.length); i++) {
+      const d = (a[i] || 0) - (b[i] || 0);
+      if (d !== 0) return d;
+    }
+    return 0;
+  }
+
+  /** Same estimate as regimenOptions, over any option list (default: CANDIDATE_OPTIONS). */
+  function candidateOptions(o, list) {
+    const opts = list || CANDIDATE_OPTIONS;
+    const out = [];
+    const ktvR = isNum(o.ktvRenal) ? o.ktvRenal : 0;
+    const rkfL = isNum(o.rkfLDay) ? o.rkfLDay : 0;
+    const est = (opt, ufMl) => {
+      const p = predictDaily(optionDwells(opt, ufMl), o.mtacUrea, o.mtacCr);
+      const ktvP = isNum(p.ureaLDay) && isNum(o.V) && o.V > 0 ? weeklyKtv(p.ureaLDay, o.V) : null;
+      return {
+        ktvP,
+        ktvR,
+        ktv: isNum(ktvP) ? ktvP + ktvR : null,
+        crcl: isNum(p.crLDay) && isNum(o.bsa) && o.bsa > 0 ? weeklyCrCl173(p.crLDay + rkfL, o.bsa) : null,
+      };
+    };
+    for (const opt of opts) {
+      const hasLong = opt.mod === "capd" || opt.lastFillL > 0;
+      const base = { baseId: opt.id, mod: opt.mod, label: opt.label, opt, burden: burdenKey(opt) };
+      out.push(Object.assign({ id: opt.id }, base, { longSolution: hasLong ? "dextrose" : null }, est(opt, o.longUfDextroseMl)));
+      if (hasLong) out.push(Object.assign({ id: opt.id + "-ico" }, base, { longSolution: "icodextrin" }, est(opt, o.longUfIcodextrinMl)));
+    }
+    return out;
+  }
+
+  /**
+   * Rank one modality's rows and return the top n.
+   *  Metric: total weekly Kt/V when every row has one; otherwise weekly CrCl
+   *  (L/week/1.73 m²) — e.g. transport type only, no D/P urea.
+   *  Targets: Kt/V ≥ ktvTarget (default 1.7, KDOQI 2006 CPG 2.1.1);
+   *    CrCl ≥ crclTarget (default 60, the historical KDOQI/ADEMEX CAPD figure).
+   *  Dextrose and Extraneal variants of one regimen count once: the dextrose
+   *    row unless only the Extraneal row meets target (or, below target, is higher).
+   *  Order: rows meeting target first, least burdensome first (ties: higher
+   *    metric); then rows below target, highest metric first.
+   */
+  function rankOptions(rows, opts) {
+    const o = opts || {};
+    const ktvTarget = isNum(o.ktvTarget) ? o.ktvTarget : TARGETS.KTV_HISTORICAL_MIN;
+    const crclTarget = isNum(o.crclTarget) ? o.crclTarget : TARGETS.CRCL_HISTORICAL_CAPD;
+    const n = isNum(o.n) ? o.n : 3;
+    const list = (rows || []).filter((r) => !o.mod || r.mod === o.mod);
+    if (!list.length) return { metric: null, target: null, top: [], meetCount: 0, anyMeet: false, all: [] };
+    const metric = list.every((r) => isNum(r.ktv)) ? "ktv" : list.every((r) => isNum(r.crcl)) ? "crcl" : null;
+    if (!metric) return { metric: null, target: null, top: [], meetCount: 0, anyMeet: false, all: [] };
+    const target = metric === "ktv" ? ktvTarget : crclTarget;
+    const val = (r) => r[metric];
+    const byBase = new Map();
+    list.forEach((r) => {
+      const e = Object.assign({}, r, { value: val(r), meets: val(r) >= target - 1e-9 });
+      const prev = byBase.get(r.baseId);
+      if (!prev) return byBase.set(r.baseId, e);
+      const better = (e.meets && !prev.meets) || (e.meets === prev.meets && !prev.meets && e.value > prev.value + 1e-9);
+      if (better) byBase.set(r.baseId, e);
+    });
+    const uniq = Array.from(byBase.values());
+    const meet = uniq.filter((r) => r.meets).sort((a, b) => cmpKey(a.burden, b.burden) || b.value - a.value);
+    const below = uniq.filter((r) => !r.meets).sort((a, b) => b.value - a.value || cmpKey(a.burden, b.burden));
+    const all = meet.concat(below);
+    return { metric, target, top: all.slice(0, n), meetCount: meet.length, anyMeet: meet.length > 0, all };
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════
    * Measured clearances (24-h collections) — KDOQI 2006 CPG 2 definitions
    *   Peritoneal Kt (L/day) = (D_urea / P_urea) × 24-h drain volume
    *   Renal urea clearance (L/day) = (U_urea / P_urea) × 24-h urine volume
@@ -474,6 +593,10 @@
     REGIMEN_OPTIONS,
     optionDwells,
     regimenOptions,
+    CANDIDATE_OPTIONS,
+    burdenKey,
+    candidateOptions,
+    rankOptions,
     petNetUfMl,
     petUfScreen,
     garredMtac,

@@ -1,5 +1,5 @@
 /**
- * PD Buddy — UI. Live results, no Calculate button.
+ * PD Buddy — UI. Five inputs → Top 3 CAPD and Top 3 CCPD. Live results, no Calculate button.
  * Inputs are never stored. No network after first load.
  */
 (function () {
@@ -10,7 +10,7 @@
   const RX = window.PdPrescription;
   const $ = (id) => document.getElementById(id);
   const $$ = (sel, root) => Array.from((root || document).querySelectorAll(sel));
-  const TOTAL_STEPS = 5;
+  const TOTAL_STEPS = 2;
   let currentStep = 1;
 
   function num(id) {
@@ -47,8 +47,9 @@
     }
   }
 
+
   /* chip groups (in-memory state only) */
-  const state = { sex: "male", vm: "watson", wunit: "kg", ptype: null, petsol: "2.5", mod: "capd", sol: "2.5", lsol: "same", asol: "1.5", alsol: "ico" };
+  const state = { sex: "male", wunit: "kg", ptype: null, pick: null };
   function bindChips(groupId, key) {
     const g = $(groupId);
     g.addEventListener("click", (e) => {
@@ -60,28 +61,255 @@
         c.classList.toggle("is-on", on);
         c.setAttribute("aria-checked", on ? "true" : "false");
       });
-      syncUi();
       recalc();
     });
   }
   bindChips("p-sex", "sex");
-  bindChips("p-vmethod", "vm");
   bindChips("p-wunit", "wunit");
   bindChips("pet-type", "ptype");
-  bindChips("pet-sol", "petsol");
-  bindChips("r-mod", "mod");
-  bindChips("c-sol", "sol");
-  bindChips("c-longsol", "lsol");
-  bindChips("a-sol", "asol");
-  bindChips("a-lsol", "alsol");
 
-  function syncUi() {
-    $("capd-block").classList.toggle("hidden", state.mod !== "capd");
-    $("apd-block").classList.toggle("hidden", state.mod !== "apd");
-    $("c-longsol-wrap").classList.toggle("hidden", !(F.isNum(num("c-long")) && num("c-long") > 0));
+  /* ── calculations ── */
+  let last = {};
+  const KTV_DEFAULT = F.TARGETS.KTV_HISTORICAL_MIN;
+  const CRCL_TARGET = F.TARGETS.CRCL_HISTORICAL_CAPD;
+
+  function recalc() {
+    const r = {};
     const wp = document.querySelector("#p-wt-wrap .unit-pill");
     if (wp) wp.textContent = state.wunit;
+
+    // 1–2. Body size → V (Watson) and BSA (Mosteller)
+    const age = num("p-age");
+    const ht = safe(() => F.ftInToCm(num("p-ft"), num("p-in")));
+    const wIn = num("p-wt");
+    const wt = state.wunit === "lb" ? safe(() => F.lbToKg(wIn)) : wIn;
+    r.htCm = ht;
+    r.wtKg = wt;
+    r.V = safe(() => F.watsonV(state.sex, age, ht, wt));
+    if (F.isNum(r.V) && r.V <= 0) r.V = null;
+    r.bsa = safe(() => F.bsaMosteller(ht, wt));
+    setText("o-v", F.isNum(r.V) ? fmt(r.V, 1) + " L" : "—");
+    setText("o-bsa", F.isNum(r.bsa) ? fmt(r.bsa, 2) + " m²" : "—");
+    const conv = [];
+    if (F.isNum(ht)) conv.push(fmt(ht, 1) + " cm");
+    if (F.isNum(wt) && state.wunit === "lb") conv.push(fmt(wt, 1) + " kg");
+    setText("p-msg", conv.length ? "= " + conv.join(", ") + "." : "");
+    $("p-msg").classList.remove("warn-text");
+
+    // 3. Transport: picked type, or PET numbers (numbers win)
+    const dpcr = num("pet-dpcr"), dpu = num("pet-dpu"), drainIn = num("pet-drain");
+    r.numCat = safe(() => F.petCategoryCr(dpcr));
+    r.typeCat = state.ptype ? safe(() => F.typicalPet(state.ptype)) : null;
+    r.cat = r.numCat ? r.numCat : r.typeCat ? { key: r.typeCat.key, label: r.typeCat.label, outside: null } : null;
+    const typ = r.cat ? F.typicalPet(r.cat.key) : null; // typical values for the category in use
+    r.dpCrUsed = r.numCat ? dpcr : typ ? typ.dpCr : null;
+    r.drainMlUsed = F.isNum(drainIn) && drainIn > 0 ? drainIn : typ ? typ.drainMl : null;
+    r.drainTypical = !(F.isNum(drainIn) && drainIn > 0);
+    r.dpCrTypical = !r.numCat;
+    r.typical = !!r.typeCat && !r.numCat && !F.isNum(dpu) && r.drainTypical;
+    const fillL = F.TARGETS.PET_FILL_L;
+    const drainL = F.isNum(r.drainMlUsed) ? r.drainMlUsed / 1000 : null;
+    r.mtacCr = F.isNum(r.dpCrUsed) ? safe(() => F.garredMtac(r.dpCrUsed, fillL, drainL, F.TARGETS.PET_MINUTES)) : null;
+    r.mtacU = F.isNum(dpu) && F.isNum(drainL) ? safe(() => F.garredMtac(dpu, fillL, drainL, F.TARGETS.PET_MINUTES)) : null;
+    r.basis = r.typical ? "Estimated from typical values for " + r.typeCat.label.toLowerCase() + " transporters — enter PET numbers for a patient-specific estimate." : "";
+    let petMsg = "";
+    let flag = false;
+    if (!r.cat) petMsg = F.isNum(dpu) ? "Pick a transport type or enter D/P creatinine as well." : "Pick a transport type, or open PET numbers.";
+    else if (r.typical) petMsg = "Typical " + r.typeCat.label.toLowerCase() + " values: D/P creatinine " + fmt(typ.dpCr, 3) + ", PET drain " + fmt(typ.drainMl, 0) + " mL (Twardowski band midpoints). No typical D/P urea exists, so Kt/V needs your PET numbers; options are ranked by CrCl.";
+    else {
+      const used = [];
+      used.push("D/P creatinine " + fmt(r.dpCrUsed, 2) + (r.dpCrTypical ? " (typical)" : ""));
+      if (F.isNum(dpu)) used.push("D/P urea " + fmt(dpu, 2));
+      used.push("drain " + fmt(r.drainMlUsed, 0) + " mL" + (r.drainTypical ? " (typical for " + r.cat.label.toLowerCase() + ")" : ""));
+      petMsg = r.cat.label + " transport. Using " + used.join(", ") + ".";
+      if (r.numCat && r.numCat.outside) petMsg += " D/P creatinine is " + r.numCat.outside + " the published range (0.34–1.03).";
+      if (r.numCat && r.typeCat && r.numCat.key !== r.typeCat.key) {
+        petMsg += " PET numbers give " + r.numCat.label + ", not the picked " + r.typeCat.label + ". Using the numbers.";
+        flag = true;
+      }
+      if (F.isNum(dpu) && !F.isNum(r.mtacU)) {
+        petMsg += " D/P urea and drain give no valid urea MTAC; check the values.";
+        flag = true;
+      }
+      if (!F.isNum(dpu)) petMsg += " Add D/P urea to rank by Kt/V.";
+    }
+    setText("pet-msg", petMsg);
+    $("pet-msg").classList.toggle("flag-text", flag);
+    $("pet-msg").classList.toggle("basis-note", !!r.typical);
+
+    // 4. Residual urine (renal clearance only with urine + serum values)
+    const uvol = num("l-uvol");
+    r.urineMl = F.isNum(uvol) && uvol > 0 ? uvol : 0;
+    const uu = num("l-uu"), pu = num("l-pu"), ucr = num("l-ucr"), pcr = num("l-pcr");
+    r.res = r.urineMl > 0 ? safe(() => F.residual({ urineMl: r.urineMl, urineUrea: uu, plasmaUrea: pu, urineCr: ucr, plasmaCr: pcr })) : null;
+    r.ktvR = r.res && F.isNum(r.V) ? F.weeklyKtv(r.res.ureaLDay, r.V) : null;
+    r.rkfLDay = r.res && F.isNum(r.res.rkfLDay) ? r.res.rkfLDay : 0;
+    r.rkfCrcl = r.res && F.isNum(r.res.rkfLDay) && F.isNum(r.bsa) ? F.weeklyCrCl173(r.res.rkfLDay, r.bsa) : null;
+    let rm = "";
+    let rflag = false;
+    if (r.urineMl === 0) rm = "Anuric: ranking uses peritoneal clearance only.";
+    else if (!r.res) {
+      rm = "Not counted yet: urine volume alone does not give a clearance. Add urine and serum urea (and creatinine for CrCl) under Residual clearance details.";
+      rflag = true;
+    } else {
+      rm = "Renal Kt/V " + (F.isNum(r.ktvR) ? fmt(r.ktvR, 2) : "—") + " added to every option";
+      rm += F.isNum(r.rkfCrcl) ? "; RKF ≈ " + fmt(r.rkfCrcl, 1) + " L/week/1.73 m² added to CrCl." : "; add urine and serum creatinine to add RKF to CrCl.";
+      if (!r.res.significant) rm += " Urine 100 mL/day or less: KDOQI 2006 treats RKF as negligible.";
+    }
+    setText("rkf-msg", rm);
+    $("rkf-msg").classList.toggle("flag-text", rflag);
+
+    // 5. Target
+    const tk = num("t-ktv");
+    r.ktvTarget = F.isNum(tk) && tk > 0 ? tk : KTV_DEFAULT;
+
+    // Options and ranking
+    r.ready = F.isNum(r.V) && F.isNum(r.bsa) && F.isNum(r.mtacCr);
+    r.options = r.ready
+      ? safe(() => F.candidateOptions({ mtacUrea: r.mtacU, mtacCr: r.mtacCr, V: r.V, bsa: r.bsa, ktvRenal: r.ktvR, rkfLDay: r.rkfLDay, longUfDextroseMl: num("o-uf-dex"), longUfIcodextrinMl: num("o-uf-ico") }))
+      : null;
+    if (r.options) {
+      r.rankCapd = F.rankOptions(r.options, { mod: "capd", ktvTarget: r.ktvTarget, crclTarget: CRCL_TARGET });
+      r.rankCcpd = F.rankOptions(r.options, { mod: "ccpd", ktvTarget: r.ktvTarget, crclTarget: CRCL_TARGET });
+    }
+    last = r;
+    setText("step-hint", r.ready ? "" : "Fill in body size and transport type");
+    renderResults(r);
   }
+
+  /* plain-words regimen */
+  function words(o) {
+    const p = o.opt;
+    const ico = o.longSolution === "icodextrin";
+    if (p.mod === "capd") return p.exchanges + " exchanges a day × " + fmt(p.fillL, 1) + " L, one 8-h overnight dwell" + (ico ? " with Extraneal" : "");
+    return p.cycles + " cycles × " + fmt(p.fillL, 1) + " L over 9 h, " + (p.lastFillL > 0 ? "plus a " + fmt(p.lastFillL, 1) + " L day dwell (15 h)" + (ico ? " with Extraneal" : "") : "dry day");
+  }
+  function shortName(o) {
+    const p = o.opt;
+    if (p.mod === "capd") return "CAPD " + p.exchanges + " × " + fmt(p.fillL, 1) + " L";
+    return "CCPD " + p.cycles + " × " + fmt(p.fillL, 1) + " L" + (p.lastFillL > 0 ? " + day dwell" : ", dry day");
+  }
+
+  function renderTop(listId, noteId, rank, r) {
+    const el = $(listId);
+    const note = $(noteId);
+    if (!rank || !rank.top.length) {
+      el.innerHTML = '<li class="top-empty">Enter body size and transport type to see options.</li>';
+      note.classList.add("hidden");
+      return;
+    }
+    const tgtTxt = rank.metric === "ktv" ? "Kt/V " + fmt(rank.target, 1) : "CrCl " + fmt(rank.target, 0);
+    if (!rank.anyMeet) {
+      note.textContent = "None of these options reaches the target (" + tgtTxt + "). Showing the 3 highest-clearance options.";
+      note.classList.remove("hidden");
+    } else if (rank.meetCount < rank.top.length) {
+      note.textContent = "Only " + rank.meetCount + " option" + (rank.meetCount === 1 ? "" : "s") + " reach" + (rank.meetCount === 1 ? "es" : "") + " the target (" + tgtTxt + "); the rest are the highest-clearance options below it.";
+      note.classList.remove("hidden");
+    } else note.classList.add("hidden");
+    el.innerHTML = rank.top
+      .map((o, i) => {
+        const sel = state.pick === o.id;
+        const ktv = F.isNum(o.ktv) ? fmt(o.ktv, 2) : "needs D/P urea";
+        const badge = o.meets ? '<span class="badge-ok">Meets target</span>' : '<span class="badge-warn">Below target</span>';
+        return (
+          '<li><button type="button" class="top-item' + (sel ? " is-sel" : "") + '" data-pick="' + esc(o.id) + '">' +
+          '<span class="top-rank">' + (i + 1) + "</span>" +
+          '<span class="top-body"><span class="top-name">' + esc(shortName(o)) + (o.longSolution === "icodextrin" ? " · Extraneal" : "") + "</span>" +
+          '<span class="top-words">' + esc(words(o)) + "</span>" +
+          '<span class="top-nums"><span class="tn' + (rank.metric === "ktv" ? " lead" : "") + '"><b class="' + (F.isNum(o.ktv) ? (rank.metric === "ktv" ? (o.meets ? "v-ok" : "v-warn") : "") : "muted") + '">' + esc(ktv) + "</b><i>weekly Kt/V</i></span>" +
+          '<span class="tn' + (rank.metric === "crcl" ? " lead" : "") + '"><b class="' + (rank.metric === "crcl" ? (o.meets ? "v-ok" : "v-warn") : "") + '">' + fmt(o.crcl, 1) + "</b><i>CrCl L/wk/1.73 m²</i></span></span>" +
+          '<span class="top-foot">' + badge + '<span class="est-mini">model estimate, not measured</span></span></span></button></li>'
+        );
+      })
+      .join("");
+  }
+
+  function renderResults(r) {
+    // summary line
+    const bits = [];
+    if (F.isNum(r.V)) bits.push(state.sex === "female" ? "Female" : "Male");
+    if (F.isNum(num("p-age"))) bits.push(num("p-age") + " y");
+    if (F.isNum(r.htCm)) bits.push(num("p-ft") + " ft " + (num("p-in") || 0) + " in");
+    if (F.isNum(r.wtKg)) bits.push(fmt(r.wtKg, 1) + " kg");
+    if (F.isNum(r.V)) bits.push("V " + fmt(r.V, 1) + " L");
+    if (F.isNum(r.bsa)) bits.push("BSA " + fmt(r.bsa, 2) + " m²");
+    if (r.cat) bits.push(r.cat.label + (r.typical ? " (typical)" : r.numCat ? " (PET)" : ""));
+    bits.push(r.urineMl > 0 ? fmt(r.urineMl, 0) + " mL/day urine" + (r.res ? "" : " (not counted)") : "anuric");
+    setText("sum-line", bits.join(" · "));
+    const rb = $("rank-basis");
+    const anyRank = r.rankCapd || r.rankCcpd;
+    let basis = "";
+    if (!r.ready) basis = "Enter body size and a transport type (or PET numbers) on step 1.";
+    else if (anyRank && anyRank.metric === "ktv") basis = "Ranked by estimated total weekly Kt/V against your target of " + fmt(r.ktvTarget, 2).replace(/0$/, "") + " (CrCl shown alongside).";
+    else basis = "Ranked by weekly CrCl: Kt/V can’t be estimated without a 4-h D/P urea. Reference " + CRCL_TARGET + " L/week/1.73 m² (historical CAPD figure)." + (r.typical ? " Typical " + r.typeCat.label.toLowerCase() + " values, not this patient’s PET." : "");
+    rb.textContent = basis;
+    rb.classList.toggle("warn-note", r.ready && !!anyRank && anyRank.metric === "crcl");
+
+    renderTop("top-capd", "top-capd-note", r.rankCapd, r);
+    renderTop("top-ccpd", "top-ccpd-note", r.rankCcpd, r);
+    renderOptions(r);
+    renderRx(r);
+  }
+
+  function renderOptions(r) {
+    const el = $("opt-table");
+    const basis = $("opt-basis");
+    if (!r.options) {
+      el.innerHTML = "";
+      basis.textContent = "Enter body size and a transport type to compare options.";
+      return;
+    }
+    const kt = (v) => (F.isNum(v) ? '<span class="' + (v >= r.ktvTarget - 1e-9 ? "ok-v" : "warn-v") + '">' + fmt(v, 2) + "</span>" : "—");
+    const out = ['<div class="op-row head"><span>Option</span><span>Kt/V</span><span>CrCl</span></div>'];
+    let grp = "";
+    r.options.forEach((o) => {
+      if (o.mod !== grp) {
+        grp = o.mod;
+        out.push('<div class="op-row grp"><span>' + (grp === "capd" ? "CAPD · 8-h overnight long dwell" : "CCPD · 9 h on cycler") + "</span></div>");
+      }
+      const ico = o.longSolution === "icodextrin";
+      const label = ico ? "+ Extraneal long dwell" : o.label.replace(/^(CAPD|CCPD) /, "").replace(", 9 h", "").replace(" + 2.0 L day dwell", " + 2 L day") + (o.longSolution === "dextrose" ? " · dextrose" : "");
+      out.push('<div class="op-row' + (ico ? " ico" : "") + '"><span class="ol">' + esc(label) + "</span><span>" + kt(o.ktv) + "</span><span>" + fmt(o.crcl, 1) + "</span></div>");
+    });
+    el.innerHTML = out.join("");
+    const noKtv = r.options.every((o) => !F.isNum(o.ktv));
+    let b = "Weekly totals (renal included when entered). Kt/V green at or above your target, amber below; CrCl in L/week/1.73 m².";
+    if (r.typical) b = r.basis + " Kt/V needs a measured 4-h D/P urea.";
+    else if (noKtv) b += " Add 4-h D/P urea for Kt/V.";
+    basis.textContent = b;
+  }
+
+  function pickedRow(r) {
+    if (!r.options) return null;
+    const all = (r.rankCapd ? r.rankCapd.top : []).concat(r.rankCcpd ? r.rankCcpd.top : []);
+    return all.find((o) => o.id === state.pick) || (r.rankCapd && r.rankCapd.top[0]) || null;
+  }
+
+  function renderRx(r) {
+    const o = pickedRow(r);
+    const est = o ? { measured: false, ktvTotal: o.ktv, ktvP: o.ktvP, ktvR: o.ktvR, crcl: o.crcl } : {};
+    const ico = o && o.longSolution === "icodextrin";
+    const p = o ? o.opt : null;
+    const rx = RX.build({
+      modality: p && p.mod === "ccpd" ? "apd" : "capd",
+      capd: p && p.mod === "capd" ? { exchanges: p.exchanges, fillL: p.fillL, longDwellH: p.longDwellH, longSolution: ico ? "ico" : "same" } : {},
+      apd: p && p.mod === "ccpd" ? { cycles: p.cycles, fillL: p.fillL, therapyH: p.therapyH, lastFillL: p.lastFillL, lastSolution: ico ? "ico" : null } : {},
+      estimate: est,
+      transport: r.cat ? r.cat.label : null,
+      basis: r.basis || null,
+    });
+    renderSheet($("rx-sheet"), rx);
+  }
+
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-pick]");
+    if (!b) return;
+    state.pick = b.getAttribute("data-pick");
+    renderResults(last);
+    const card = $("rx-card");
+    if (card && card.scrollIntoView) card.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+
 
   /* theme (in-memory only) */
   function currentTheme() {
@@ -102,7 +330,7 @@
     v: {
       title: "Urea volume (V) and BSA",
       html: `<h4>Equations</h4>
-        <p class="eq">Watson, male: 2.447 − 0.09516×age + 0.1074×H + 0.3362×W<br>Watson, female: −2.097 + 0.1069×H + 0.2466×W<br>
+        <p class="eq">Watson (used), male: 2.447 − 0.09516×age + 0.1074×H + 0.3362×W<br>Watson, female: −2.097 + 0.1069×H + 0.2466×W<br>
         Hume-Weyers, male: 0.194786×H + 0.296785×W − 14.012934<br>Hume-Weyers, female: 0.344547×H + 0.183809×W − 35.270121<br>
         BSA (Mosteller) = √(H × W / 3600)</p>
         <p>H in cm, W in kg, V in litres.</p>
@@ -153,15 +381,19 @@
         <li>No middle-molecule or sodium estimate.</li></ul>`,
     },
     options: {
-      title: "Regimen options",
-      html: `<h4>Options compared</h4>
-        <p class="eq">CAPD 3 × 2.0 L · 4 × 2.0 L · 4 × 2.5 L, 8-h overnight long dwell<br>
-        CCPD 4 × 2.0 L dry day · 4 × 2.0 L, 5 × 2.0 L, 5 × 2.5 L with a 2.0 L day dwell (15 h), 9 h on the cycler</p>
+      title: "Options compared and how they are ranked",
+      html: `<h4>Candidate set</h4>
+        <p class="eq">CAPD 3, 4 or 5 exchanges × 2.0, 2.5 or 3.0 L, 8-h overnight long dwell<br>
+        CCPD 4 or 5 cycles × 2.0 or 2.5 L over 9 h, dry day or a 2.0 L day dwell (15 h)<br>
+        Each option with a long dwell also with an Extraneal long dwell</p>
+        <h4>Ranking</h4>
+        <p>Metric: total weekly Kt/V (peritoneal + renal) when a D/P urea is available; otherwise weekly CrCl (L/week/1.73 m²). Target: Kt/V ≥ 1.7 by default (KDOQI 2006 minimum), or CrCl ≥ 60 (historical CANUSA-based CAPD figure, also used for CCPD here).</p>
+        <p>Options meeting the target come first, least burdensome first. CAPD: fewer exchanges, then smaller fills. CCPD: dry day before a day dwell, then fewer cycles, then smaller fills. If fewer than 3 meet it, the rest are the highest-clearance options below target. The dextrose and Extraneal versions of a regimen count once (dextrose unless only Extraneal meets the target).</p>
         <h4>Sources</h4>
-        <p>Handbook of Dialysis, 4th ed. (Daugirdas, Blake, Ing 2006), as reproduced in ISPD teaching slides: “4 x 2L ... is the typical prescription. 4 x 2.5L in larger patients with small RRF or anuric patients who weigh &gt;75 kg. 3 x 2L in smaller patients or in patients with good RRF.” CCPD: “3 to 5 cycles per 9 hour cycling session”, “Cycler dwell volumes - 2 to 2.5 L”, “Can start with NIPD if patient has good residual volume.” ADEMEX (Paniagua R et al. <em>J Am Soc Nephrol.</em> 2002;13:1307-1320) control arm: “four daily exchanges with 2 L”. Core Curriculum 2023 (<em>Am J Kidney Dis</em>): no more than 5 exchanges per night on the cycler.</p>
+        <p>Handbook of Dialysis, 4th ed. (Daugirdas, Blake, Ing 2006), as reproduced in ISPD teaching slides: “4 x 2L ... is the typical prescription. 4 x 2.5L in larger patients with small RRF or anuric patients who weigh &gt;75 kg. 3 x 2L in smaller patients or in patients with good RRF.” CCPD: “3 to 5 cycles per 9 hour cycling session”, “Cycler dwell volumes - 2 to 2.5 L”, “Can start with NIPD if patient has good residual volume.” ADEMEX (Paniagua R et al. <em>J Am Soc Nephrol.</em> 2002;13:1307-1320) control arm: “four daily exchanges with 2 L”. Core Curriculum 2023 (<em>Am J Kidney Dis</em>): no more than 5 exchanges per night on the cycler. 3.0 L fills and 5 CAPD exchanges go beyond these quotes and are awaiting Dr D’s review.</p>
         <h4>Extraneal (icodextrin 7.5%)</h4>
-        <p>Used once a day for the long dwell (CAPD overnight, CCPD day dwell). Icodextrin kinetics are not modeled: the Extraneal dwell is the same diffusion dwell, so it differs only if you enter an expected long-dwell UF. Do not read identical rows as “no benefit”; UF is the point of icodextrin and is not predicted here.</p>
-        <h4>Caveats</h4><p>Same Garred model and limits as the regimen estimate. Short-dwell net UF counts as 0. CCPD fill/drain time counts as 0, which overstates dwell time. The 8-h CAPD overnight dwell is the low end of the usual 8–10 h.</p>`,
+        <p>Used once a day for the long dwell (CAPD overnight, CCPD day dwell). Icodextrin kinetics are not modeled: the Extraneal dwell is the same diffusion dwell, so it differs only if you enter an expected long-dwell UF. UF is the point of icodextrin and is not predicted here.</p>
+        <h4>Caveats</h4><p>Same Garred model and limits as the estimate. Short-dwell net UF counts as 0. CCPD fill/drain time counts as 0, which overstates dwell time. The 8-h CAPD overnight dwell is the low end of the usual 8–10 h. Burden ordering is a judgment, not a published rule.</p>`,
     },
     targets: {
       title: "Targets",
@@ -207,227 +439,6 @@
     if (e.key === "Escape" && sheet.classList.contains("open")) closeSheet();
   });
 
-  /* ── calculations ── */
-  let last = {};
-
-  function recalc() {
-    syncUi();
-    const r = {};
-    // Step 1
-    const age = num("p-age");
-    const ht = safe(() => F.ftInToCm(num("p-ft"), num("p-in")));
-    const wIn = num("p-wt");
-    const wt = state.wunit === "lb" ? safe(() => F.lbToKg(wIn)) : wIn;
-    r.htCm = ht;
-    r.wtKg = wt;
-    r.V = safe(() => (state.vm === "hume" ? F.humeWeyersV(state.sex, ht, wt) : F.watsonV(state.sex, age, ht, wt)));
-    if (F.isNum(r.V) && r.V <= 0) r.V = null;
-    r.bsa = safe(() => F.bsaMosteller(ht, wt));
-    setText("o-v", F.isNum(r.V) ? fmt(r.V, 1) + " L" : "—");
-    setText("o-bsa", F.isNum(r.bsa) ? fmt(r.bsa, 2) + " m²" : "—");
-    const conv = [];
-    if (F.isNum(ht)) conv.push(fmt(ht, 1) + " cm");
-    if (F.isNum(wt) && state.wunit === "lb") conv.push(fmt(wt, 1) + " kg");
-    if (F.isNum(r.V)) setText("p-msg", (conv.length ? "= " + conv.join(", ") + ". " : "") + "KDOQI 2006 accepts Watson or Hume for V in adults.");
-
-    // Step 2
-    const dpcr = num("pet-dpcr"), dd0 = num("pet-dd0"), fill = num("pet-fill"), drainMl = num("pet-drain"), dpu = num("pet-dpu");
-    // Numbers win over the picked type when a D/P creatinine is entered.
-    r.numCat = safe(() => F.petCategoryCr(dpcr));
-    r.typeCat = state.ptype ? safe(() => F.typicalPet(state.ptype)) : null;
-    r.typical = !r.numCat && !!r.typeCat;
-    r.cat = r.numCat ? r.numCat : r.typeCat ? { key: r.typeCat.key, label: r.typeCat.label, outside: null } : null;
-    r.gcat = safe(() => F.petCategoryGlucose(dd0));
-    setText("o-cat", r.cat ? r.cat.label + (r.typical ? " (typical)" : "") : "—");
-    setText("o-gcat", r.gcat ? r.gcat.label : "—");
-    let petMsg = r.cat ? "" : "Pick a transport type, or enter PET numbers.";
-    let flag = false;
-    if (r.numCat && r.numCat.outside) petMsg = "D/P creatinine is " + r.numCat.outside + " the published range (0.34–1.03); reported as " + r.numCat.label.toLowerCase() + ".";
-    if (r.numCat && r.typeCat && r.numCat.key !== r.typeCat.key) {
-      petMsg += (petMsg ? " " : "") + "PET numbers give " + r.numCat.label + ", not the picked " + r.typeCat.label + ". Using the numbers.";
-      flag = true;
-    } else if (r.numCat && r.typeCat) petMsg += (petMsg ? " " : "") + "PET numbers agree with the picked type.";
-    if (r.numCat && r.gcat && r.numCat.key !== r.gcat.key) {
-      petMsg += (petMsg ? " " : "") + "Creatinine and glucose categories disagree; consider repeating the PET.";
-      flag = true;
-    }
-    setText("pet-msg", petMsg);
-    $("pet-msg").classList.toggle("flag-text", flag);
-    if (r.cat) $("pet-msg").classList.remove("warn-text");
-    r.petUf = safe(() => F.petNetUfMl(fill, drainMl));
-    setText("o-petuf", F.isNum(r.petUf) ? (r.petUf > 0 ? "+" : "") + fmt(r.petUf, 0) + " mL" : "—");
-    const scr = F.isNum(r.petUf) ? F.petUfScreen(r.petUf, state.petsol) : null;
-    metricState("m-o-petuf", scr && scr.applicable ? (scr.insufficient ? "warn" : "ok") : null);
-    setText(
-      "pet-uf-msg",
-      scr && scr.applicable
-        ? scr.insufficient
-          ? "Net UF below " + scr.threshold + " mL on " + state.petsol + "% dextrose: insufficient UF by the ISPD 2021 screen."
-          : "Net UF meets the ISPD 2021 screen (" + scr.threshold + " mL on " + state.petsol + "% dextrose)."
-        : ""
-    );
-    const drainL = F.isNum(drainMl) ? drainMl / 1000 : null;
-    if (r.typical) {
-      // Twardowski band midpoints (D/P Cr and PET drain volume, 2 L 2.5% PET). No typical D/P urea.
-      r.mtacCr = safe(() => F.garredMtac(r.typeCat.dpCr, r.typeCat.fillL, r.typeCat.drainMl / 1000, F.TARGETS.PET_MINUTES));
-    } else {
-      r.mtacCr = safe(() => F.garredMtac(dpcr, fill, drainL, F.TARGETS.PET_MINUTES));
-    }
-    r.mtacU = r.typical ? null : safe(() => F.garredMtac(dpu, fill, drainL, F.TARGETS.PET_MINUTES));
-    r.basis = r.typical ? "Estimated from typical values for " + r.typeCat.label.toLowerCase() + " transporters — enter PET numbers for a patient-specific estimate." : "";
-    setText("o-mtac", F.isNum(r.mtacCr) ? fmt(r.mtacCr, 1) + " mL/min" : "—");
-    let mm = "";
-    if (r.typical)
-      mm = r.basis + " Typical D/P creatinine " + fmt(r.typeCat.dpCr, 3) + " and PET drain " + fmt(r.typeCat.drainMl, 0) + " mL (Twardowski band midpoints). No published typical D/P urea, so Kt/V needs your PET numbers.";
-    else if (F.isNum(r.mtacCr)) mm = "MTAC creatinine " + fmt(r.mtacCr, 1) + " mL/min" + (F.isNum(r.mtacU) ? ", urea " + fmt(r.mtacU, 1) + " mL/min" : "; add D/P urea for a Kt/V estimate") + " (Garred).";
-    else if (r.numCat) mm = "Add the PET drain volume to estimate regimens (Garred model).";
-    setText("pet-model-msg", mm);
-    $("pet-model-msg").classList.toggle("basis-note", r.typical);
-
-    // Step 3
-    const pu = num("l-pu"), pcr = num("l-pcr"), uvol = num("l-uvol"), uu = num("l-uu"), ucr = num("l-ucr");
-    r.res = safe(() => F.residual({ urineMl: uvol, urineUrea: uu, plasmaUrea: pu, urineCr: ucr, plasmaCr: pcr }));
-    r.ktvR = r.res && F.isNum(r.V) ? F.weeklyKtv(r.res.ureaLDay, r.V) : null;
-    r.rkfCrcl = r.res && F.isNum(r.res.rkfLDay) && F.isNum(r.bsa) ? F.weeklyCrCl173(r.res.rkfLDay, r.bsa) : null;
-    setText("o-ktvr", F.isNum(r.ktvR) ? fmt(r.ktvR, 2) : "—");
-    setText("o-rkf", r.res && F.isNum(r.res.rkfMlMin) ? fmt(r.res.rkfMlMin, 1) + " mL/min" : "—");
-    let rm = "";
-    if (r.res && !r.res.significant) rm = "Urine 100 mL/day or less: KDOQI 2006 treats RKF as negligible.";
-    if (F.isNum(r.rkfCrcl)) rm += (rm ? " " : "") + "RKF ≈ " + fmt(r.rkfCrcl, 1) + " L/week/1.73 m².";
-    setText("rkf-msg", rm);
-    const mdrain = num("m-drain"), mdu = num("m-du"), mdcr = num("m-dcr");
-    r.measU = safe(() => F.clearanceLDay(mdu, pu, mdrain));
-    r.measCr = safe(() => F.clearanceLDay(mdcr, pcr, mdrain));
-    r.ktvPmeas = F.isNum(r.measU) && F.isNum(r.V) ? F.weeklyKtv(r.measU, r.V) : null;
-    const rkfL = r.res && F.isNum(r.res.rkfLDay) ? r.res.rkfLDay : 0;
-    r.crclMeas = F.isNum(r.measCr) && F.isNum(r.bsa) ? F.weeklyCrCl173(r.measCr + rkfL, r.bsa) : null;
-    setText("o-ktvp-meas", F.isNum(r.ktvPmeas) ? fmt(r.ktvPmeas, 2) : "—");
-    setText("o-crcl-meas", F.isNum(r.crclMeas) ? fmt(r.crclMeas, 1) + " L/wk" : "—");
-
-    // Step 4
-    let dwells = null;
-    let regErr = "";
-    try {
-      if (state.mod === "capd") {
-        dwells = F.capdDwells({
-          exchanges: num("c-n"),
-          fillL: num("c-fill"),
-          longDwellH: num("c-long"),
-          ufPerExchangeMl: num("c-uf"),
-          longDwellUfMl: num("c-long-uf"),
-        });
-      } else {
-        dwells = F.apdDwells({
-          cycles: num("a-n"),
-          fillL: num("a-fill"),
-          therapyH: num("a-ttt"),
-          fillDrainMin: num("a-fd"),
-          ufPerCycleMl: num("a-uf"),
-          lastFillL: num("a-last"),
-          dayDwellH: num("a-day"),
-          lastFillUfMl: num("a-last-uf"),
-        });
-      }
-    } catch (e) {
-      regErr = "Regimen: " + e.message + ".";
-    }
-    r.pred = dwells && (F.isNum(r.mtacCr) || F.isNum(r.mtacU)) ? safe(() => F.predictDaily(dwells, r.mtacU, r.mtacCr)) : null;
-    r.ktvPpred = r.pred && F.isNum(r.pred.ureaLDay) && F.isNum(r.V) ? F.weeklyKtv(r.pred.ureaLDay, r.V) : null;
-    r.ktvTpred = F.isNum(r.ktvPpred) ? r.ktvPpred + (F.isNum(r.ktvR) ? r.ktvR : 0) : null;
-    r.crclPred = r.pred && F.isNum(r.pred.crLDay) && F.isNum(r.bsa) ? F.weeklyCrCl173(r.pred.crLDay + rkfL, r.bsa) : null;
-    setText("o-ktv-pred", F.isNum(r.ktvTpred) ? fmt(r.ktvTpred, 2) : "—");
-    setText("o-crcl-pred", F.isNum(r.crclPred) ? fmt(r.crclPred, 1) + " L/wk" : "—");
-    metricState("m-o-ktv-pred", F.isNum(r.ktvTpred) ? F.ktvReading(r.ktvTpred).state : null);
-    const tbl = $("dwell-table");
-    if (r.pred) {
-      const name = { exchange: "Exchange", long: "Long dwell", cycle: "Night cycle", day: "Day dwell" };
-      tbl.innerHTML =
-        '<div class="dw-row head"><span>Dwell</span><span>Time</span><span>D/P urea</span><span>D/P Cr</span></div>' +
-        r.pred.rows
-          .map(
-            (d) =>
-              '<div class="dw-row"><span>' + esc(name[d.kind]) + " · " + fmt(d.fillL, 1) + " L</span><span>" +
-              fmt(d.minutes / 60, 1) + " h</span><span>" + fmt(d.dpUrea, 2) + "</span><span>" + fmt(d.dpCr, 2) + "</span></div>"
-          )
-          .join("");
-    } else tbl.innerHTML = "";
-    let rmsg = regErr;
-    if (!regErr && !F.isNum(r.mtacCr)) rmsg = "Add PET drain volume (step 2) to estimate this regimen.";
-    else if (!regErr && r.typical && r.pred) rmsg = r.basis + " Kt/V needs a measured 4-h D/P urea; CrCl shown.";
-    else if (!regErr && !F.isNum(r.mtacU)) rmsg = "Add 4-h D/P urea (step 2) for a Kt/V estimate.";
-    else if (!regErr && r.pred) rmsg = "Estimate only (Garred model). Total includes renal Kt/V when entered. UF counts only as entered.";
-    setText("reg-msg", rmsg);
-    $("reg-msg").classList.toggle("basis-note", !!(r.typical && r.pred && !regErr));
-    if (F.isNum(r.ktvPpred) === false && r.typical) setText("o-ktv-pred", "needs D/P urea");
-
-    // Step 5: standard regimen options
-    r.options = F.isNum(r.mtacCr) || F.isNum(r.mtacU)
-      ? safe(() => F.regimenOptions({ mtacUrea: r.mtacU, mtacCr: r.mtacCr, V: r.V, bsa: r.bsa, ktvRenal: r.ktvR, rkfLDay: rkfL, longUfDextroseMl: num("o-uf-dex"), longUfIcodextrinMl: num("o-uf-ico") }))
-      : null;
-
-    last = r;
-    renderResults(r);
-  }
-
-  function renderResults(r) {
-    const rows = [];
-    const row = (k, pred, meas, cls) =>
-      '<div class="result-row' + (cls ? " " + cls : "") + '"><span class="rk">' + esc(k) + '</span><span class="rv">' + pred + '</span><span class="rv">' + meas + "</span></div>";
-    rows.push(row("", "Estimated", "Measured", "head"));
-    const ktvTmeas = F.isNum(r.ktvPmeas) ? r.ktvPmeas + (F.isNum(r.ktvR) ? r.ktvR : 0) : null;
-    rows.push(row("Peritoneal Kt/V", fmt(r.ktvPpred, 2), fmt(r.ktvPmeas, 2)));
-    rows.push(row("Renal Kt/V", fmt(r.ktvR, 2), fmt(r.ktvR, 2)));
-    const chip = (v) => (F.isNum(v) ? ' <span class="status-chip ' + F.ktvReading(v).state + '">' + (v >= F.TARGETS.KTV_HISTORICAL_MIN ? "≥ 1.7" : "< 1.7") + "</span>" : "");
-    rows.push(row("Total weekly Kt/V", fmt(r.ktvTpred, 2) + chip(r.ktvTpred), fmt(ktvTmeas, 2) + chip(ktvTmeas)));
-    rows.push(row("CrCl, L/week/1.73 m²", fmt(r.crclPred, 1), fmt(r.crclMeas, 1)));
-    rows.push(row("Transport (PET)", r.cat ? esc(r.cat.label) + (r.typical ? '<span class="sub">typical values</span>' : "") : "—", ""));
-    $("cmp-rows").innerHTML = rows.join("");
-    renderOptions(r);
-
-    const useMeas = !F.isNum(r.ktvTpred) && F.isNum(ktvTmeas);
-    const est = useMeas
-      ? { measured: true, ktvTotal: ktvTmeas, ktvP: r.ktvPmeas, ktvR: r.ktvR, crcl: r.crclMeas }
-      : { measured: false, ktvTotal: r.ktvTpred, ktvP: r.ktvPpred, ktvR: r.ktvR, crcl: r.crclPred };
-    const rx = RX.build({
-      modality: state.mod,
-      capd: { exchanges: num("c-n"), fillL: num("c-fill"), solution: state.sol, longDwellH: num("c-long"), longSolution: state.lsol },
-      apd: { cycles: num("a-n"), fillL: num("a-fill"), therapyH: num("a-ttt"), solution: state.asol, lastFillL: num("a-last"), lastSolution: state.alsol, dayDwellH: num("a-day") },
-      estimate: est,
-      transport: r.cat ? r.cat.label : null,
-      basis: r.basis || null,
-    });
-    renderSheet($("rx-sheet"), rx);
-  }
-
-  function renderOptions(r) {
-    const el = $("opt-table");
-    const basis = $("opt-basis");
-    if (!r.options) {
-      el.innerHTML = "";
-      basis.textContent = "Pick a transport type (step 2) or enter PET numbers with drain volume to compare options.";
-      basis.classList.remove("basis-note");
-      return;
-    }
-    const kt = (v) => (F.isNum(v) ? '<span class="' + (v >= F.TARGETS.KTV_HISTORICAL_MIN ? "ok-v" : "warn-v") + '">' + fmt(v, 2) + "</span>" : "—");
-    const out = ['<div class="op-row head"><span>Option</span><span>Kt/V</span><span>CrCl</span></div>'];
-    let grp = "";
-    r.options.forEach((o) => {
-      if (o.mod !== grp) {
-        grp = o.mod;
-        out.push('<div class="op-row grp"><span>' + (grp === "capd" ? "CAPD · 8-h overnight long dwell" : "CCPD · 9 h on cycler") + "</span></div>");
-      }
-      const ico = o.longSolution === "icodextrin";
-      const label = ico ? "+ Extraneal long dwell" : o.label.replace(/^(CAPD|CCPD) /, "").replace(", 9 h", "").replace(" + 2.0 L day dwell", " + 2 L day") + (o.longSolution === "dextrose" ? " · dextrose" : "");
-      out.push('<div class="op-row' + (ico ? " ico" : "") + '"><span class="ol">' + esc(label) + "</span><span>" + kt(o.ktv) + "</span><span>" + fmt(o.crcl, 1) + "</span></div>");
-    });
-    el.innerHTML = out.join("");
-    const noKtv = r.options.every((o) => !F.isNum(o.ktv));
-    let b = "Weekly totals (renal included when entered). Kt/V shown against the KDOQI 2006 reference of 1.7 (green ≥ 1.7, amber below); CrCl in L/week/1.73 m².";
-    if (r.typical) b = r.basis + (noKtv ? " Kt/V needs a measured 4-h D/P urea." : "");
-    else if (noKtv) b += " Add 4-h D/P urea (step 2) for Kt/V.";
-    basis.textContent = b;
-    basis.classList.toggle("basis-note", !!r.typical);
-  }
 
   function renderSheet(el, rx) {
     const bits = [];
@@ -464,14 +475,21 @@
 
   /* ── steps ── */
   function canLeaveStep(n) {
-    if (n === 1 && !F.isNum(last.V)) {
+    if (n === 1 && !(F.isNum(last.V) && F.isNum(last.bsa))) {
       setText("p-msg", "Enter age, height and weight to continue.");
       $("p-msg").classList.add("warn-text");
+      $("patient-card").scrollIntoView && $("patient-card").scrollIntoView({ block: "start" });
       return false;
     }
-    if (n === 2 && !last.cat) {
-      setText("pet-msg", "Pick a transport type, or enter the 4-hour D/P creatinine, to continue.");
-      $("pet-msg").classList.add("warn-text");
+    if (n === 1 && !last.cat) {
+      setText("pet-msg", "Pick a transport type, or enter the 4-h D/P creatinine, to continue.");
+      $("pet-msg").classList.add("flag-text");
+      $("pet-card").scrollIntoView && $("pet-card").scrollIntoView({ block: "start" });
+      return false;
+    }
+    if (n === 1 && !last.ready) {
+      setText("pet-msg", "These PET values give no valid MTAC; check D/P creatinine and drain volume.");
+      $("pet-msg").classList.add("flag-text");
       return false;
     }
     return true;
@@ -486,8 +504,10 @@
       if (g === n) btn.setAttribute("aria-current", "step");
       else btn.removeAttribute("aria-current");
     });
+    document.body.classList.toggle("on-results", n === TOTAL_STEPS);
     $("step-back").disabled = n === 1;
     $("step-next").hidden = n === TOTAL_STEPS;
+    $("step-hint").hidden = n === TOTAL_STEPS;
     window.scrollTo(0, 0);
   }
   $("step-back").addEventListener("click", () => currentStep > 1 && showStep(currentStep - 1));
@@ -507,7 +527,6 @@
     const b = $("draft-banner");
     if (b) b.remove();
   }
-  syncUi();
   showStep(1);
   recalc();
 })();

@@ -1,6 +1,6 @@
 # Content review — PD Buddy (draft)
 
-**App:** PD Buddy, v0.2.0-draft · `DRAFT=true` · noindex · robots `Disallow: /`
+**App:** PD Buddy, v0.3.0-draft · `DRAFT=true` · noindex · robots `Disallow: /`
 **Preview:** https://amarzon-tech.github.io/pd-buddy/
 **For:** Dr D (Amar Damodar). Nothing here is signed off. Every box below is unticked until Dr D ticks it in his own words.
 
@@ -262,6 +262,59 @@ Verification note: the slide deck PDF returned an error (HTTP 500/502) when I tr
 Height is entered as feet + inches and converted internally: cm = (ft × 12 + in) × 2.54 (exact by definition of the international inch). Weight can be entered in kg (default) or lb: kg = lb × 0.45359237 (exact by definition of the international pound). Watson, Hume-Weyers and Mosteller still use cm and kg. Example: 5 ft 9 in = 175.26 cm.
 
 - [ ] Sign-off: ft/in height entry, optional lb weight entry, conversions
+
+---
+
+## 13. Redesign: five inputs → Top 3 CAPD and Top 3 CCPD — added after Dr D asked to “redesign app with the above in mind” (minimum inputs, 3 best CAPD and 3 best CCPD options)
+
+**Screen 1 (one scroll): the minimum inputs.**
+1. Sex, age, height (ft + in), weight (kg or lb) → V (Watson, §1) and BSA (Mosteller, §2). Hume-Weyers is still in the code but no longer offered on screen.
+2. PET transport type (4 buttons, typical values as in §10), with an optional “I have PET numbers” expander: 4-h D/P creatinine, 4-h D/P urea, and 4-h drain volume. Numbers win (§10). Fill is fixed at the PET protocol 2.0 L, 4 h (§3).
+3. Residual urine output, mL/day (blank/0 = anuric), labelled “can change the ranking a lot”, with an optional “Residual clearance details” expander for urine and serum urea and creatinine (§7 equations).
+4. Ranking target: weekly Kt/V ≥ 1.7 by default (editable); CrCl shown alongside.
+5. Optional “Expected long-dwell UF” expander (dextrose / Extraneal), unchanged from §11.
+
+**Removed from the screen (still in the code and tests):** D/D₀ glucose, PET solution and the ISPD 2021 UF screen (§3–4), the Hume-Weyers choice, the measured 24-h dialysate card (§7), and the custom regimen builder (§6). Please say if you want any of them back, e.g. behind an “Advanced” expander.
+
+**Screen 2: results.** A summary line, then **Top 3 CAPD** and **Top 3 CCPD** cards. Each option shows the regimen in plain words, weekly Kt/V (or “needs D/P urea”), weekly CrCl in L/week/1.73 m², a “Meets target” / “Below target” badge, and “model estimate, not measured”. Tapping an option fills the prescription summary (§9; solution strengths are left as write-in lines). The full table of every candidate is under “See all options”.
+
+**Judgment calls in the inputs (to confirm):**
+- **D/P numbers without a drain volume.** If D/P creatinine or D/P urea is entered without a 4-h drain volume, the app uses the typical drain-volume midpoint for the transport category (the same Twardowski 1990 values as §10). The screen says “drain … (typical for <type>)”.
+- **D/P urea without D/P creatinine.** Allowed: the picked type gives the typical D/P creatinine and drain; the entered D/P urea gives the urea MTAC, so Kt/V can be ranked.
+- **Urine volume alone is not converted to clearance.** No published conversion from urine volume to renal urea clearance is used. With urine volume but no urine and serum urea, residual function is **not counted** and the screen says so in amber. With urea values, renal Kt/V is added to every option (§7); with creatinine as well, RKF is added to CrCl.
+
+### Ranking rule
+
+**Candidate set (same Garred model and dwell rules as §6 and §11; only the grid is wider):**
+
+| Modality | Grid | Count |
+|---|---|---|
+| CAPD | 3, 4 or 5 exchanges × 2.0, 2.5 or 3.0 L; 8-h overnight long dwell, the rest share 16 h | 9 |
+| CCPD | 4 or 5 cycles × 2.0 or 2.5 L over 9 h; dry day or a 2.0 L 15-h day dwell | 8 |
+
+Each option with a long dwell (all CAPD; CCPD with a day dwell) also has an Extraneal variant (icodextrin not modeled, §11). Every original §11 option is in the set. **New beyond the §11 sources:** 3.0 L CAPD fills and 5 CAPD exchanges a day (the Handbook quote covers 3–4 × 2.0–2.5 L); please confirm or trim. CCPD stays within “3 to 5 cycles”, “2 to 2.5 L” and “no more than 5 exchanges per night”.
+
+**Metric and target.**
+- Rank by **total weekly Kt/V** (peritoneal + renal when urea values are entered) against the target, default **1.7** (KDOQI 2006 CPG 2.1.1, §8). ISPD 2020 framing is unchanged: the target is a reference, not a guarantee.
+- **CrCl fallback:** if Kt/V can’t be estimated (type only, or no D/P urea), rank by **weekly CrCl (L/week/1.73 m²)** against **60**, the historical CANUSA-based CAPD figure already shown in §8, and say so plainly (“Ranked by weekly CrCl: Kt/V can’t be estimated without a 4-h D/P urea.”). 60 is also applied to CCPD; no separate cycler CrCl figure is used. KDOQI 2006 CPR 2.7 says CrCl “is of little added value for predicting risk for death”, and ADEMEX raising peritoneal CrCl to 60 did not improve survival, so this is a weak fallback.
+
+**Order.**
+1. Options that meet the target come first, **least burdensome first**: CAPD by fewer exchanges, then smaller fill. CCPD by dry day before a day dwell, then fewer cycles, then smaller fill. Ties go to the higher clearance.
+2. If fewer than 3 meet the target, the rest of the 3 are the highest-clearance options below it (badged “Below target”, with an amber note).
+3. If none meet it, the 3 highest-clearance options are shown with the amber note “None of these options reaches the target (…). Showing the 3 highest-clearance options.”
+4. The dextrose and Extraneal versions of one regimen count once: the dextrose row, unless only the Extraneal row meets the target (or, below target, is higher because an Extraneal UF was entered).
+
+The burden order is a judgment, not a published rule. For example, it puts CAPD 3 × 3.0 L ahead of CAPD 4 × 2.0 L, and CCPD 5 × 2.5 L dry day ahead of 4 × 2.0 L with a day dwell.
+
+**Worked example (screenshots):** male, 55 y, 5 ft 10 in (177.8 cm), 80 kg → Watson V 43.2 L, BSA 1.99 m²; high-average; urine 500 mL/day with no urine/serum values (not counted).
+- Type only (ranked by CrCl, none reach 60): CAPD 5 × 3.0 L 58.4 · 5 × 2.5 L 53.5 · 4 × 3.0 L 53.3. CCPD 5 × 2.5 L + day 41.2 · 4 × 2.5 L + day 39.7 · 5 × 2.0 L + day 39.7.
+- D/P creatinine 0.70, D/P urea 0.75, drain typical 2,226 mL (ranked by Kt/V, none reach 1.7): CAPD 5 × 3.0 L 1.60 / 55.4 · 5 × 2.5 L 1.47 / 51.1 · 4 × 3.0 L 1.46 / 51.0. CCPD 5 × 2.5 L + day 1.13 / 39.1 · 4 × 2.5 L + day 1.09 / 37.8 · 5 × 2.0 L + day 1.09 / 37.8.
+
+- [ ] Sign-off: ranking — target Kt/V 1.7 (default, editable), total = peritoneal + renal, informational framing
+- [ ] Sign-off: ranking — burden ordering (CAPD exchanges then fill; CCPD dry day, then cycles, then fill), meeting-target first, fill with highest-clearance below target, Extraneal counted once
+- [ ] Sign-off: ranking — candidate set (CAPD 3–5 × 2.0/2.5/3.0 L with 8-h overnight; CCPD 4–5 × 2.0/2.5 L, 9 h, dry or 2.0 L 15-h day dwell; Extraneal variants), including the new 3.0 L and 5-exchange CAPD options
+- [ ] Sign-off: ranking — CrCl fallback when there is no D/P urea (60 L/week/1.73 m² for CAPD and CCPD, stated plainly on screen)
+- [ ] Sign-off: minimal input screen — removed inputs (D/D₀, PET solution and UF screen, Hume-Weyers, measured dialysate, custom regimen), typical drain when D/P numbers lack a drain volume, urine volume not counted without urine/serum values
 
 ---
 
