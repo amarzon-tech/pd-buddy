@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="PD Buddy">
-  <meta name="description" content="Draft educational PD prescribing tool for nephrologists: five inputs to the 3 best CAPD and 3 best CCPD options by estimated weekly Kt/V and creatinine clearance. Offline, no login, no data collection. Not for clinical use until reviewed by Dr D.">
+  <meta name="description" content="Draft educational PD prescribing workflow for nephrologists: patient, start prescription (Top 3 CAPD and CCPD with estimated Kt/V and UF), check adequacy with new labs, troubleshoot. Offline, no login, no data collection. Not for clinical use until reviewed by Dr D.">
   <meta name="robots" content="noindex, nofollow">
   <title>PD Buddy — Draft</title>
   <link rel="manifest" href="./manifest.json">
@@ -26,7 +26,7 @@
       <div>
         <p class="eyebrow">Wellness Tech LLC</p>
         <h1>PD Buddy</h1>
-        <p class="subhead">Educational PD prescribing tool for nephrologists. Five inputs → the 3 best CAPD and 3 best CCPD options. Offline · no data collected.</p>
+        <p class="subhead">Educational PD prescribing workflow for nephrologists: patient → start prescription → check adequacy with new labs → troubleshoot, and round again. Offline · no data collected.</p>
       </div>
       <button class="icon-btn" id="theme-btn" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">
         <svg id="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
@@ -34,9 +34,11 @@
         </svg>
       </button>
     </div>
-    <nav class="stepper two-step" id="stepper" aria-label="Steps">
-      <button type="button" class="stepper-item is-on" data-go="1" aria-current="step"><span class="stepper-num">1</span><span class="stepper-lbl">Patient &amp; PET</span></button>
-      <button type="button" class="stepper-item" data-go="2"><span class="stepper-num">2</span><span class="stepper-lbl">Top options</span></button>
+    <nav class="stepper four-step" id="stepper" aria-label="Steps">
+      <button type="button" class="stepper-item is-on" data-go="1" aria-current="step"><span class="stepper-num">1</span><span class="stepper-lbl">Patient</span></button>
+      <button type="button" class="stepper-item" data-go="2"><span class="stepper-num">2</span><span class="stepper-lbl">Start Rx</span></button>
+      <button type="button" class="stepper-item" data-go="3"><span class="stepper-num">3</span><span class="stepper-lbl">Adequacy</span></button>
+      <button type="button" class="stepper-item" data-go="4"><span class="stepper-num">4</span><span class="stepper-lbl">Troubleshoot</span></button>
     </nav>
   </header>
 
@@ -88,7 +90,7 @@
           <div class="card-h"><h2><span class="qn">3</span> PET transport type</h2><button type="button" class="about-btn" data-about="pet">About PET</button></div>
           <div class="chips big quad" id="pet-type" role="radiogroup" aria-label="Transport type"><button type="button" class="chip" role="radio" aria-checked="false" data-ptype="high">High</button><button type="button" class="chip" role="radio" aria-checked="false" data-ptype="high-average">High-average</button><button type="button" class="chip" role="radio" aria-checked="false" data-ptype="low-average">Low-average</button><button type="button" class="chip" role="radio" aria-checked="false" data-ptype="low">Low</button></div>
           <details class="cit pet-nums" id="pet-nums">
-            <summary>I have PET numbers <span class="tag">optional · needed for Kt/V</span></summary>
+            <summary>I have PET numbers <span class="tag">optional · patient-specific Kt/V</span></summary>
             <div class="pet-nums-body">
               <div class="grid-2 simple">
             <label class="field" id="pet-dpcr-wrap">
@@ -174,9 +176,9 @@
               </div>
             </label>
           </div>
-          <p class="note" id="t-msg">Weekly creatinine clearance is shown alongside. If Kt/V can’t be estimated (no D/P urea), options are ranked by weekly CrCl against the historical 60 L/week/1.73 m² instead.</p>
+          <p class="note" id="t-msg">Weekly creatinine clearance is shown alongside. Without the patient’s D/P urea, Kt/V uses the published typical urea MTAC for the transport type (Akonur 2016).</p>
           <details class="cit pet-nums" id="uf-details">
-            <summary>Expected long-dwell UF <span class="tag">optional</span></summary>
+            <summary>Measured long-dwell UF <span class="tag">optional</span></summary>
             <div class="pet-nums-body">
               <div class="grid-2 simple">
             <label class="field" id="o-uf-dex-wrap">
@@ -194,7 +196,7 @@
               </div>
             </label>
               </div>
-              <p class="note">UF is not predicted. Icodextrin’s UF advantage is not modeled, so Extraneal options match the dextrose options unless you enter an expected UF here.</p>
+              <p class="note">Optional: a long-dwell UF you have measured. It is used in the Kt/V estimate (drain volume) for that dwell. Predicted UF from the three-pore model is shown on the options but never changes Kt/V.</p>
             </div>
           </details>
         </article>
@@ -218,6 +220,18 @@
           <div class="card-h"><h2>Top 3 CCPD</h2><span class="est-chip">model estimate</span></div>
           <p class="amber-note hidden" id="top-ccpd-note"></p>
           <ol class="top-list" id="top-ccpd"></ol>
+        </article>
+
+        <article class="card" id="uf-card">
+          <div class="card-h"><h2>Predicted UF</h2><span class="exp-chip">experimental</span><button type="button" class="about-btn" data-about="uf">About UF</button></div>
+          <p class="note" id="uf-note"></p>
+        </article>
+
+        <article class="card grid-card" id="grid-card">
+          <div class="card-h"><h2>Published Adequest grid</h2><button type="button" class="about-btn" data-about="grid">About the grid</button></div>
+          <p class="note" id="grid-key"></p>
+          <div id="grid-body"></div>
+          <p class="src-note" id="grid-src"></p>
         </article>
 
         <p class="note rank-rule" id="rank-rule">How options are ranked: options that meet the target come first, least burdensome first (fewer exchanges or cycles, smaller fills, no day dwell). If none meet it, the 3 highest-clearance options are shown. Tap an option for its prescription summary.</p>
@@ -247,13 +261,179 @@
           <div class="card-h"><h2>Limits of the estimate</h2><button type="button" class="about-btn" data-about="model">About the model</button></div>
           <ul class="limits">
             <li>Every number here is a model estimate, not measured. The Garred simple diffusion model fitted to one PET has not been validated as a prescribing model.</li>
-            <li>Ultrafiltration is not predicted. UF counts only when you enter it.</li>
-            <li>It ignores residual volume, fill-volume and posture effects on transport, and CCPD fill/drain time.</li>
-            <li>Transport type alone uses typical values for that type (Twardowski bands), not the patient’s own membrane. Kt/V needs a measured 4-h D/P urea.</li>
+            <li>Predicted UF comes from an open three-pore model with typical-patient membrane parameters for the transport type. It is labelled experimental: against the published Akonur 2016 predictions it is off by up to about 250 mL per period (see About UF). It never changes Kt/V or the ranking.</li>
+            <li>Extraneal UF is the published typical-patient value (Akonur 2016, 2 L fill, 9-h CAPD / 15-h APD dwell), not simulated.</li>
+            <li>The Kt/V estimate ignores residual volume, fill-volume and posture effects on transport, and CCPD fill/drain time.</li>
+            <li>Without PET numbers, Kt/V is a typical-patient estimate from published Adequest-derived parameters, not measured, and not this patient’s membrane.</li>
             <li>Urine volume alone is not converted to clearance; residual function counts only with urine and serum urea (and creatinine for CrCl).</li>
-            <li>Icodextrin (Extraneal) kinetics are not modeled.</li>
             <li>ISPD 2020: “There is no specific clearance target that guarantees sufficient dialysis for an individual.” Confirm any change with a measured 24-h dialysate and urine collection.</li>
           </ul>
+        </article>
+      </div>
+
+      <!-- Step 3: check adequacy with new labs (loop) -->
+      <div class="step" id="step-3" data-step="3">
+        <article class="card" id="cur-card">
+          <div class="card-h"><h2>Current prescription</h2></div>
+          <select id="cur-rx" class="sel" aria-label="Current prescription"></select>
+          <p class="note" id="cur-msg">The prescription the patient is on now. Defaults to the option picked on step 2.</p>
+        </article>
+
+        <article class="card" id="scan-card">
+          <div class="card-h"><h2>Scan lab report</h2><button type="button" class="about-btn" data-about="scan">About scanning</button></div>
+          <p class="note">Take or pick a photo of a lab report. Text is read on this device; nothing is uploaded or saved. Values found are filled in <mark class="unconf-mark">highlighted</mark> and are not used until you confirm each one.</p>
+          <label class="scan-btn" for="scan-file">Scan lab report</label>
+          <input id="scan-file" type="file" accept="image/*" capture="environment" hidden>
+          <p class="note" id="scan-msg" aria-live="polite"></p>
+          <details class="cit pet-nums" id="scan-paste">
+            <summary>Or paste report text <span class="tag">optional</span></summary>
+            <div class="pet-nums-body">
+              <textarea id="scan-text" rows="5" class="ta" aria-label="Lab report text"></textarea>
+              <button type="button" class="rx-btn" id="scan-parse">Read values</button>
+            </div>
+          </details>
+        </article>
+
+        <article class="card" id="labs-card">
+          <div class="card-h"><h2>New labs</h2><button type="button" class="about-btn" data-about="labs">About labs</button></div>
+          <h3 class="sub-h">New PET</h3>
+          <div class="grid-2 simple">
+            <label class="field lab-field" id="lab-dpcr-wrap" data-lab="dpcr">
+              <span class="field-label">4-h D/P creatinine <span class="tag">PET</span></span>
+              <div class="field-control">
+                <input id="lab-dpcr" type="text" inputmode="decimal" autocomplete="off" placeholder="—" aria-label="4-h D/P creatinine">
+              </div>
+            </label>
+            <label class="field lab-field" id="lab-dpu-wrap" data-lab="dpu">
+              <span class="field-label">4-h D/P urea <span class="tag">PET</span></span>
+              <div class="field-control">
+                <input id="lab-dpu" type="text" inputmode="decimal" autocomplete="off" placeholder="—" aria-label="4-h D/P urea">
+              </div>
+            </label>
+            <label class="field lab-field" id="lab-petdrain-wrap" data-lab="petDrain">
+              <span class="field-label">PET drain volume <span class="tag">PET</span></span>
+              <div class="field-control">
+                <input id="lab-petdrain" type="text" inputmode="decimal" autocomplete="off" placeholder="—" aria-label="PET drain volume">
+                <span class="unit-pill">mL</span>
+              </div>
+            </label>
+          </div>
+          <h3 class="sub-h">24-h dialysate and urine</h3>
+          <div class="grid-2 simple">
+            <label class="field lab-field" id="lab-dvol-wrap" data-lab="dialVolL">
+              <span class="field-label">Dialysate volume <span class="tag">24 h</span></span>
+              <div class="field-control">
+                <input id="lab-dvol" type="text" inputmode="decimal" autocomplete="off" placeholder="—" aria-label="Dialysate volume">
+                <span class="unit-pill">L</span>
+              </div>
+            </label>
+            <label class="field lab-field" id="lab-durea-wrap" data-lab="dialUrea">
+              <span class="field-label">Dialysate urea <span class="tag">24 h</span></span>
+              <div class="field-control">
+                <input id="lab-durea" type="text" inputmode="decimal" autocomplete="off" placeholder="—" aria-label="Dialysate urea">
+              </div>
+            </label>
+            <label class="field lab-field" id="lab-dcr-wrap" data-lab="dialCr">
+              <span class="field-label">Dialysate creatinine <span class="tag">24 h</span></span>
+              <div class="field-control">
+                <input id="lab-dcr" type="text" inputmode="decimal" autocomplete="off" placeholder="—" aria-label="Dialysate creatinine">
+              </div>
+            </label>
+            <label class="field lab-field" id="lab-uvol-wrap" data-lab="urineMl">
+              <span class="field-label">Urine volume <span class="tag">24 h</span></span>
+              <div class="field-control">
+                <input id="lab-uvol" type="text" inputmode="decimal" autocomplete="off" placeholder="—" aria-label="Urine volume">
+                <span class="unit-pill">mL</span>
+              </div>
+            </label>
+            <label class="field lab-field" id="lab-uurea-wrap" data-lab="urineUrea">
+              <span class="field-label">Urine urea <span class="tag">24 h</span></span>
+              <div class="field-control">
+                <input id="lab-uurea" type="text" inputmode="decimal" autocomplete="off" placeholder="—" aria-label="Urine urea">
+              </div>
+            </label>
+            <label class="field lab-field" id="lab-ucr-wrap" data-lab="urineCr">
+              <span class="field-label">Urine creatinine <span class="tag">24 h</span></span>
+              <div class="field-control">
+                <input id="lab-ucr" type="text" inputmode="decimal" autocomplete="off" placeholder="—" aria-label="Urine creatinine">
+              </div>
+            </label>
+          </div>
+          <h3 class="sub-h">Serum</h3>
+          <div class="grid-2 simple">
+            <label class="field lab-field" id="lab-surea-wrap" data-lab="serumUrea">
+              <span class="field-label">Serum urea (BUN) <span class="tag">same units</span></span>
+              <div class="field-control">
+                <input id="lab-surea" type="text" inputmode="decimal" autocomplete="off" placeholder="—" aria-label="Serum urea (BUN)">
+              </div>
+            </label>
+            <label class="field lab-field" id="lab-scr-wrap" data-lab="serumCr">
+              <span class="field-label">Serum creatinine <span class="tag">same units</span></span>
+              <div class="field-control">
+                <input id="lab-scr" type="text" inputmode="decimal" autocomplete="off" placeholder="—" aria-label="Serum creatinine">
+              </div>
+            </label>
+          </div>
+          <h3 class="sub-h">Or the reported weekly Kt/V</h3>
+          <div class="grid-2 simple">
+            <label class="field lab-field" id="lab-ktv-wrap" data-lab="measuredKtv">
+              <span class="field-label">Weekly Kt/V (total) <span class="tag">measured</span></span>
+              <div class="field-control">
+                <input id="lab-ktv" type="text" inputmode="decimal" autocomplete="off" placeholder="—" aria-label="Weekly Kt/V (total)">
+              </div>
+            </label>
+          </div>
+          <p class="note">Urea and creatinine: use the same units for dialysate, urine and serum (only ratios are used).</p>
+          <p class="note flag-text" id="lab-warn"></p>
+        </article>
+
+        <article class="card" id="adeq-card">
+          <div class="card-h"><h2>Adequacy</h2><span class="est-chip" id="adeq-chip">measured</span></div>
+          <div id="adeq-body"></div>
+        </article>
+
+        <article class="card" id="update-card">
+          <div class="card-h"><h2>Updated prescription choices</h2><span class="est-chip">model estimate</span></div>
+          <p class="basis-note" id="upd-basis"></p>
+          <div id="upd-diff"></div>
+          <h3 class="sub-h">Top 3 CAPD</h3>
+          <ol class="top-list" id="upd-capd"></ol>
+          <h3 class="sub-h">Top 3 CCPD</h3>
+          <ol class="top-list" id="upd-ccpd"></ol>
+          <div class="loop-actions">
+            <button type="button" class="step-btn primary" id="lab-adopt">Use these labs as the new baseline</button>
+            <p class="note">Copies confirmed PET and urine values into step 1, keeps the fitted clearance, clears this form for the next round.</p>
+          </div>
+        </article>
+      </div>
+
+      <!-- Step 4: troubleshoot -->
+      <div class="step" id="step-4" data-step="4">
+        <article class="card" id="ts-card">
+          <div class="card-h"><h2>Troubleshoot</h2></div>
+          <p class="note" id="ts-cur"></p>
+          <div class="chips big ts-chips" id="ts-problem" role="radiogroup" aria-label="Problem"><button type="button" class="chip is-on" role="radio" aria-checked="true" data-problem="clearance">Low clearance</button><button type="button" class="chip" role="radio" aria-checked="false" data-problem="uf">Inadequate UF / fluid overload</button><button type="button" class="chip" role="radio" aria-checked="false" data-problem="rkf">Declining RKF</button></div>
+          <div id="ts-rkf" class="hidden">
+            <div class="grid-2 simple">
+            <label class="field" id="ts-uvol-wrap">
+              <span class="field-label">New urine output <span class="tag">mL/day</span></span>
+              <div class="field-control"><input id="ts-uvol" type="text" inputmode="decimal" autocomplete="off" placeholder="—" aria-label="New urine output"><span class="unit-pill">mL/day</span></div>
+            </label>
+            <label class="field" id="ts-ktvr-wrap">
+              <span class="field-label">New renal Kt/V <span class="tag">weekly</span></span>
+              <div class="field-control"><input id="ts-ktvr" type="text" inputmode="decimal" autocomplete="off" placeholder="—" aria-label="New renal Kt/V"></div>
+            </label>
+            </div>
+            <p class="note">Renal Kt/V comes from a 24-h urine (step 3 or step 1). With 0 here the patient is treated as anuric.</p>
+          </div>
+        </article>
+        <article class="card" id="ts-sugg-card">
+          <div class="card-h"><h2>Model-computed changes</h2><span class="est-chip">model estimate</span></div>
+          <div id="ts-sugg"></div>
+        </article>
+        <article class="card" id="ts-guide-card">
+          <div class="card-h"><h2>Guidance</h2><span class="est-chip">quoted</span></div>
+          <div id="ts-guide"></div>
         </article>
       </div>
     </div>
@@ -262,7 +442,7 @@
   <div class="step-bar" id="step-bar">
     <button type="button" class="step-btn" id="step-back" disabled>Back</button>
     <p class="step-hint" id="step-hint"></p>
-    <button type="button" class="step-btn primary" id="step-next">See top options</button>
+    <button type="button" class="step-btn primary" id="step-next">Start prescription</button>
   </div>
 
   <footer class="foot">
@@ -286,6 +466,11 @@
 
   <script src="./js/config.js"></script>
   <script src="./js/formulas.js"></script>
+  <script src="./js/threepore.js"></script>
+  <script src="./js/rxgrid.js"></script>
+  <script src="./js/workflow.js"></script>
+  <script src="./js/labparse.js"></script>
+  <script src="./js/ocr.js"></script>
   <script src="./js/prescription.js"></script>
   <script src="./js/app.js"></script>
   <script>

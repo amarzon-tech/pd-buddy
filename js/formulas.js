@@ -1,8 +1,9 @@
 /**
  * PD Buddy — formulas. Pure functions, no DOM, no storage, no network.
  *
- * Every constant below carries its source. Nothing here reproduces any
- * proprietary kinetic-modeling program. The regimen estimate uses the
+ * Every constant below carries its source. This file does not reproduce or
+ * contain any proprietary kinetic-modeling program; it cites published
+ * parameters derived with one (Akonur 2013/2016). The regimen estimate uses the
  * published Garred simple diffusion model (volume-corrected form), fitted
  * to the patient's own 4-hour PET and then run forward for each dwell.
  * It is NOT a validated prescription model; see CONTENT_REVIEW.md.
@@ -147,9 +148,26 @@
    *    same transport class in Twardowski ZJ. The fast peritoneal equilibration
    *    test. Semin Dial. 1990;3:141-142 (2 L of 2.5% dextrose):
    *    Low 2651–3326, Low-average 2369–2650, High-average 2085–2367, High 1580–2084 mL.
-   *  D/P urea: NO published per-category value was found, so none is used.
-   *    Kt/V is therefore not estimated from transport type alone.
+   *  D/P urea: no published per-category value was found. Instead, when the
+   *    patient's own D/P urea is not known, the published per-category urea MTAC
+   *    below is used in the same Garred model (approved by Dr D, CONTENT_REVIEW §16).
    * ═══════════════════════════════════════════════════════════════════════ */
+
+  /* Published typical-patient MTACs (mL/min) by transport type, estimated with
+   * PD Adequest 2.0 in the TARGET cohort:
+   *  urea:       Akonur A, Sloand J, Davis I, Leypoldt J. Perit Dial Int. 2016;36:79-84,
+   *              doi:10.3747/pdi.2013.00081, Table 1: H 27.71, HA 23.14, LA 18.40, L 15.92.
+   *  creatinine: Akonur A, Guest S, Sloand JA, Leypoldt JK. Perit Dial Int. 2013;33:646-654,
+   *              doi:10.3747/pdi.2012.00261, Table 1: H 19.15, HA 11.92, LA 8.60
+   *              (no Low value published → Low keeps the D/P-midpoint Garred method).
+   * Used only when the patient's own D/P urea (or D/P creatinine) is not entered. */
+  const ADEQUEST_TYPICAL_MTAC = Object.freeze({
+    high: Object.freeze({ urea: 27.71, cr: 19.15 }),
+    "high-average": Object.freeze({ urea: 23.14, cr: 11.92 }),
+    "low-average": Object.freeze({ urea: 18.4, cr: 8.6 }),
+    low: Object.freeze({ urea: 15.92, cr: null }),
+  });
+  const TYPICAL_LABEL = "typical-patient estimate from published Adequest-derived parameters, not measured";
   const PET_DRAIN_BANDS_ML = Object.freeze({
     low: [2651, 3326],
     "low-average": [2369, 2650],
@@ -168,6 +186,8 @@
       drainMl: (d[0] + d[1]) / 2,
       fillL: TARGETS.PET_FILL_L,
       dpUrea: null,
+      mtacUrea: ADEQUEST_TYPICAL_MTAC[key].urea,
+      mtacCr: ADEQUEST_TYPICAL_MTAC[key].cr,
     };
   }
 
@@ -248,6 +268,28 @@
     const vt = endL * 1000;
     const dp = 1 - (v0 / vt) * Math.exp((-mtac * minutes) / vt);
     return Math.max(0, dp);
+  }
+
+  /**
+   * Lab loop: the MTAC that makes the same Garred regimen model reproduce a
+   * measured 24-h peritoneal clearance (L/day) for the prescription the patient
+   * is on. Bisection on MTAC in [0.1, 200] mL/min. Returns null if the measured
+   * value is outside what the model can produce for that regimen.
+   */
+  function fitMtacToClearance(dwells, measuredLDay, which) {
+    pos("measured clearance", measuredLDay);
+    const f = (m) => {
+      const p = predictDaily(dwells, which === "cr" ? null : m, which === "cr" ? m : null);
+      return (which === "cr" ? p.crLDay : p.ureaLDay) - measuredLDay;
+    };
+    let lo = 0.1, hi = 200;
+    if (f(lo) > 0 || f(hi) < 0) return null;
+    for (let i = 0; i < 80; i++) {
+      const mid = (lo + hi) / 2;
+      if (f(mid) > 0) hi = mid;
+      else lo = mid;
+    }
+    return (lo + hi) / 2;
   }
 
   /* ═══════════════════════════════════════════════════════════════════════
@@ -479,8 +521,13 @@
     for (const opt of opts) {
       const hasLong = opt.mod === "capd" || opt.lastFillL > 0;
       const base = { baseId: opt.id, mod: opt.mod, label: opt.label, opt, burden: burdenKey(opt) };
-      out.push(Object.assign({ id: opt.id }, base, { longSolution: hasLong ? "dextrose" : null }, est(opt, o.longUfDextroseMl)));
-      if (hasLong) out.push(Object.assign({ id: opt.id + "-ico" }, base, { longSolution: "icodextrin" }, est(opt, o.longUfIcodextrinMl)));
+      // Predicted UF (optional): o.ufFn(opt, longSolution) → { dailyUfMl, ... } from js/threepore.js.
+      // Kt/V deliberately does NOT use the predicted UF (it stays the Garred estimate with
+      // short-dwell UF 0 and the long-dwell UF the user enters), so an experimental UF
+      // prediction never changes the clearance ranking.
+      const uf = (sol) => (typeof o.ufFn === "function" ? o.ufFn(opt, sol) : null);
+      out.push(Object.assign({ id: opt.id }, base, { longSolution: hasLong ? "dextrose" : null, uf: uf(hasLong ? "dextrose" : null) }, est(opt, o.longUfDextroseMl)));
+      if (hasLong) out.push(Object.assign({ id: opt.id + "-ico" }, base, { longSolution: "icodextrin", uf: uf("icodextrin") }, est(opt, o.longUfIcodextrinMl)));
     }
     return out;
   }
@@ -587,7 +634,10 @@
     petCategoryGlucose,
     petConcordant,
     PET_DRAIN_BANDS_ML,
+    ADEQUEST_TYPICAL_MTAC,
+    TYPICAL_LABEL,
     typicalPet,
+    fitMtacToClearance,
     ftInToCm,
     lbToKg,
     REGIMEN_OPTIONS,

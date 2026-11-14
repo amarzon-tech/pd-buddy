@@ -1,6 +1,7 @@
 /**
  * Static checks for PD Buddy: draft state (DRAFT=true, banner, noindex,
- * robots Disallow), offline / no tracking, no proprietary-program claims.
+ * robots Disallow), offline / no tracking, Adequest/Baxter cited but never claimed,
+ * four-step workflow, lab loop and on-device OCR.
  * Run: node tests/static.test.js
  */
 "use strict";
@@ -13,7 +14,7 @@ const read = (p) => fs.readFileSync(path.join(root, p), "utf8");
 const html = read("index.html");
 const cfg = require("../js/config.js");
 const sw = read("sw.js");
-const shipped = ["index.html", "404.html", "privacy.html", "support.html", "js/app.js", "js/formulas.js", "js/prescription.js", "js/config.js", "css/styles.css", "css/standalone.css", "css/pd.css", "manifest.json", "sw.js"];
+const shipped = ["index.html", "404.html", "privacy.html", "support.html", "js/app.js", "js/formulas.js", "js/threepore.js", "js/rxgrid.js", "js/workflow.js", "js/labparse.js", "js/ocr.js", "js/prescription.js", "js/config.js", "css/styles.css", "css/standalone.css", "css/pd.css", "manifest.json", "sw.js"];
 
 section("Draft state");
 isTrue(cfg.DRAFT === true, "DRAFT is true until Dr D signs off");
@@ -24,14 +25,29 @@ isTrue(/Draft – not for clinical use until reviewed by Dr D/.test(html), "draf
 );
 isTrue(/User-agent: \*\s+Disallow: \//.test(read("robots.txt")), "robots.txt disallows all");
 isTrue(/<title>PD Buddy — Draft<\/title>/.test(html), "title marks draft");
-isTrue(/Educational PD prescribing tool for nephrologists/.test(html), "educational positioning for nephrologists");
+isTrue(/Educational PD prescribing workflow for nephrologists/.test(html), "educational positioning for nephrologists");
 isTrue(/Educational use only; not a substitute for clinical judgment/.test(html), "educational disclaimer");
 isTrue(!fs.existsSync(path.join(root, "CNAME")), "no custom domain");
 isTrue(/amardamodar@gmail\.com/.test(html) && cfg.SUPPORT_EMAIL === "amardamodar@gmail.com", "support email");
 
-section("No proprietary-program claims");
-shipped.forEach((f) => isTrue(!/adequest|pd adequest|baxter/i.test(read(f)), f + ": no Adequest / Baxter name"));
+section("Adequest / Baxter: cited, never claimed (Dr D approved citing, 0.4)");
+const CLAIM = /(reproduc(?:e|es|ing)|replicat(?:e|es|ing)|implement(?:s|ing)?|equivalent to|same as|powered by|based on|version of|clone of|is)\s+(?:the\s+)?(?:pd\s+)?adequest/i;
+shipped.forEach((f) => isTrue(!CLAIM.test(read(f).replace(/not (?:a copy of|reproduce or contain)[^.]*\./gi, "")), f + ": no claim to be or reproduce PD Adequest"));
+shipped.forEach((f) => isTrue(!/baxter/i.test(read(f)) || /Quick Reference Guide|Akonur/.test(read(f)), f + ": Baxter named only as a cited source"));
+["js/formulas.js", "js/threepore.js", "js/rxgrid.js"].forEach((f) => isTrue(/Akonur/.test(read(f)) && /doi:10\.3747\/pdi\./.test(read(f)), f + ": Adequest-derived numbers carry Akonur citations with DOI"));
+isTrue(/typical-patient estimate from published Adequest-derived parameters, not measured/.test(read("js/formulas.js")), "type-only Kt/V label wording (option 1)");
 isTrue(/not a validated prescribing model/i.test(read("js/app.js")) || /not been validated/i.test(html), "app states the estimate is not validated");
+
+section("On-device OCR: bundled, lazy, no network, no storage");
+const ocr = read("js/ocr.js");
+isTrue(/cacheMethod: "none"/.test(ocr), "Tesseract cacheMethod none (no IndexedDB)");
+isTrue(/workerPath: BASE/.test(ocr) && /corePath: BASE/.test(ocr) && /langPath: BASE/.test(ocr), "worker, core and language data served from the app");
+isTrue(/const BASE = "\.\/vendor\/tesseract\/"/.test(ocr), "local base path");
+["vendor/tesseract/tesseract.min.js", "vendor/tesseract/worker.min.js", "vendor/tesseract/core/tesseract-core-simd-lstm.wasm.js", "vendor/tesseract/core/tesseract-core-lstm.wasm.js", "vendor/tesseract/lang/eng.traineddata.gz", "vendor/tesseract/LICENSE-tesseract.js.md", "vendor/tesseract/LICENSE-tesseract.js-core", "vendor/tesseract/LICENSE-tessdata_fast"].forEach((f) => isTrue(fs.existsSync(path.join(root, f)), "bundled: " + f));
+const ocrBytes = ["tesseract.min.js", "worker.min.js", "core/tesseract-core-simd-lstm.wasm.js", "core/tesseract-core-lstm.wasm.js", "lang/eng.traineddata.gz"].reduce((a, f) => a + fs.statSync(path.join(root, "vendor/tesseract", f)).size, 0);
+isTrue(ocrBytes < 15e6, "OCR bundle under 15 MB (" + (ocrBytes / 1e6).toFixed(1) + " MB)");
+isTrue(!/<script[^>]+vendor\/tesseract/.test(html), "OCR engine is lazy-loaded, not in index.html");
+isTrue(/Apache-2\.0/.test(read("vendor/tesseract/LICENSE-tesseract.js.md") + read("vendor/tesseract/README.md")), "Apache-2.0 license recorded");
 
 section("Offline, no login, no tracking, no stored data");
 shipped.forEach((f) => {
@@ -48,13 +64,22 @@ const assets = (sw.match(/"\.\/[^"]*"/g) || []).map((s) => s.slice(3, -1)).filte
 assets.forEach((a) => isTrue(fs.existsSync(path.join(root, a)), "service-worker asset exists: " + a));
 ["css/pd.css", "js/app.js", "js/formulas.js", "js/prescription.js", "js/config.js"].forEach((a) => isTrue(assets.includes(a), "service worker caches " + a));
 isTrue(/const CACHE = "pd-buddy-v\d+"/.test(sw), "versioned cache name");
-isTrue(/const CACHE = "pd-buddy-v3";/.test(sw), "cache bumped to pd-buddy-v3 for the redesign");
+isTrue(/const CACHE = "pd-buddy-v4";/.test(sw), "cache bumped to pd-buddy-v4 for the 0.4 workflow");
+["js/threepore.js", "js/rxgrid.js", "js/workflow.js", "js/labparse.js", "js/ocr.js"].forEach((a) => isTrue(assets.includes(a), "service worker caches " + a));
+isTrue(cfg.APP_VERSION === "0.4.0-draft", "version 0.4.0-draft");
 
-section("Two-step flow: five inputs → Top 3");
-["Patient &amp; PET", "Top options"].forEach((s, i) =>
-  isTrue(new RegExp('data-go="' + (i + 1) + '"[^]*?' + s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).test(html), "step " + (i + 1) + " " + s)
+section("Four-step clinician workflow");
+["Patient", "Start Rx", "Adequacy", "Troubleshoot"].forEach((s, i) =>
+  isTrue(new RegExp('data-go="' + (i + 1) + '"[^>]*>[^]*?' + s).test(html), "step " + (i + 1) + " " + s)
 );
-isTrue(!/data-go="3"/.test(html), "only two steps");
+isTrue(!/data-go="5"/.test(html), "exactly four steps");
+[1, 2, 3, 4].forEach((n) => isTrue(new RegExp('id="step-' + n + '" data-step="' + n + '"').test(html), "step panel " + n));
+["lab-dpcr", "lab-dpu", "lab-petdrain", "lab-dvol", "lab-durea", "lab-dcr", "lab-uvol", "lab-uurea", "lab-ucr", "lab-surea", "lab-scr", "lab-ktv", "cur-rx", "scan-file", "ts-uvol", "ts-ktvr"].forEach((id) => isTrue(new RegExp('id="' + id + '"').test(html), "workflow input " + id));
+isTrue(/id="scan-file"[^>]*accept="image\/\*"[^>]*capture="environment"/.test(html), "Scan lab report uses the camera / photo picker");
+isTrue(/data-problem="clearance"[^]*data-problem="uf"[^]*data-problem="rkf"/.test(html), "troubleshoot: low clearance, UF, declining RKF");
+isTrue(/id="grid-card"/.test(html) && /id="uf-card"/.test(html), "grid and UF cards on step 2");
+isTrue(/id="lab-adopt"/.test(html), "loop: adopt labs as the new baseline");
+isTrue(/unconfirmed/.test(read("js/app.js")) && /data-confirm/.test(read("js/app.js")), "OCR values stay unconfirmed until confirmed");
 ["p-age", "p-ft", "p-in", "p-wt", "pet-dpcr", "pet-dpu", "pet-drain", "l-uvol", "l-uu", "l-pu", "l-ucr", "l-pcr", "t-ktv", "o-uf-dex", "o-uf-ico"].forEach((id) =>
   isTrue(new RegExp('id="' + id + '"').test(html), "input " + id)
 );
@@ -70,23 +95,23 @@ isTrue(/id="t-ktv"[^>]*value="1\.7"/.test(html), "Kt/V target defaults to 1.7");
 isTrue(/Top 3 CAPD/.test(html) && /Top 3 CCPD/.test(html), "Top 3 CAPD and Top 3 CCPD cards");
 isTrue(/<details[^>]*id="all-opts"[^]*See all options/.test(html) && /id="opt-table"/.test(html), "full options table under See all options");
 isTrue((html.match(/Model estimate, not measured/g) || []).length >= 2 && /model estimate, not measured/.test(read("js/app.js")), "results labelled model estimate, not measured");
-isTrue(/needs D\/P urea/.test(read("js/app.js")), "Kt/V shows needs D/P urea when not estimable");
+isTrue(/experimental/.test(read("js/app.js")) && /exp-chip/.test(html), "predicted UF labelled experimental");
 isTrue(/Ranked by weekly CrCl/.test(read("js/app.js")), "CrCl fallback stated plainly");
 isTrue(/None of these options reaches the target/.test(read("js/app.js")), "amber note when none meet target");
 isTrue(/Meets target/.test(read("js/app.js")), "meets-target badge");
 isTrue(!/>APD</.test(html), "no APD label");
-isTrue(/icodextrin’s UF advantage is not modeled/.test(html), "icodextrin limitation stated");
-isTrue(/Estimated from typical values for " \+ r\.typeCat\.label\.toLowerCase\(\) \+ " transporters — enter PET numbers for a patient-specific estimate\./.test(read("js/app.js")), "type-only label wording");
+isTrue(/Extraneal UF is the published typical-patient value/.test(html), "Extraneal UF source stated");
+isTrue(/F\.TYPICAL_LABEL/.test(read("js/app.js")), "type-only label used in the UI");
 isTrue(!/<button[^>]*>Calculate</.test(html), "no Calculate button");
 isTrue(/#1e63d6/i.test(html) && /--teal: #1e63d6/.test(read("css/styles.css")), "blue #1E63D6 theme");
 
 section("CONTENT_REVIEW");
 const review = read("CONTENT_REVIEW.md");
 const boxes = (review.match(/^- \[ \] Sign-off/gm) || []).length;
-isTrue(boxes >= 17, "at least 17 unticked sign-off boxes (" + boxes + ")");
+isTrue(boxes >= 50, "at least 50 unticked sign-off boxes (" + boxes + ")");
 ["target Kt/V 1.7", "burden ordering", "candidate set", "CrCl fallback"].forEach((k) => isTrue(new RegExp("^- \\[ \\] Sign-off: ranking — " + k, "m").test(review), "unticked ranking item: " + k));
 isTrue(!/^- \[x\]/im.test(review), "no ticked boxes before Dr D reviews");
-["Watson", "Hume", "Mosteller", "Twardowski", "Garred", "Asghar", "Waniewski", "Morelle", "Brown", "KDOQI", "Pannekeet", "Semin Dial", "Daugirdas", "ADEMEX", "Paniagua", "icodextrin"].forEach((s) =>
+["Akonur", "Vonesh", "Öberg", "Rippe", "Bergling", "Tesseract", "Watson", "Hume", "Mosteller", "Twardowski", "Garred", "Asghar", "Waniewski", "Morelle", "Brown", "KDOQI", "Pannekeet", "Semin Dial", "Daugirdas", "ADEMEX", "Paniagua", "icodextrin"].forEach((s) =>
   isTrue(review.includes(s), "review cites " + s)
 );
 isTrue(/DRAFT=true/.test(review), "review records DRAFT=true");

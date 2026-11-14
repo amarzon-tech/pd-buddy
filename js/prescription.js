@@ -56,6 +56,10 @@
       }
       if (isNum(e.crcl)) lines.push("Weekly CrCl: " + n1(e.crcl) + " L/week/1.73 m²");
     }
+    const u = s.uf;
+    if (u && isNum(u.dailyUfMl)) {
+      lines.push("Predicted daily UF (experimental three-pore model): " + (u.dailyUfMl / 1000).toFixed(2) + " L" + (u.longSource === "published" ? ", assuming 1.5% dextrose exchanges; Extraneal long dwell = published value" : u.longSource === "model" ? ", assuming 1.5% dextrose exchanges and a 2.5% dextrose long dwell" : ", assuming 1.5% dextrose cycles"));
+    }
     if (s.transport) lines.push("PET transport: " + s.transport + (s.basis ? " (typical values)" : ""));
     if (s.basis) lines.push(s.basis);
     const footer = "Educational estimate only. Confirm with a measured 24-h collection.";

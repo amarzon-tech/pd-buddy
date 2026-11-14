@@ -318,6 +318,214 @@ The burden order is a judgment, not a published rule. For example, it puts CAPD 
 
 ---
 
+## 14. Version 0.4: what changed and why (approved by Dr D: options 1, 2 and 3; then the 4-step workflow, then the lab loop with scanning)
+
+Dr D approved three uses of published Adequest data. He then asked for a “useful pd workflow for nephrologist prescribing pd” and for clinicians to “scan information labs and things when available and new prescription choices are given”. PD Buddy cites PD Adequest-derived numbers from peer-reviewed papers. It does not contain, copy or reproduce PD Adequest. No code was copied from any program; the GitHub repo carliercomputationallab/PD-comparison-paper has no licence and was not used.
+
+Sections 10, 11 and 13 above describe 0.3 behaviour. Where they say Kt/V is unavailable from type alone, that icodextrin is not modeled, or that UF is not predicted, §15–16 supersede them.
+
+- [ ] Sign-off: citing Adequest-derived published parameters and the Baxter/Akonur grid in a free educational tool (wording “published Adequest-derived parameters”, never “Adequest”)
+
+## 15. Option 1: Kt/V from transport type alone (published typical MTACs)
+
+When the patient’s own 4-h D/P urea is not entered, the Garred estimate uses the published typical-patient urea MTAC for the transport type. These are PD Adequest 2.0 estimates in the TARGET cohort.
+- Urea MTAC (mL/min): High 27.71 · High-average 23.14 · Low-average 18.40 · Low 15.92. Source: Akonur A, Sloand J, Davis I, Leypoldt J. *Perit Dial Int.* 2016;36(1):79-84, doi:10.3747/pdi.2013.00081, Table 1.
+- Creatinine MTAC (mL/min), used only when no D/P creatinine is entered: High 19.15 · High-average 11.92 · Low-average 8.60. Source: Akonur A, Guest S, Sloand JA, Leypoldt JK. *Perit Dial Int.* 2013;33(6):646-654, doi:10.3747/pdi.2012.00261, Table 1.
+- Low transport has no published creatinine MTAC, so it keeps the 0.3 method: Garred MTAC from the Twardowski D/P creatinine band midpoint and the drain midpoint.
+- With D/P creatinine but no D/P urea, the urea MTAC is the published value for the category the D/P creatinine falls in.
+- Label on screen: “typical-patient estimate from published Adequest-derived parameters, not measured”.
+- Ranking now uses the Kt/V target whenever an urea MTAC exists, which includes type-only. The CrCl fallback remains only if Kt/V cannot be estimated.
+- Plausibility check (tests/workflow.test.js): the 4-h D/P urea implied by the HA urea MTAC with the typical HA drain is about 0.92.
+
+- [ ] Sign-off: urea MTACs 27.71 / 23.14 / 18.40 / 15.92 mL/min (Akonur 2016 Table 1) used in the Garred model when D/P urea is missing
+- [ ] Sign-off: creatinine MTACs 19.15 / 11.92 / 8.60 mL/min (Akonur 2013 Table 1) used when D/P creatinine is missing; Low keeps the band-midpoint method
+- [ ] Sign-off: D/P creatinine without D/P urea → published urea MTAC of that category
+- [ ] Sign-off: label wording “typical-patient estimate from published Adequest-derived parameters, not measured”
+- [ ] Sign-off: rank by Kt/V target for type-only input (replaces the 0.3 CrCl ranking for type-only)
+- [ ] Sign-off: TARGET-cohort typical patients (BSA 1.84–1.87 m², TBW 40.6–42.3 L) applied to any body size through V and BSA only
+
+## 16. Option 2: open three-pore model for UF (experimental)
+
+`js/threepore.js` is written from published equations: Öberg CM, Rippe B. *Kidney Int Rep.* 2017;2:943-951 (doi:10.1016/j.ekir.2017.04.010), eq. 1–13; Bergling K, Lund University doctoral thesis 2023 (ISBN 978-91-8021-370-7), eq. 9–15; Rippe B, Stelin G, Haraldsson B. *Kidney Int.* 1991;40:315-325; and Vonesh EF et al. *Perit Dial Int.* 1999;19:556-571, Appendix.
+
+Each number used, with its source:
+- Fractional hydraulic conductance by pore: small 0.90, large 0.08, aquaporin 0.02 (Öberg & Rippe 2017 Table 1).
+- Reflection coefficients: glucose small 0.028, large 0.0010, aquaporin 1.0; albumin small 0.950, large 0.085, aquaporin 1 (Rippe B, Davies S. *Perit Dial Int.* 2011;31(3):249-258, doi:10.3747/pdi.2010.00124, Table 2).
+- Protein oncotic pressure gradient 22 mmHg; dialysate Na 132 mmol/L; Na osmotic coefficient 0.93; plasma urea 20 mmol/L; plasma glucose 6.5 mmol/L; PS Na 4.5 mL/min at A0/Δx 25,000, scaled by A0/Δx (Öberg & Rippe 2017 Table 1).
+- Plasma Na 137 mmol/L (Akonur 2013 simulation setting).
+- Hydrostatic gradient ΔP 8 mmHg. Bergling 2023 says “about 8 or 9 mmHg”; 8 was chosen because the fit is better (RMSE 111 vs 162 mL at 9). This is a choice for review.
+- RT 19.3 mmHg per mmol/L (van ’t Hoff; Bergling 2023).
+- Area factor 16.18·(1 − e^(−0.00077·V))/13.3187, applied to PS and LpS (Keshaviah, as written in Öberg & Rippe 2017).
+- Time-dependent MTAC ×[1 + 0.66·e^(−0.02·t)], with t in minutes since fill (Vonesh 1999 eq. A7). Vonesh eq. A8 (one value per exchange) fits worse (RMSE 131 mL).
+- Per transport type (Akonur 2016 Table 1): LpS 0.0575 / 0.0560 / 0.0563 / 0.0554 mL/min/mmHg; A0/Δx 40,398 / 29,362 / 21,942 / 16,402 cm; glucose MTAC 16.34 / 11.71 / 8.35 / 5.96 mL/min; urea MTAC as in §15 (H / HA / LA / L).
+- Glucose in fresh dialysate: 1.36% = 75.49 and 3.86% = 214.25 mmol/L (Morelle J et al. *J Am Soc Nephrol.* 2018;29:1875-1886). 2.27% = 22.7 g/L ÷ 180.16 g/mol = 126.0 mmol/L.
+- PD Adequest 2.0 defaults (Vonesh 1999 Appendix): fluid absorption 0.6 mL/min, and in the app residual volume 10% of fill. Validation runs use Akonur’s stated 350 mL instead.
+
+Simplifications:
+- Small-pore σ for urea and Na⁺ is set to 0.
+- Creatinine is ignored osmotically.
+- Plasma concentrations are constant.
+- Fill and drain are instant.
+- Volume is floored at half the residual.
+- RK4 integration with a 1-min step.
+
+**Validation vs Akonur 2016 Tables 3–4.** 28 glucose cells; 2 L fill, 350 mL residual, anuric typical patients. Printed by `node tests/threepore.test.js`:
+
+| Model vs published UF (mL) | H | HA | LA | L |
+|---|---|---|---|---|
+| APD day 15 h 2.27% | −661 vs −416 | −490 vs −291 | −264 vs −135 | 2 vs 71 |
+| CAPD night 9 h 2.27% | −225 vs −108 | −64 vs 13 | 129 vs 147 | 317 vs 299 |
+| APD night 9 h, 3 cycles 1.36% | −71 vs 20 | 58 vs 103 | 183 vs 171 | 283 vs 266 |
+| APD night 9 h, 5 cycles 1.36% | 131 vs 168 | 247 vs 230 | 357 vs 276 | 437 vs 357 |
+| APD night 9 h, 7 cycles 1.36% | 258 vs 246 | 359 vs 287 | 456 vs 316 | 520 vs 386 |
+| CAPD day 3 × 5 h 1.36% | −434 vs −223 | −226 vs −75 | −9 vs 61 | 186 vs 233 |
+| CAPD day 3 × 5 h 2.27% | 162 vs 262 | 518 vs 520 | 899 vs 771 | 1221 vs 1040 |
+
+- RMSE 111 mL; largest error 245 mL; mean bias −26 mL.
+- The order across transport types matches in all 7 rows.
+- The model absorbs more than Akonur in High/HA long dwells and gives more UF in short dwells for LA/L.
+- Table 5 UF efficiency (UF ÷ carbohydrate absorbed) has the same direction (High lowest, Low highest), e.g. CAPD night 2.27%: −5.3 / −1.6 / 3.4 / 9.8 vs published −2.6 / 0.3 / 4.0 / 9.1 mL/g.
+- **Decision rule:** UF counts as “validated” only if every cell is within ±100 mL. It is not, so UF is shown as **experimental**. It never changes Kt/V or the ranking.
+
+**App use.**
+- Daily UF per option assumes 1.5% dextrose for every exchange or cycle and 2.5% dextrose for a dextrose long dwell (the strengths in the Akonur grid).
+- The day is simulated twice and the second day is reported.
+- Extraneal long-dwell UF is not simulated. It is the published Akonur 2016 Table 3 value (2 L icodextrin): CAPD 9-h H 388 · HA 386 · LA 382 · L 389 mL; APD 15-h H 465 · HA 488 · LA 501 · L 524 mL. The app’s CAPD long dwell is 8 h, not 9.
+
+- [ ] Sign-off: three-pore equations and sources (Öberg & Rippe 2017; Bergling 2023; Rippe 1991; Vonesh 1999 A7)
+- [ ] Sign-off: pore fractions 0.90 / 0.08 / 0.02 and σ glucose 0.028 / 0.001 / 1, σ albumin 0.95 / 0.085 / 1 (Rippe & Davies 2011)
+- [ ] Sign-off: Δπ 22 mmHg, ΔP 8 mmHg (choice within “about 8 or 9”), RT 19.3, Na 132/137 mmol/L, φ 0.93, plasma urea 20 / glucose 6.5 mmol/L
+- [ ] Sign-off: per-type LpS, A0/Δx and glucose MTAC from Akonur 2016 Table 1
+- [ ] Sign-off: PD Adequest defaults used: fluid absorption 0.6 mL/min and residual volume 10% of fill (review item requested by Dr D)
+- [ ] Sign-off: glucose 75.49 / 126.0 / 214.25 mmol/L for 1.36 / 2.27 / 3.86%
+- [ ] Sign-off: simplifications (σ small solutes 0, constant plasma, instant fill/drain, ΔP constant)
+- [ ] Sign-off: validation vs Akonur 2016 Tables 3–5 (RMSE 111 mL, max 245 mL) and the ±100 mL rule → UF shown as experimental
+- [ ] Sign-off: UF assumptions on the cards (1.5% exchanges/cycles, 2.5% long dwell, steady-state second day)
+- [ ] Sign-off: Extraneal UF = published Akonur 2016 Table 3 values (not simulated), shown for 8-h CAPD although published for 9 h
+- [ ] Sign-off: predicted UF never changes Kt/V or ranking; Kt/V keeps short-dwell UF 0 plus any entered long-dwell UF
+- [ ] Sign-off: “Measured long-dwell UF” inputs now described as measured values used in the Kt/V drain volume
+
+## 17. Option 3: published prescription grid (Akonur 2016 Figs 4–5 = Baxter Quick Reference Guide pp. 10–11)
+
+Shown on step 2 next to the Top 3, for the patient’s transport type × Watson V band × residual urea clearance band.
+- Bands: V1 < 34 L, V2 34 to < 42 L, V3 ≥ 42 L. RKF < 2 or ≥ 2 mL/min, from the renal urea clearance in mL/min. Anuric counts as < 2. Urine without urine and serum urea is assumed < 2 and labelled.
+- Source: Akonur A, Firanek C, Gellens M, Hutchcraft A, Kathuria P, Sloand JA. Volume-based peritoneal dialysis prescription guide to achieve adequacy targets. *Perit Dial Int.* 2016;36(2):188-195, doi:10.3747/pdi.2014.00255 (PMC4803365), Figures 4–5. Baxter PD Prescription Management Quick Reference Guide (USMP/81/17-0004), pp. 10–11.
+- Source assumptions: PD Adequest 2.0; Kt/V 1.7 and UF 1 L/day; 1.5%/2.5% dextrose and icodextrin only; CAPD 8-h overnight; APD 9-h cycler.
+
+**Re-verification.**
+- The paper’s figures (PMC images) were transcribed.
+- Every row was checked against the Baxter guide PDF. Text and colour squares were extracted from the vector PDF: green = 2.5%, green+yellow = mixed 1.5/2.5%, purple = icodextrin.
+- 41 of 48 cell lists (CAPD and APD for each of the 24 type × band × RKF combinations) agree exactly.
+- In the other 7, 9 rows are flagged **Unverified** on screen with both readings. The paper’s reading is shown.
+  1. RKF < 2, V2, HA, CAPD row 2: the guide shows no colour for the 2.5 L night; the paper shows icodextrin.
+  2. RKF ≥ 2, V1, Low, APD row 1: day 1.5 L is 2.5% in the paper and mixed in the guide.
+  3. RKF ≥ 2, V2, LA, CAPD row 2: no colour in the guide; icodextrin in the paper.
+  4. RKF ≥ 2, V2, HA, CAPD row 2: no colour in the guide; icodextrin in the paper.
+  5. RKF ≥ 2, V3, LA, APD row 1: day 2.5 L in the paper; 2 × 2.5 L in the guide.
+  6. RKF ≥ 2, V3, LA, APD row 2: day 2.5 L in the paper; 2 × 3 L in the guide.
+  7. RKF ≥ 2, V3, LA, APD row 3: day 2 × 2 L in the paper; 2 × 2.5 L in the guide.
+  8. RKF ≥ 2, V3, HA, APD row 2: no colour for the 5 × 2.5 L night in the guide; 2.5% in the paper.
+  9. RKF ≥ 2, V3, High, APD row 3: day 2.5 L icodextrin in the paper; 2 L icodextrin in the guide.
+
+- [ ] Sign-off: show the published grid alongside the Top 3 (as published, not computed), with source and assumptions
+- [ ] Sign-off: band rules (Watson V for V1/V2/V3; renal urea clearance mL/min for RKF band; anuric → < 2; unknown → assumed < 2 with label)
+- [ ] Sign-off: transcription of all 24 cells (js/rxgrid.js)
+- [ ] Sign-off: the 9 unverified rows and the choice to show the paper’s reading with a warning
+
+## 18. Four-step clinician workflow (Dr D: “I need useful pd workflow for nephrologist prescribing pd”)
+
+1. **Patient.** Sex, age, height, weight, urine and residual clearance, and transport type or PET numbers. Unchanged inputs.
+2. **Start prescription.** Top 3 CAPD and Top 3 CCPD with Kt/V, CrCl and predicted UF (experimental). The Extraneal alternative’s UF and Kt/V are shown on each dextrose card. The published grid, the full options table and the prescription summary are also on this step.
+3. **Check adequacy.** Current prescription (defaults to the option picked on step 2), Scan lab report, new labs, measured Kt/V versus target (Met / Not met), measured versus predicted UF, then updated choices and what changed.
+4. **Troubleshoot.** Low clearance, inadequate UF / fluid overload, or declining RKF. Model-computed one-step changes from the current prescription, each with ΔKt/V, ΔCrCl and ΔUF:
+   - add an exchange or cycle;
+   - larger fill (+0.5 L);
+   - Extraneal long dwell;
+   - for a CCPD dry day, a 2.0 L day dwell (dextrose or Extraneal).
+
+   Cited guidance is quoted below the changes.
+
+- [ ] Sign-off: four-step structure and step names (Patient · Start Rx · Adequacy · Troubleshoot)
+- [ ] Sign-off: current prescription defaults to the picked option and can be chosen from the candidate list
+- [ ] Sign-off: troubleshooting change set (add exchange/cycle, +0.5 L fill, Extraneal long dwell, CCPD day dwell; bounded by the candidate set) and ordering (Kt/V gain for clearance; UF gain for UF)
+- [ ] Sign-off: declining RKF tool (new urine output and renal Kt/V re-run all options; 0 = anuric)
+- [ ] Sign-off: measured daily UF = 24-h drain − nominal instilled volume, shown next to predicted UF
+
+## 19. Lab loop (Dr D: “they scan information labs and things when available and new prescription choices are given”)
+
+- Step 3 accepts:
+  - a new PET: D/P creatinine, D/P urea, drain;
+  - 24-h dialysate volume, urea and creatinine;
+  - 24-h urine volume, urea and creatinine;
+  - serum urea and creatinine;
+  - or a reported weekly Kt/V.
+- Measured adequacy uses the KDOQI 2006 CPG 2 definitions (§7).
+- **Re-ranking with measured values:**
+  - A new PET replaces the transport category and MTACs.
+  - A 24-h collection on the current prescription fits the Garred urea MTAC by bisection (0.1–200 mL/min), so the model reproduces the measured peritoneal Kt. Creatinine is fitted too when dialysate creatinine is given.
+  - A reported total Kt/V uses Kt/V − renal Kt/V.
+  - All options are then re-estimated and re-ranked.
+- Screen shows the updated Top 3 CAPD and CCPD, the current prescription’s Kt/V before → after, and which options are new or dropped versus the previous Top 3.
+- “Use these labs as the new baseline” copies confirmed PET and urine values into step 1, keeps the fitted MTAC, and clears the form for the next round (the loop).
+
+- [ ] Sign-off: lab fields accepted in step 3 and the measured-adequacy formulas
+- [ ] Sign-off: fitting the model MTAC to a measured 24-h clearance on the current prescription (assumes the prescription was done as written)
+- [ ] Sign-off: reported total Kt/V → peritoneal = total − renal for fitting
+- [ ] Sign-off: precedence — fitted clearance > PET > typical; a new PET clears an older fit
+- [ ] Sign-off: diff display (new / dropped options, current Rx Kt/V before → after) and the adopt-as-baseline loop
+
+## 20. Scan lab report (on-device OCR)
+
+- **Engine.** Tesseract.js 5.1.1 (Apache-2.0) plus tesseract.js-core 5.1.1 LSTM builds (SIMD and non-SIMD, Apache-2.0), and the tessdata_fast English model (Apache-2.0, gzip). All are bundled in `vendor/tesseract/` with licence files. Apache-2.0 is compatible with this project.
+- **Size.** About 10.1 MB:
+  - core 7.9 MB
+  - language data 2.0 MB
+  - scripts 0.19 MB
+
+  It is lazy-loaded on the first scan and is not in index.html. The service worker caches it in the background after install so scanning works offline.
+- **Privacy.** No network calls outside the app’s own folder, verified in headless Chrome with all other hosts blocked. No uploads. `cacheMethod: "none"`, so nothing goes to IndexedDB. The photo and text stay in memory and are discarded.
+- **Parser.** `js/labparse.js` recognises labelled lines: D/P creatinine, D/P urea, PET drain, dialysate/urine/serum urea and creatinine (also by section headers), volumes and weekly Kt/V. It cleans O→0 and l/I→1 inside numbers and comma decimals. It warns on fluid/serum unit mismatch and implausible ratios. It never guesses a value without a label.
+- **Confirmation.** Every scanned value is filled in **UNCONFIRMED** (yellow highlight and label) and is not used until the clinician taps Confirm or types over it.
+- **Tests.** `tests/labparse.test.js` covers sample lab text. `tests/fixtures/sample-lab-report.png` is a synthetic report; OCR read 11 of 11 values correctly in headless Chrome.
+
+- [ ] Sign-off: bundling Tesseract.js / tesseract.js-core / tessdata_fast (Apache-2.0) and the ~10 MB lazy download
+- [ ] Sign-off: OCR privacy (on device, no upload, no IndexedDB, background offline cache of the engine only)
+- [ ] Sign-off: recognised labels and the clean-up rules; units must match (no unit conversion is done)
+- [ ] Sign-off: every scanned value unconfirmed until confirmed; typing over a value confirms it
+- [ ] Sign-off: background caching of the OCR engine by the service worker (app code only, no patient data)
+
+## 21. Guidance statements (verbatim, each shown in step 4)
+
+Sources:
+- **Brown 2020:** Brown EA et al. ISPD practice recommendations: prescribing high-quality goal-directed peritoneal dialysis. *Perit Dial Int.* 2020;40(3):244-253, doi:10.1177/0896860819895364.
+- **Morelle 2021:** Morelle J et al. ISPD recommendations for the evaluation of peritoneal membrane dysfunction in adults. *Perit Dial Int.* 2021;41(4):352-372, doi:10.1177/0896860820982218.
+
+The quotes were checked against the full-text PDFs.
+
+- [ ] Sign-off: G-C1 (Brown 2020 §3.4b) “There is no specific clearance target that guarantees sufficient dialysis for an individual. Increasing small solute clearance to a Kt/V > 1.7 may improve uraemia-related symptoms, if present, but there is only low certainty evidence…”
+- [ ] Sign-off: G-C2 (Brown 2020 §3.4d) “If symptoms, nutrition and volume are all controlled, no PD prescription change is needed for the sole purpose of reaching an arbitrary clearance target (practice point).”
+- [ ] Sign-off: G-C3 (Brown 2020 Table 2) “Patients who remain symptomatic despite a Kt/Vurea > 1.7 should have other dialysis and non-dialysis-related factors considered as possible contributing factors. A trial of increasing dialysis dose may be indicated (practice point).”
+- [ ] Sign-off: G-C4 (Brown 2020 §3.4a) “Small solute clearance should be routinely measured using Kt/Vurea or creatinine clearance … while recognizing the limitations of accuracy of these measurements in individuals (practice point).”
+- [ ] Sign-off: G-U1 (Morelle 2021 Guideline 3) insufficient UF thresholds (< 400 mL 3.86% / < 100 mL 2.27% PET, or daily UF insufficient) and other causes (mechanical problems, leaks, increased absorption)
+- [ ] Sign-off: G-U2 (Morelle 2021 Guideline 2b) “The resulting lower net UF can be avoided by shortening glucose-based exchanges, using a polyglucose solution (icodextrin), and/or prescribing higher glucose concentrations. (GRADE 1A) …”
+- [ ] Sign-off: G-U3 (Brown 2020, solutions A) “Once-daily icodextrin should be considered as an alternative to hypertonic glucose solutions for long dwells … (GRADE 1B).”
+- [ ] Sign-off: G-U4 (Morelle 2021 table, fast PSTR) “If long dwells required use icodextrin (daytime for APD, overnight for CAPD). Shorten glucose-based overnight dwells (e.g. 90–180 min) when using APD coupled with icodextrin during the day long dwell.”
+- [ ] Sign-off: G-U5 (Morelle 2021 text) CAPD bag overfill “might – unless subtracted – lead to a significant overestimate in actual UF of 400–800 mL per day.”
+- [ ] Sign-off: G-R1 (Brown 2020 §4) “Residual kidney function should be determined for all individuals doing PD and management should focus on preserving this function (practice point).”
+- [ ] Sign-off: G-R2 (Brown 2020 §3.4c) “…start on a low dose prescription that may be increased incrementally as residual kidney function declines or as clinically indicated.”
+- [ ] Sign-off: G-R3 (Brown 2020 Table 2, RKF 3) “Caution should be taken to avoid volume depletion and hypotension based on low certainty evidence that this may adversely affect RKF (practice point).”
+- [ ] Sign-off: G-R4 (Brown 2020, solutions B) “Use of neutral pH, low GDP PD solutions improves preservation of residual kidney function and urine output (GRADE 1A).”
+- [ ] Sign-off: G-R5 (Brown 2020 §3.2a) euvolaemia “so that both fluid removal from peritoneal ultrafiltration and urine output are considered and residual kidney function is not compromised (practice point).”
+
+## 22. Release housekeeping (0.4.0-draft)
+
+- [ ] Sign-off: version 0.4.0-draft, service-worker cache pd-buddy-v4 (+ pd-buddy-ocr-v1), DRAFT=true, noindex unchanged
+- [ ] Sign-off: About sheets updated (PET, model, options) and new sheets (UF, grid, labs, scanning); limits list updated
+- [ ] Sign-off: prescription summary adds the predicted daily UF line (labelled experimental, with its glucose assumptions)
+
+
+---
+
 ## Status
 
 `DRAFT=true`. Not signed off. Draft banner, noindex and robots `Disallow: /` stay until Dr D signs off and asks, in his own words, to publish.

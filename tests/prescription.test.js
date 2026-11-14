@@ -62,4 +62,12 @@ section("No electrolyte or uncited content");
   eq(Object.keys(RX.SOLUTIONS).length, 4, "four labelled solutions");
 }
 
+section("Predicted UF line (0.4)");
+{
+  const r = RX.build({ modality: "capd", capd: { exchanges: 4, fillL: 2 }, uf: { dailyUfMl: 420, longSource: "published" } });
+  isTrue(r.lines.some((l) => /^Predicted daily UF \(experimental three-pore model\): 0\.42 L, assuming 1\.5% dextrose exchanges; Extraneal long dwell = published value$/.test(l)), "UF line labelled experimental with assumptions");
+  const r2 = RX.build({ modality: "capd", capd: { exchanges: 4, fillL: 2 } });
+  isTrue(!r2.lines.some((l) => /Predicted daily UF/.test(l)), "no UF line without a prediction");
+}
+
 done("prescription");

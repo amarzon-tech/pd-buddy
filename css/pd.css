@@ -92,3 +92,48 @@ details.all-opts summary { font-size: 15.5px; font-weight: 700; padding: 16px 18
 .on-results .top h1 { font-size: 26px; }
 .tn b.v-ok { color: var(--green-ink); }
 .tn b.v-warn { color: var(--amber-ink); }
+
+/* ── 0.4: four-step workflow, UF, grid, labs, scan, troubleshoot ── */
+.stepper.four-step .stepper-item { flex-direction: column; gap: 3px; min-height: 52px; padding: 6px 2px; }
+.stepper.four-step .stepper-num { flex-shrink: 0; }
+.stepper.four-step .stepper-lbl { font-size: 11.5px; white-space: nowrap; }
+.top-nums.three { grid-template-columns: 1fr 1fr 1fr; }
+.tn.uf b { font-size: 17px; }
+.tn i em.exp, .exp-chip { font-style: normal; font-size: 10px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--amber-ink); }
+.exp-chip { padding: 3px 8px; border-radius: 999px; background: var(--amber-bg); font-size: 11px; }
+#uf-note { font-size: 13.5px; line-height: 1.45; }
+.sub-h { margin: 14px 0 6px; font-size: 13px; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; color: var(--ink-secondary); }
+.gr-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.gr-row { padding: 8px 10px; border-radius: 10px; background: var(--teal-soft); font-size: 14px; font-weight: 600; line-height: 1.35; }
+.gr-row.flagged { background: var(--amber-bg); }
+.gr-flag { display: block; margin-top: 3px; font-size: 12px; font-weight: 650; color: var(--amber-ink); }
+.src-note { margin: 10px 0 0; font-size: 12px; color: var(--ink-tertiary); line-height: 1.4; }
+#grid-key { font-weight: 650; }
+.opt-table .op-row.four { grid-template-columns: 1fr 52px 56px 56px; }
+.sel { width: 100%; min-height: 44px; padding: 8px 10px; border-radius: 12px; border: 1px solid var(--hairline-strong); background: var(--bg-elevated); color: var(--ink); font: inherit; font-size: 15px; }
+.scan-btn { display: flex; align-items: center; justify-content: center; min-height: 48px; margin-top: 10px; border-radius: 14px; background: var(--teal); color: #fff; font-weight: 750; font-size: 16px; cursor: pointer; }
+.ta { width: 100%; box-sizing: border-box; border-radius: 10px; border: 1px solid var(--hairline-strong); padding: 8px; font: inherit; font-size: 13px; background: var(--bg-elevated); color: var(--ink); }
+.unconf-mark, .lab-field.unconfirmed .field-control { background: #fff3b0; color: #5a4500; }
+.lab-field.unconfirmed .field-control { outline: 2px solid #e0b400; border-radius: 12px; }
+.lab-field.unconfirmed input { background: transparent; color: #5a4500; }
+.confirm-btn { margin-top: 6px; min-height: 34px; padding: 4px 12px; border-radius: 999px; border: 1px solid #c79c00; background: #ffe680; color: #4a3800; font-weight: 750; font-size: 13px; cursor: pointer; }
+.lab-field.unconfirmed .field-label::after { content: "UNCONFIRMED"; margin-left: 6px; font-size: 10px; font-weight: 800; color: #8a6a00; letter-spacing: 0.05em; }
+#lab-warn:empty { display: none; }
+.rx-rows .rx-row { display: grid; grid-template-columns: 1fr 1.2fr; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--hairline); font-size: 14px; }
+.rx-rows .rx-row .rk { color: var(--ink-secondary); font-weight: 600; }
+.diff-line { margin: 6px 0; }
+.diff-h { display: inline-block; min-width: 76px; font-weight: 800; color: var(--teal-deep); }
+.loop-actions { margin-top: 16px; }
+.loop-actions .step-btn { width: 100%; }
+.ts-chips { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 8px; }
+.ts-chips .chip { width: 100%; }
+#ts-rkf { margin-top: 12px; }
+.ts-list { display: grid; gap: 8px; }
+.ts-row { padding: 10px 12px; border-radius: 12px; border: 1px solid var(--hairline-strong); background: var(--bg-elevated); display: grid; gap: 6px; }
+.ts-h { font-size: 14.5px; }
+.ts-n { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--ink-secondary); font-variant-numeric: tabular-nums; }
+blockquote.gq { margin: 0 0 10px; padding: 8px 12px; border-left: 3px solid var(--teal); background: var(--bg-sunken); border-radius: 0 10px 10px 0; }
+blockquote.gq p { margin: 0; font-size: 14px; line-height: 1.45; }
+blockquote.gq cite { display: block; margin-top: 4px; font-size: 11.5px; font-style: normal; color: var(--ink-tertiary); }
+.hidden { display: none !important; }
+.ico-line { display: block; margin-top: 6px; font-size: 12.5px; font-weight: 650; color: var(--teal-deep); }
