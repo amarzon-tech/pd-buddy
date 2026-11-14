@@ -162,6 +162,76 @@ section("Predicted daily clearance and weekly Kt/V");
   isTrue(onlyCr.crLDay > 0, "creatinine estimate still given");
 }
 
+section("Transport type only: Twardowski band midpoints");
+{
+  const t = F.typicalPet("high-average");
+  approx(t.dpCr, 0.73, 1e-9, "high-average D/P Cr = (0.65 + 0.81) / 2");
+  approx(t.drainMl, 2226, 1e-9, "high-average PET drain = (2085 + 2367) / 2");
+  eq(t.dpUrea, null, "no typical D/P urea (none published per category)");
+  approx(F.typicalPet("low").dpCr, 0.415, 1e-9, "low D/P Cr midpoint");
+  approx(F.typicalPet("low-average").dpCr, 0.57, 1e-9, "low-average D/P Cr midpoint");
+  approx(F.typicalPet("high").dpCr, 0.925, 1e-9, "high D/P Cr midpoint");
+  approx(F.typicalPet("low").drainMl, 2988.5, 1e-9, "low drain midpoint");
+  approx(F.typicalPet("low-average").drainMl, 2509.5, 1e-9, "low-average drain midpoint");
+  approx(F.typicalPet("high").drainMl, 1832, 1e-9, "high drain midpoint");
+  ["low", "low-average", "high-average", "high"].forEach((k) => {
+    const x = F.typicalPet(k);
+    eq(F.petCategoryCr(x.dpCr).key, k, k + ": typical D/P Cr falls in its own band");
+    eq(x.fillL, 2.0, k + ": PET fill 2.0 L");
+  });
+  throws(() => F.typicalPet("medium"), "unknown type rejected");
+  // High-average typical MTAC creatinine (Garred): (2.226/240) × ln[2 / (2.226 × 0.27)] × 1000
+  approx(F.garredMtac(0.73, 2.0, 2.226, 240), (2226 / 240) * Math.log(2000 / (2226 * 0.27)), 1e-9, "typical MTAC Cr");
+  // Faster type → higher MTAC
+  const m = ["low", "low-average", "high-average", "high"].map((k) => { const x = F.typicalPet(k); return F.garredMtac(x.dpCr, 2, x.drainMl / 1000, 240); });
+  isTrue(m[0] < m[1] && m[1] < m[2] && m[2] < m[3], "typical MTAC rises with transport type");
+}
+
+section("Height ft/in and weight lb");
+{
+  approx(F.ftInToCm(5, 9), 175.26, 1e-9, "5 ft 9 in = 175.26 cm");
+  approx(F.ftInToCm(6, 0), 182.88, 1e-9, "6 ft = 182.88 cm");
+  approx(F.ftInToCm(5, null), 152.4, 1e-9, "inches blank = 0");
+  approx(F.ftInToCm(null, 69), 175.26, 1e-9, "inches only");
+  throws(() => F.ftInToCm(null, null), "height required");
+  throws(() => F.ftInToCm(-5, 0), "negative rejected");
+  approx(F.lbToKg(176.37), 80.0, 0.001, "176.37 lb ≈ 80 kg");
+  approx(F.lbToKg(1), 0.45359237, 1e-12, "1 lb = 0.45359237 kg");
+  approx(F.watsonV("male", 60, F.ftInToCm(5, 9), 80), 2.447 - 0.09516 * 60 + 0.1074 * 175.26 + 0.3362 * 80, 1e-9, "Watson with converted height");
+}
+
+section("Standard regimen options (CAPD, CCPD, Extraneal)");
+{
+  eq(F.REGIMEN_OPTIONS.length, 7, "7 standard regimens");
+  isTrue(F.REGIMEN_OPTIONS.every((o) => o.fillL >= 2.0 && o.fillL <= 2.5), "fills 2.0–2.5 L (Handbook)");
+  isTrue(F.REGIMEN_OPTIONS.filter((o) => o.mod === "ccpd").every((o) => o.cycles <= 5 && o.therapyH === 9), "CCPD ≤ 5 cycles over 9 h");
+  const d = F.optionDwells(F.REGIMEN_OPTIONS[1]);
+  eq(d.length, 4, "CAPD 4 × 2 L has 4 dwells");
+  approx(d[3].minutes, 480, 1e-9, "8-h overnight long dwell");
+  approx(d[0].minutes, 320, 1e-9, "day dwells share 16 h");
+  const cd = F.optionDwells(F.REGIMEN_OPTIONS[4]);
+  approx(cd[4].minutes, 900, 1e-9, "CCPD day dwell 15 h");
+  eq(F.optionDwells(F.REGIMEN_OPTIONS[3]).length, 4, "dry-day CCPD has no day dwell");
+  const mC = F.garredMtac(0.73, 2, 2.226, 240);
+  const base = { mtacUrea: null, mtacCr: mC, V: 42.5, bsa: 1.97 };
+  const rows = F.regimenOptions(base);
+  eq(rows.length, 13, "7 regimens + 6 Extraneal variants (dry day has none)");
+  isTrue(rows.every((r) => r.ktv === null), "no Kt/V without urea MTAC");
+  isTrue(rows.every((r) => Number.isFinite(r.crcl)), "CrCl for every row");
+  const dex = rows.find((r) => r.id === "capd-4x2"), ico = rows.find((r) => r.id === "capd-4x2-ico");
+  approx(ico.crcl, dex.crcl, 1e-12, "Extraneal = dextrose when no UF entered (icodextrin not modeled)");
+  const withUf = F.regimenOptions(Object.assign({}, base, { longUfIcodextrinMl: 500 }));
+  isTrue(withUf.find((r) => r.id === "capd-4x2-ico").crcl > dex.crcl, "entered Extraneal UF raises CrCl");
+  const p = F.predictDaily(F.capdDwells({ exchanges: 4, fillL: 2, longDwellH: 8 }), null, mC);
+  approx(dex.crcl, F.weeklyCrCl173(p.crLDay, 1.97), 1e-9, "option = custom CAPD 4 × 2 L with 8-h long dwell");
+  const mU = F.garredMtac(0.9, 2, 2.2, 240);
+  const k = F.regimenOptions({ mtacUrea: mU, mtacCr: mC, V: 42.5, bsa: 1.97, ktvRenal: 0.3, rkfLDay: 5 });
+  const kd = k.find((r) => r.id === "capd-4x2");
+  approx(kd.ktv, kd.ktvP + 0.3, 1e-12, "total Kt/V includes renal");
+  isTrue(k.find((r) => r.id === "capd-4x2.5").ktv > kd.ktv, "4 × 2.5 L > 4 × 2.0 L");
+  isTrue(k.find((r) => r.id === "ccpd-4x2-day").ktv > k.find((r) => r.id === "ccpd-4x2-dry").ktv, "day dwell adds clearance");
+}
+
 section("Measured clearances (KDOQI 2006 CPG 2 definitions)");
 approx(F.clearanceLDay(0.9 * 60, 60, 10), 9, 1e-12, "D/P urea 0.9 × 10 L drain = 9 L/day");
 approx(F.weeklyKtv(9, 35), 1.8, 1e-12, "7 × 9 / 35 = 1.80");

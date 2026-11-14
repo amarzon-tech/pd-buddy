@@ -53,19 +53,27 @@ section("Step flow and inputs");
 ["Patient", "PET", "Labs &amp; urine", "Regimen", "Prescription"].forEach((s, i) =>
   isTrue(new RegExp('data-go="' + (i + 1) + '"[^]*?' + s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).test(html), "step " + (i + 1) + " " + s)
 );
-["p-age", "p-ht", "p-wt", "pet-dpcr", "pet-dd0", "pet-drain", "pet-dpu", "l-uvol", "l-uu", "l-ucr", "c-n", "c-fill", "a-n", "a-ttt", "a-last"].forEach((id) =>
+["p-age", "p-ft", "p-in", "p-wt", "o-uf-dex", "o-uf-ico", "pet-dpcr", "pet-dd0", "pet-drain", "pet-dpu", "l-uvol", "l-uu", "l-ucr", "c-n", "c-fill", "a-n", "a-ttt", "a-last"].forEach((id) =>
   isTrue(new RegExp('id="' + id + '"').test(html), "input " + id)
 );
 isTrue(/inputmode="decimal"/.test(html), "numeric keypad");
+isTrue(!/id="p-ht"/.test(html), "no cm height field (ft + in)");
+isTrue(/id="p-wunit"[^]*data-wunit="kg"[^]*data-wunit="lb"/.test(html), "kg / lb weight toggle");
+["high", "high-average", "low-average", "low"].forEach((k) => isTrue(new RegExp('id="pet-type"[^]*data-ptype="' + k + '"').test(html), "transport type chip " + k));
+isTrue(/<details[^>]*id="pet-nums"[^]*Have PET numbers\?/.test(html), "optional PET numbers section");
+isTrue(/data-mod="apd">CCPD</.test(html) && !/>APD</.test(html), "cycler labelled CCPD, not APD");
+isTrue(/id="opt-table"/.test(html), "regimen options table");
+isTrue(/icodextrin’s UF advantage is not modeled/.test(html), "icodextrin limitation stated");
+isTrue(/Estimated from typical values for " \+ r\.typeCat\.label\.toLowerCase\(\) \+ " transporters — enter PET numbers for a patient-specific estimate\./.test(read("js/app.js")), "type-only label wording");
 isTrue(!/<button[^>]*>Calculate</.test(html), "no Calculate button");
 isTrue(/#1e63d6/i.test(html) && /--teal: #1e63d6/.test(read("css/styles.css")), "blue #1E63D6 theme");
 
 section("CONTENT_REVIEW");
 const review = read("CONTENT_REVIEW.md");
 const boxes = (review.match(/^- \[ \] Sign-off/gm) || []).length;
-isTrue(boxes >= 8, "at least 8 unticked sign-off boxes (" + boxes + ")");
+isTrue(boxes >= 11, "at least 11 unticked sign-off boxes (" + boxes + ")");
 isTrue(!/^- \[x\]/im.test(review), "no ticked boxes before Dr D reviews");
-["Watson", "Hume", "Mosteller", "Twardowski", "Garred", "Asghar", "Waniewski", "Morelle", "Brown", "KDOQI", "Pannekeet"].forEach((s) =>
+["Watson", "Hume", "Mosteller", "Twardowski", "Garred", "Asghar", "Waniewski", "Morelle", "Brown", "KDOQI", "Pannekeet", "Semin Dial", "Daugirdas", "ADEMEX", "Paniagua", "icodextrin"].forEach((s) =>
   isTrue(review.includes(s), "review cites " + s)
 );
 isTrue(/DRAFT=true/.test(review), "review records DRAFT=true");

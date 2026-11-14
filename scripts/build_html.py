@@ -13,12 +13,12 @@ def field(id_, label, unit, tag="", value="", placeholder="—", mode="decimal",
               </div>
             </label>'''
 
-def chips(id_, attr, opts, on, label):
+def chips(id_, attr, opts, on, label, extra=""):
     b = []
     for v, t in opts:
         is_on = v == on
         b.append(f'<button type="button" class="chip{" is-on" if is_on else ""}" role="radio" aria-checked="{"true" if is_on else "false"}" data-{attr}="{v}">{t}</button>')
-    return f'<div class="chips big" id="{id_}" role="radiogroup" aria-label="{label}">' + "".join(b) + "</div>"
+    return f'<div class="chips big{extra}" id="{id_}" role="radiogroup" aria-label="{label}">' + "".join(b) + "</div>"
 
 def metric(id_, label, mid=None):
     return f'<div class="metric" id="{mid or "m-"+id_}"><div class="mv" id="{id_}">—</div><div class="ml">{label}</div></div>'
@@ -35,7 +35,7 @@ html = f'''<!DOCTYPE html>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="PD Buddy">
-  <meta name="description" content="Draft educational PD prescribing tool for nephrologists: PET transport, weekly Kt/V and creatinine clearance. Offline, no login, no data collection. Not for clinical use until reviewed by Dr D.">
+  <meta name="description" content="Draft educational PD prescribing tool for nephrologists: PET transport, CAPD and CCPD options, weekly Kt/V and creatinine clearance. Offline, no login, no data collection. Not for clinical use until reviewed by Dr D.">
   <meta name="robots" content="noindex, nofollow">
   <title>PD Buddy — Draft</title>
   <link rel="manifest" href="./manifest.json">
@@ -79,11 +79,14 @@ html = f'''<!DOCTYPE html>
           <div class="card-h"><h2>Patient</h2><button type="button" class="about-btn" data-about="v">About V &amp; BSA</button></div>
           <span class="field-label">Sex</span>
           {chips("p-sex", "sex", [("male", "Male"), ("female", "Female")], "male", "Sex")}
-          <div class="grid-3 simple" style="margin-top:14px">
+          <div class="grid-2 simple" style="margin-top:14px">
             {field("p-age", "Age", "yr", "required", mode="numeric")}
-            {field("p-ht", "Height", "cm", "required")}
             {field("p-wt", "Weight", "kg", "required")}
+            {field("p-ft", "Height", "ft", "required", mode="numeric", aria="Height, feet")}
+            {field("p-in", "&nbsp;", "in", "", mode="decimal", aria="Height, inches")}
           </div>
+          <div class="unit-row"><span class="field-label">Weight in</span>
+          {chips("p-wunit", "wunit", [("kg", "kg"), ("lb", "lb")], "kg", "Weight unit", " small")}</div>
           <div class="mod-h"><span class="field-label">Urea volume (V)</span></div>
           {chips("p-vmethod", "vm", [("watson", "Watson"), ("hume", "Hume-Weyers")], "watson", "Urea distribution volume method")}
           <div class="metric-grid two" style="margin-top:12px">
@@ -98,24 +101,31 @@ html = f'''<!DOCTYPE html>
       <div class="step" id="step-2" data-step="2">
         <article class="card" id="pet-card">
           <div class="card-h"><h2>4-hour PET</h2><button type="button" class="about-btn" data-about="pet">About PET</button></div>
+          <span class="field-label">Transport type</span>
+          {chips("pet-type", "ptype", [("high", "High"), ("high-average", "High-average"), ("low-average", "Low-average"), ("low", "Low")], None, "Transport type", " quad")}
+          <details class="cit pet-nums" id="pet-nums">
+            <summary>Have PET numbers? <span class="tag">optional</span></summary>
+            <div class="pet-nums-body">
           <span class="field-label">PET solution</span>
           {chips("pet-sol", "petsol", [("2.5", "2.5% dextrose"), ("4.25", "4.25% dextrose")], "2.5", "PET solution")}
           <div class="grid-2 simple" style="margin-top:14px">
-            {field("pet-dpcr", "4-h D/P creatinine", "", "required")}
+            {field("pet-dpcr", "4-h D/P creatinine", "", "optional")}
             {field("pet-dd0", "4-h D/D₀ glucose", "", "optional")}
             {field("pet-fill", "Fill volume", "L", "standard 2.0", value="2.0")}
             {field("pet-drain", "Drain volume", "mL", "for model")}
             {field("pet-dpu", "4-h D/P urea", "", "for Kt/V model")}
           </div>
+            </div>
+          </details>
           <div class="metric-grid two" style="margin-top:12px">
-            {metric("o-cat", "Transport (D/P Cr)")}
+            {metric("o-cat", "Transport used")}
             {metric("o-gcat", "D/D₀ glucose")}
             {metric("o-petuf", "PET net UF")}
             {metric("o-mtac", "MTAC creatinine")}
           </div>
-          <p class="note" id="pet-msg">Enter the 4-hour D/P creatinine to continue.</p>
+          <p class="note" id="pet-msg">Pick a transport type, or enter PET numbers.</p>
           <p class="note" id="pet-uf-msg"></p>
-          <p class="note" id="pet-model-msg">Drain volume and D/P urea let the app estimate other regimens (Garred model). Without them, only transport type and measured clearances are shown.</p>
+          <p class="note" id="pet-model-msg"></p>
         </article>
       </div>
 
@@ -155,8 +165,8 @@ html = f'''<!DOCTYPE html>
       <!-- Step 4: regimen -->
       <div class="step" id="step-4" data-step="4">
         <article class="card" id="reg-card">
-          <div class="card-h"><h2>Regimen</h2><button type="button" class="about-btn" data-about="model">About the estimate</button></div>
-          {chips("r-mod", "mod", [("capd", "CAPD"), ("apd", "APD")], "capd", "PD modality")}
+          <div class="card-h"><h2>Your regimen</h2><button type="button" class="about-btn" data-about="model">About the estimate</button></div>
+          {chips("r-mod", "mod", [("capd", "CAPD"), ("apd", "CCPD")], "capd", "PD modality")}
 
           <div id="capd-block" style="margin-top:14px">
             <div class="grid-2 simple">
@@ -188,7 +198,7 @@ html = f'''<!DOCTYPE html>
               {field("a-uf", "Net UF per cycle", "mL", "default 0", value="0")}
             </div>
             <span class="field-label">Night solution</span>
-            {chips("a-sol", "asol", SOL, "1.5", "APD night solution")}
+            {chips("a-sol", "asol", SOL, "1.5", "CCPD night solution")}
             <div class="grid-2 simple" style="margin-top:14px">
               {field("a-last", "Last fill (day dwell)", "L", "0 = dry day", value="0")}
               {field("a-day", "Day dwell", "h", "default 24 − therapy")}
@@ -210,6 +220,16 @@ html = f'''<!DOCTYPE html>
 
       <!-- Step 5: results and prescription -->
       <div class="step" id="step-5" data-step="5">
+        <article class="card" id="opt-card">
+          <div class="card-h"><h2>Regimen options</h2><button type="button" class="about-btn" data-about="options">About options</button></div>
+          <div class="opt-table" id="opt-table"></div>
+          <p class="note" id="opt-basis"></p>
+          <div class="grid-2 simple" style="margin-top:10px">
+            {field("o-uf-dex", "Long-dwell UF, dextrose", "mL", "optional")}
+            {field("o-uf-ico", "Long-dwell UF, Extraneal", "mL", "optional")}
+          </div>
+          <p class="note" id="opt-note">Standard CAPD and CCPD prescriptions (Handbook of Dialysis; ADEMEX). Extraneal rows use the same diffusion model: icodextrin’s UF advantage is not modeled, so they match the dextrose rows unless you enter expected long-dwell UF. Short dwells count net UF as 0.</p>
+        </article>
         <article class="card" id="cmp-card">
           <div class="card-h"><h2>Clearance vs targets</h2><button type="button" class="about-btn" data-about="targets">About targets</button></div>
           <div class="result-rows" id="cmp-rows"></div>
@@ -232,7 +252,9 @@ html = f'''<!DOCTYPE html>
           <ul class="limits">
             <li>The regimen estimate is the Garred simple diffusion model fitted to one PET. It has not been validated as a prescribing model.</li>
             <li>Ultrafiltration is not predicted. UF counts only when you enter it.</li>
-            <li>It ignores residual volume, fill-volume and posture effects on transport, and APD fill/drain losses unless entered.</li>
+            <li>It ignores residual volume, fill-volume and posture effects on transport, and CCPD fill/drain losses unless entered.</li>
+            <li>Transport type alone uses typical values for that type (Twardowski bands), not the patient’s own membrane. Kt/V needs a measured 4-h D/P urea.</li>
+            <li>Icodextrin (Extraneal) kinetics are not modeled.</li>
             <li>Confirm any change with a measured 24-h dialysate and urine collection.</li>
           </ul>
         </article>

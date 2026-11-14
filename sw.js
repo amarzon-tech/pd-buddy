@@ -1,5 +1,5 @@
 /* Offline cache for PD Buddy. No network after first load. */
-const CACHE = "pd-buddy-v1";
+const CACHE = "pd-buddy-v2";
 const ASSETS = [
   "./",
   "./index.html",

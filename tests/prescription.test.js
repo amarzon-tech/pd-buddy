@@ -27,10 +27,11 @@ section("CAPD");
   isTrue(!b.text.includes("clearance"), "no clearance section without numbers");
 }
 
-section("APD");
+section("CCPD (cycler)");
 {
   const r = RX.build({ modality: "apd", apd: { cycles: 5, fillL: 2, therapyH: 9, solution: "1.5", lastFillL: 2, lastSolution: "ico" } });
-  isTrue(r.lines.includes("Modality: APD"), "modality APD");
+  isTrue(r.lines.includes("Modality: CCPD"), "modality shown as CCPD");
+  isTrue(!/APD/.test(r.text), "no APD label in the summary");
   isTrue(r.lines.includes("Night cycles: 5 × 2.0 L"), "cycles");
   isTrue(r.lines.includes("Total therapy time: 9 h"), "therapy time");
   isTrue(r.lines.includes("Night solution: 1.5% dextrose"), "night solution");
@@ -41,6 +42,17 @@ section("APD");
   const m = RX.build({ modality: "apd", apd: { cycles: 5, fillL: 2, therapyH: 9, solution: "1.5" }, estimate: { measured: true, ktvTotal: 1.8, ktvP: 1.8, ktvR: 0 } });
   isTrue(m.lines.includes("Measured clearance (24-h collections)"), "measured label");
   isTrue(m.lines.includes("Weekly Kt/V urea: 1.80"), "no split when renal 0");
+}
+
+section("Transport type only (typical values)");
+{
+  const basis = "Estimated from typical values for high-average transporters — enter PET numbers for a patient-specific estimate.";
+  const r = RX.build({ modality: "capd", capd: { exchanges: 4, fillL: 2, solution: "2.5" }, estimate: { crcl: 42.5 }, transport: "High-average", basis });
+  isTrue(r.lines.includes("PET transport: High-average (typical values)"), "transport marked typical");
+  isTrue(r.lines.includes(basis), "basis sentence in summary");
+  isTrue(!r.text.includes("Kt/V"), "no Kt/V line when not estimable");
+  const n = RX.build({ modality: "capd", capd: { exchanges: 4, fillL: 2, solution: "2.5" }, transport: "High" });
+  isTrue(!/typical/.test(n.text), "no typical label when PET numbers used");
 }
 
 section("No electrolyte or uncited content");

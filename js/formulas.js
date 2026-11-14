@@ -139,6 +139,53 @@
     return petCategoryCr(dpCr).key === petCategoryGlucose(dd0).key;
   }
 
+  /* ═══════════════════════════════════════════════════════════════════════
+   * Transport type only (no PET numbers) — typical values per category
+   *  D/P creatinine: midpoint of the Twardowski 4-h band above
+   *    (Twardowski, Blood Purif. 1989;7:95-108).
+   *  PET drain volume: midpoint of the 4-h drain-volume range listed for the
+   *    same transport class in Twardowski ZJ. The fast peritoneal equilibration
+   *    test. Semin Dial. 1990;3:141-142 (2 L of 2.5% dextrose):
+   *    Low 2651–3326, Low-average 2369–2650, High-average 2085–2367, High 1580–2084 mL.
+   *  D/P urea: NO published per-category value was found, so none is used.
+   *    Kt/V is therefore not estimated from transport type alone.
+   * ═══════════════════════════════════════════════════════════════════════ */
+  const PET_DRAIN_BANDS_ML = Object.freeze({
+    low: [2651, 3326],
+    "low-average": [2369, 2650],
+    "high-average": [2085, 2367],
+    high: [1580, 2084],
+  });
+
+  function typicalPet(key) {
+    const b = PET_CR_BANDS.find((x) => x.key === key);
+    if (!b) throw new Error("unknown transport type");
+    const d = PET_DRAIN_BANDS_ML[key];
+    return {
+      key: b.key,
+      label: b.label,
+      dpCr: Math.round(((b.lo + b.hi) / 2) * 1000) / 1000,
+      drainMl: (d[0] + d[1]) / 2,
+      fillL: TARGETS.PET_FILL_L,
+      dpUrea: null,
+    };
+  }
+
+  /* Height and weight unit conversion (exact by definition:
+   * 1 in = 2.54 cm; 1 lb = 0.45359237 kg). */
+  function ftInToCm(ft, inch) {
+    const f = isNum(ft) ? ft : 0;
+    const i = isNum(inch) ? inch : 0;
+    if (!isNum(ft) && !isNum(inch)) throw new Error("height is required");
+    if (f < 0 || i < 0) throw new Error("height cannot be negative");
+    const cm = (f * 12 + i) * 2.54;
+    return pos("height", cm);
+  }
+  function lbToKg(lb) {
+    pos("weight", lb);
+    return lb * 0.45359237;
+  }
+
   /** PET net UF (mL) = drain − fill. */
   function petNetUfMl(fillL, drainMl) {
     pos("PET fill volume", fillL);
@@ -293,6 +340,70 @@
   }
 
   /* ═══════════════════════════════════════════════════════════════════════
+   * Standard regimen options (compared side by side)
+   * Typical prescriptions: DeVita MV. Peritoneal dialysis modalities (ISPD North
+   * American Chapter teaching slides, May 2011), CAPD section citing Daugirdas JT,
+   * Blake PG, Ing TS. Handbook of Dialysis, 4th ed. 2006:
+   *  CAPD "4 ( number of exchanges) x 2L ( dwell volumes) is the typical
+   *    prescription. 4 x 2.5L in larger patients with small RRF or anuric patients
+   *    who weigh >75 kg. 3 x 2L in smaller patients or in patients with good RRF."
+   *  ADEMEX (Paniagua R et al. J Am Soc Nephrol. 2002;13:1307-1320) control arm:
+   *    "four daily exchanges with 2 L of standard PD solution".
+   *  CCPD (same slides): "3 to 7 cycles of 1.5 to 2.5 L delivered over 9 hours";
+   *    "Cycle frequency- 3 to 5 cycles per 9 hour cycling session"; "Cycler dwell
+   *    volumes - 2 to 2.5 L"; "Can start with NIPD if patient has good residual
+   *    volume." Core Curriculum 2023 (Am J Kidney Dis): "Patients should not receive
+   *    more than 5 exchanges per night on the cycler".
+   *  Overnight CAPD long dwell 8 h; CCPD day dwell = 24 h − 9 h = 15 h.
+   *  Extraneal (icodextrin 7.5%): one long dwell per day (label: "single daily
+   *    exchange for the long (8- to 16-hour) dwell").
+   * Icodextrin kinetics are NOT modeled: the Extraneal long dwell is the same
+   * Garred diffusive dwell; any UF difference counts only if the user enters it.
+   * Short dwells assume net UF 0 (UF is not predicted).
+   * ═══════════════════════════════════════════════════════════════════════ */
+  const REGIMEN_OPTIONS = Object.freeze([
+    { id: "capd-3x2", mod: "capd", label: "CAPD 3 × 2.0 L", exchanges: 3, fillL: 2.0, longDwellH: 8 },
+    { id: "capd-4x2", mod: "capd", label: "CAPD 4 × 2.0 L", exchanges: 4, fillL: 2.0, longDwellH: 8 },
+    { id: "capd-4x2.5", mod: "capd", label: "CAPD 4 × 2.5 L", exchanges: 4, fillL: 2.5, longDwellH: 8 },
+    { id: "ccpd-4x2-dry", mod: "ccpd", label: "CCPD 4 × 2.0 L, 9 h, dry day", cycles: 4, fillL: 2.0, therapyH: 9, lastFillL: 0 },
+    { id: "ccpd-4x2-day", mod: "ccpd", label: "CCPD 4 × 2.0 L, 9 h + 2.0 L day dwell", cycles: 4, fillL: 2.0, therapyH: 9, lastFillL: 2.0 },
+    { id: "ccpd-5x2-day", mod: "ccpd", label: "CCPD 5 × 2.0 L, 9 h + 2.0 L day dwell", cycles: 5, fillL: 2.0, therapyH: 9, lastFillL: 2.0 },
+    { id: "ccpd-5x2.5-day", mod: "ccpd", label: "CCPD 5 × 2.5 L, 9 h + 2.0 L day dwell", cycles: 5, fillL: 2.5, therapyH: 9, lastFillL: 2.0 },
+  ]);
+
+  function optionDwells(opt, longUfMl) {
+    const uf = isNum(longUfMl) ? longUfMl : 0;
+    if (opt.mod === "capd") return capdDwells({ exchanges: opt.exchanges, fillL: opt.fillL, longDwellH: opt.longDwellH, longDwellUfMl: uf, ufPerExchangeMl: 0 });
+    return apdDwells({ cycles: opt.cycles, fillL: opt.fillL, therapyH: opt.therapyH, lastFillL: opt.lastFillL, lastFillUfMl: uf, ufPerCycleMl: 0 });
+  }
+
+  /**
+   * Estimated weekly Kt/V (total) and CrCl for each standard option, each with a
+   * dextrose long dwell and (where there is a long dwell) an Extraneal long dwell.
+   * o: { mtacUrea, mtacCr, V, bsa, ktvRenal, rkfLDay, longUfDextroseMl, longUfIcodextrinMl }
+   */
+  function regimenOptions(o) {
+    const out = [];
+    const ktvR = isNum(o.ktvRenal) ? o.ktvRenal : 0;
+    const rkfL = isNum(o.rkfLDay) ? o.rkfLDay : 0;
+    const est = (opt, ufMl) => {
+      const p = predictDaily(optionDwells(opt, ufMl), o.mtacUrea, o.mtacCr);
+      const ktvP = isNum(p.ureaLDay) && isNum(o.V) && o.V > 0 ? weeklyKtv(p.ureaLDay, o.V) : null;
+      return {
+        ktvP,
+        ktv: isNum(ktvP) ? ktvP + ktvR : null,
+        crcl: isNum(p.crLDay) && isNum(o.bsa) && o.bsa > 0 ? weeklyCrCl173(p.crLDay + rkfL, o.bsa) : null,
+      };
+    };
+    for (const opt of REGIMEN_OPTIONS) {
+      const hasLong = opt.mod === "capd" || opt.lastFillL > 0;
+      out.push(Object.assign({ id: opt.id, mod: opt.mod, label: opt.label, longSolution: hasLong ? "dextrose" : null }, est(opt, o.longUfDextroseMl)));
+      if (hasLong) out.push(Object.assign({ id: opt.id + "-ico", mod: opt.mod, label: opt.label, longSolution: "icodextrin" }, est(opt, o.longUfIcodextrinMl)));
+    }
+    return out;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════
    * Measured clearances (24-h collections) — KDOQI 2006 CPG 2 definitions
    *   Peritoneal Kt (L/day) = (D_urea / P_urea) × 24-h drain volume
    *   Renal urea clearance (L/day) = (U_urea / P_urea) × 24-h urine volume
@@ -356,6 +467,13 @@
     petCategoryCr,
     petCategoryGlucose,
     petConcordant,
+    PET_DRAIN_BANDS_ML,
+    typicalPet,
+    ftInToCm,
+    lbToKg,
+    REGIMEN_OPTIONS,
+    optionDwells,
+    regimenOptions,
     petNetUfMl,
     petUfScreen,
     garredMtac,

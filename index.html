@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="PD Buddy">
-  <meta name="description" content="Draft educational PD prescribing tool for nephrologists: PET transport, weekly Kt/V and creatinine clearance. Offline, no login, no data collection. Not for clinical use until reviewed by Dr D.">
+  <meta name="description" content="Draft educational PD prescribing tool for nephrologists: PET transport, CAPD and CCPD options, weekly Kt/V and creatinine clearance. Offline, no login, no data collection. Not for clinical use until reviewed by Dr D.">
   <meta name="robots" content="noindex, nofollow">
   <title>PD Buddy — Draft</title>
   <link rel="manifest" href="./manifest.json">
@@ -52,19 +52,12 @@
           <div class="card-h"><h2>Patient</h2><button type="button" class="about-btn" data-about="v">About V &amp; BSA</button></div>
           <span class="field-label">Sex</span>
           <div class="chips big" id="p-sex" role="radiogroup" aria-label="Sex"><button type="button" class="chip is-on" role="radio" aria-checked="true" data-sex="male">Male</button><button type="button" class="chip" role="radio" aria-checked="false" data-sex="female">Female</button></div>
-          <div class="grid-3 simple" style="margin-top:14px">
+          <div class="grid-2 simple" style="margin-top:14px">
             <label class="field" id="p-age-wrap">
               <span class="field-label">Age <span class="tag req">required</span></span>
               <div class="field-control">
                 <input id="p-age" type="text" inputmode="numeric" autocomplete="off" placeholder="—" aria-label="Age">
                 <span class="unit-pill">yr</span>
-              </div>
-            </label>
-            <label class="field" id="p-ht-wrap">
-              <span class="field-label">Height <span class="tag req">required</span></span>
-              <div class="field-control">
-                <input id="p-ht" type="text" inputmode="decimal" autocomplete="off" placeholder="—" aria-label="Height">
-                <span class="unit-pill">cm</span>
               </div>
             </label>
             <label class="field" id="p-wt-wrap">
@@ -74,7 +67,23 @@
                 <span class="unit-pill">kg</span>
               </div>
             </label>
+            <label class="field" id="p-ft-wrap">
+              <span class="field-label">Height <span class="tag req">required</span></span>
+              <div class="field-control">
+                <input id="p-ft" type="text" inputmode="numeric" autocomplete="off" placeholder="—" aria-label="Height, feet">
+                <span class="unit-pill">ft</span>
+              </div>
+            </label>
+            <label class="field" id="p-in-wrap">
+              <span class="field-label">&nbsp;</span>
+              <div class="field-control">
+                <input id="p-in" type="text" inputmode="decimal" autocomplete="off" placeholder="—" aria-label="Height, inches">
+                <span class="unit-pill">in</span>
+              </div>
+            </label>
           </div>
+          <div class="unit-row"><span class="field-label">Weight in</span>
+          <div class="chips big small" id="p-wunit" role="radiogroup" aria-label="Weight unit"><button type="button" class="chip is-on" role="radio" aria-checked="true" data-wunit="kg">kg</button><button type="button" class="chip" role="radio" aria-checked="false" data-wunit="lb">lb</button></div></div>
           <div class="mod-h"><span class="field-label">Urea volume (V)</span></div>
           <div class="chips big" id="p-vmethod" role="radiogroup" aria-label="Urea distribution volume method"><button type="button" class="chip is-on" role="radio" aria-checked="true" data-vm="watson">Watson</button><button type="button" class="chip" role="radio" aria-checked="false" data-vm="hume">Hume-Weyers</button></div>
           <div class="metric-grid two" style="margin-top:12px">
@@ -89,11 +98,16 @@
       <div class="step" id="step-2" data-step="2">
         <article class="card" id="pet-card">
           <div class="card-h"><h2>4-hour PET</h2><button type="button" class="about-btn" data-about="pet">About PET</button></div>
+          <span class="field-label">Transport type</span>
+          <div class="chips big quad" id="pet-type" role="radiogroup" aria-label="Transport type"><button type="button" class="chip" role="radio" aria-checked="false" data-ptype="high">High</button><button type="button" class="chip" role="radio" aria-checked="false" data-ptype="high-average">High-average</button><button type="button" class="chip" role="radio" aria-checked="false" data-ptype="low-average">Low-average</button><button type="button" class="chip" role="radio" aria-checked="false" data-ptype="low">Low</button></div>
+          <details class="cit pet-nums" id="pet-nums">
+            <summary>Have PET numbers? <span class="tag">optional</span></summary>
+            <div class="pet-nums-body">
           <span class="field-label">PET solution</span>
           <div class="chips big" id="pet-sol" role="radiogroup" aria-label="PET solution"><button type="button" class="chip is-on" role="radio" aria-checked="true" data-petsol="2.5">2.5% dextrose</button><button type="button" class="chip" role="radio" aria-checked="false" data-petsol="4.25">4.25% dextrose</button></div>
           <div class="grid-2 simple" style="margin-top:14px">
             <label class="field" id="pet-dpcr-wrap">
-              <span class="field-label">4-h D/P creatinine <span class="tag req">required</span></span>
+              <span class="field-label">4-h D/P creatinine <span class="tag">optional</span></span>
               <div class="field-control">
                 <input id="pet-dpcr" type="text" inputmode="decimal" autocomplete="off" placeholder="—" aria-label="4-h D/P creatinine">
                 
@@ -128,15 +142,17 @@
               </div>
             </label>
           </div>
+            </div>
+          </details>
           <div class="metric-grid two" style="margin-top:12px">
-            <div class="metric" id="m-o-cat"><div class="mv" id="o-cat">—</div><div class="ml">Transport (D/P Cr)</div></div>
+            <div class="metric" id="m-o-cat"><div class="mv" id="o-cat">—</div><div class="ml">Transport used</div></div>
             <div class="metric" id="m-o-gcat"><div class="mv" id="o-gcat">—</div><div class="ml">D/D₀ glucose</div></div>
             <div class="metric" id="m-o-petuf"><div class="mv" id="o-petuf">—</div><div class="ml">PET net UF</div></div>
             <div class="metric" id="m-o-mtac"><div class="mv" id="o-mtac">—</div><div class="ml">MTAC creatinine</div></div>
           </div>
-          <p class="note" id="pet-msg">Enter the 4-hour D/P creatinine to continue.</p>
+          <p class="note" id="pet-msg">Pick a transport type, or enter PET numbers.</p>
           <p class="note" id="pet-uf-msg"></p>
-          <p class="note" id="pet-model-msg">Drain volume and D/P urea let the app estimate other regimens (Garred model). Without them, only transport type and measured clearances are shown.</p>
+          <p class="note" id="pet-model-msg"></p>
         </article>
       </div>
 
@@ -224,8 +240,8 @@
       <!-- Step 4: regimen -->
       <div class="step" id="step-4" data-step="4">
         <article class="card" id="reg-card">
-          <div class="card-h"><h2>Regimen</h2><button type="button" class="about-btn" data-about="model">About the estimate</button></div>
-          <div class="chips big" id="r-mod" role="radiogroup" aria-label="PD modality"><button type="button" class="chip is-on" role="radio" aria-checked="true" data-mod="capd">CAPD</button><button type="button" class="chip" role="radio" aria-checked="false" data-mod="apd">APD</button></div>
+          <div class="card-h"><h2>Your regimen</h2><button type="button" class="about-btn" data-about="model">About the estimate</button></div>
+          <div class="chips big" id="r-mod" role="radiogroup" aria-label="PD modality"><button type="button" class="chip is-on" role="radio" aria-checked="true" data-mod="capd">CAPD</button><button type="button" class="chip" role="radio" aria-checked="false" data-mod="apd">CCPD</button></div>
 
           <div id="capd-block" style="margin-top:14px">
             <div class="grid-2 simple">
@@ -317,7 +333,7 @@
             </label>
             </div>
             <span class="field-label">Night solution</span>
-            <div class="chips big" id="a-sol" role="radiogroup" aria-label="APD night solution"><button type="button" class="chip is-on" role="radio" aria-checked="true" data-asol="1.5">1.5%</button><button type="button" class="chip" role="radio" aria-checked="false" data-asol="2.5">2.5%</button><button type="button" class="chip" role="radio" aria-checked="false" data-asol="4.25">4.25%</button></div>
+            <div class="chips big" id="a-sol" role="radiogroup" aria-label="CCPD night solution"><button type="button" class="chip is-on" role="radio" aria-checked="true" data-asol="1.5">1.5%</button><button type="button" class="chip" role="radio" aria-checked="false" data-asol="2.5">2.5%</button><button type="button" class="chip" role="radio" aria-checked="false" data-asol="4.25">4.25%</button></div>
             <div class="grid-2 simple" style="margin-top:14px">
               <label class="field" id="a-last-wrap">
               <span class="field-label">Last fill (day dwell) <span class="tag">0 = dry day</span></span>
@@ -357,6 +373,28 @@
 
       <!-- Step 5: results and prescription -->
       <div class="step" id="step-5" data-step="5">
+        <article class="card" id="opt-card">
+          <div class="card-h"><h2>Regimen options</h2><button type="button" class="about-btn" data-about="options">About options</button></div>
+          <div class="opt-table" id="opt-table"></div>
+          <p class="note" id="opt-basis"></p>
+          <div class="grid-2 simple" style="margin-top:10px">
+            <label class="field" id="o-uf-dex-wrap">
+              <span class="field-label">Long-dwell UF, dextrose <span class="tag">optional</span></span>
+              <div class="field-control">
+                <input id="o-uf-dex" type="text" inputmode="decimal" autocomplete="off" placeholder="—" aria-label="Long-dwell UF, dextrose">
+                <span class="unit-pill">mL</span>
+              </div>
+            </label>
+            <label class="field" id="o-uf-ico-wrap">
+              <span class="field-label">Long-dwell UF, Extraneal <span class="tag">optional</span></span>
+              <div class="field-control">
+                <input id="o-uf-ico" type="text" inputmode="decimal" autocomplete="off" placeholder="—" aria-label="Long-dwell UF, Extraneal">
+                <span class="unit-pill">mL</span>
+              </div>
+            </label>
+          </div>
+          <p class="note" id="opt-note">Standard CAPD and CCPD prescriptions (Handbook of Dialysis; ADEMEX). Extraneal rows use the same diffusion model: icodextrin’s UF advantage is not modeled, so they match the dextrose rows unless you enter expected long-dwell UF. Short dwells count net UF as 0.</p>
+        </article>
         <article class="card" id="cmp-card">
           <div class="card-h"><h2>Clearance vs targets</h2><button type="button" class="about-btn" data-about="targets">About targets</button></div>
           <div class="result-rows" id="cmp-rows"></div>
@@ -379,7 +417,9 @@
           <ul class="limits">
             <li>The regimen estimate is the Garred simple diffusion model fitted to one PET. It has not been validated as a prescribing model.</li>
             <li>Ultrafiltration is not predicted. UF counts only when you enter it.</li>
-            <li>It ignores residual volume, fill-volume and posture effects on transport, and APD fill/drain losses unless entered.</li>
+            <li>It ignores residual volume, fill-volume and posture effects on transport, and CCPD fill/drain losses unless entered.</li>
+            <li>Transport type alone uses typical values for that type (Twardowski bands), not the patient’s own membrane. Kt/V needs a measured 4-h D/P urea.</li>
+            <li>Icodextrin (Extraneal) kinetics are not modeled.</li>
             <li>Confirm any change with a measured 24-h dialysate and urine collection.</li>
           </ul>
         </article>

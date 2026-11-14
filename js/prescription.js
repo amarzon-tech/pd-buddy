@@ -25,7 +25,7 @@
     const lines = ["PD PRESCRIPTION"];
     if (s.modality === "apd") {
       const a = s.apd || {};
-      lines.push("Modality: APD");
+      lines.push("Modality: CCPD");
       lines.push("Night cycles: " + (isNum(a.cycles) ? a.cycles : "__") + " × " + L(a.fillL));
       lines.push("Total therapy time: " + H(a.therapyH));
       lines.push("Night solution: " + sol(a.solution));
@@ -56,7 +56,8 @@
       }
       if (isNum(e.crcl)) lines.push("Weekly CrCl: " + n1(e.crcl) + " L/week/1.73 m²");
     }
-    if (s.transport) lines.push("PET transport: " + s.transport);
+    if (s.transport) lines.push("PET transport: " + s.transport + (s.basis ? " (typical values)" : ""));
+    if (s.basis) lines.push(s.basis);
     const footer = "Educational estimate only. Confirm with a measured 24-h collection.";
     lines.push("");
     lines.push(footer);

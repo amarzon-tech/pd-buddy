@@ -1,6 +1,6 @@
 # Content review — PD Buddy (draft)
 
-**App:** PD Buddy, v0.1.0-draft · `DRAFT=true` · noindex · robots `Disallow: /`
+**App:** PD Buddy, v0.2.0-draft · `DRAFT=true` · noindex · robots `Disallow: /`
 **Preview:** https://amarzon-tech.github.io/pd-buddy/
 **For:** Dr D (Amar Damodar). Nothing here is signed off. Every box below is unticked until Dr D ticks it in his own words.
 
@@ -147,7 +147,7 @@ V0 = fill, Vt = end-of-dwell volume (PET: measured drain), t = dwell minutes. D/
 ## 6. Regimen inputs and dwell construction (no numbers invented)
 
 - **CAPD:** exchanges/day, fill (L), solution, optional long dwell (h), optional net UF per exchange and for the long dwell. No long dwell → 24 h split equally; with a long dwell → the other exchanges share 24 h − long dwell.
-- **APD:** night cycles, fill, total therapy time, optional fill + drain time per cycle (blank = 0, stated on screen as overstating dwell time), net UF per cycle, last fill (0 = dry day), day dwell (default 24 h − therapy time), last-fill UF.
+- **APD (labelled CCPD in the UI since §11):** night cycles, fill, total therapy time, optional fill + drain time per cycle (blank = 0, stated on screen as overstating dwell time), net UF per cycle, last fill (0 = dry day), day dwell (default 24 h − therapy time), last-fill UF.
 - **Defaults to confirm (Dr D):** CAPD 4 exchanges × 2.0 L. Source: the ADEMEX control arm, per KDOQI 2006: “CAPD patients were randomized to continue on 4 exchanges using 2 L per exchange”. APD numeric fields have no defaults (required). Net UF defaults to 0.
 - **Default solution chips (judgment, to confirm):** CAPD 2.5% dextrose; APD night 1.5%; last fill icodextrin; long dwell “same”. Solutions affect only the printed prescription, not the clearance estimate.
 - **Solution labels:** 1.5%, 2.5%, 4.25% dextrose and icodextrin 7.5% (standard bag labels).
@@ -191,6 +191,77 @@ Caveat: renal Kt/V uses urea clearance (not the mean), as in the KDOQI definitio
 Prints modality and regimen (exchanges × fill and solution, or cycles × fill, therapy time, night solution, last fill and day dwell), then “Estimated clearance (model, not measured)” — or “Measured clearance (24-h collections)” when only measured values exist — with weekly Kt/V (peritoneal + renal) and CrCl, the PET transport category, and the footer “Educational estimate only. Confirm with a measured 24-h collection.” No electrolyte composition. Blank values print as write-in lines.
 
 - [ ] Sign-off: prescription summary wording
+
+---
+
+## 10. Transport type only (no PET numbers) — added after Dr D asked “Do we need actual pet no or just broad types would do”
+
+**Design.** Step 2 now starts with a transport-type picker (High, High-average, Low-average, Low). The PET numbers (solution, D/P creatinine, D/D₀ glucose, fill, drain, D/P urea) sit in an optional “Have PET numbers?” section. If a D/P creatinine is entered, **the numbers win**: the category is computed from them, and if it differs from the picked type the app says so (“PET numbers give X, not the picked Y. Using the numbers.”).
+
+**What is used when only a type is picked (every value from a citable table; nothing invented):**
+
+| Type | Typical 4-h D/P creatinine (band midpoint) | Typical 4-h PET drain volume (band midpoint) | Typical D/P urea |
+|---|---|---|---|
+| Low | (0.34 + 0.49) / 2 = **0.415** | (2651 + 3326) / 2 = **2,988.5 mL** | none |
+| Low-average | (0.50 + 0.64) / 2 = **0.57** | (2369 + 2650) / 2 = **2,509.5 mL** | none |
+| High-average | (0.65 + 0.81) / 2 = **0.73** | (2085 + 2367) / 2 = **2,226 mL** | none |
+| High | (0.82 + 1.03) / 2 = **0.925** | (1580 + 2084) / 2 = **1,832 mL** | none |
+
+Fill 2.0 L, 4-h dwell (Twardowski 1987 PET protocol, §3).
+
+Sources:
+- **D/P creatinine bands:** Twardowski ZJ. Clinical value of standardized equilibration tests in CAPD patients. *Blood Purif.* 1989;7:95-108, as reproduced (with permission) in the QxMD PET reference: “HIGH 0.82 - 1.03 · HIGH-AVERAGE 0.65 - 0.81 · LOW-AVERAGE 0.50 - 0.64 · LOW 0.34 - 0.49” — the same bands already used in §3.
+- **Drain volume by transport class:** Twardowski ZJ. The fast peritoneal equilibration test. *Semin Dial.* 1990;3:141-142, as tabulated in the Ascend Laboratories reference manual (“PET STANDARD AND PET MODIFIED”; the column is headed “Ultrafiltration Volume” but the values are 4-h drain volumes in mL for a 2 L dwell): “Low 0.34-0.49 0.50-0.61 2651-3326 · Low average 0.50-0.64 0.39-0.49 2369-2650 · Mean 0.65 0.38 2368 · High average 0.66-0.81 0.27-0.37 2085-2367 · High 0.82-1.03 0.12-0.26 1580-2084”, with the note “Membrane Transport Rate valid only for 2 liter 2.5% dialysis solution.” (That table lists High-average from 0.66; the app keeps the Blood Purif 1989 lower bound of 0.65, so the High-average midpoint is 0.73. With 0.66 it would be 0.735.)
+- **D/P urea:** no published table giving a typical 4-h D/P urea **per transport category** was found. The only citable figure found is the overall Twardowski mean, “PET D/P urea at 240': 0.91 +/- 0.07(T)” (quoted in the abstract of *Peritoneal function tests: usefulness of simplified methods*, PubMed 1361780), which is a population mean, not a per-category value. It is **not** used. ERBP 2010 (van Biesen W et al. *Nephrol Dial Transplant.* 2010;25:2052-2062): “D/P urea shows far less variability between patients than D/P of larger molecules.”
+
+**Consequence:** from a type alone the app estimates **creatinine clearance only**. Kt/V shows “needs D/P urea” and the options table shows “—” for Kt/V. Every type-only estimate carries: “Estimated from typical values for <type> transporters — enter PET numbers for a patient-specific estimate.” (Step 2, Step 4, the options table, and the printed prescription, which also marks “PET transport: <type> (typical values)”.)
+
+**Worked example (screenshots):** male, 60 y, 5 ft 9 in (175.26 cm), 80 kg → Watson V 42.46 L, BSA 1.97 m². High-average typical → MTAC creatinine (2226/240) × ln[2000 / (2226 × 0.27)] = **11.15 mL/min**. Custom CAPD 4 × 2.0 L, 6-h dwells, UF 0 → peritoneal creatinine clearance 6.93 L/day → **CrCl 42.5 L/week/1.73 m²**; Kt/V not estimated.
+
+**Question for Dr D — drain volume.** Pairing each type with the drain-volume midpoint of the same class is citable, but it assumes drain volume moves with creatinine transport. With UF 0 in the regimen, the large typical PET drain for Low (2,989 mL) gives a low MTAC creatinine (1.68 mL/min; Low-average 6.45, High-average 11.15, High 20.44). The alternative is to assume drain = fill (2.0 L), which gives Low 4.47, Low-average 7.03, High-average 10.91, High 21.59 mL/min. The app currently uses the cited drain midpoints. Tell me which you prefer.
+
+- [ ] Sign-off: transport-type-only input — creatinine band midpoints, drain-volume midpoints (or drain = fill), no typical D/P urea (Kt/V unavailable from type alone), “numbers win” rule and disagreement flag, label wording
+
+---
+
+## 11. Regimen options (CAPD, CCPD, with and without Extraneal) — added after Dr D asked “Give both capd options and ccpd options and also options with extraneal”
+
+Step 5 now shows a compact table of standard regimens for the patient, with estimated weekly total Kt/V (green ≥ 1.7, amber below; KDOQI 2006 reference, informational) and CrCl (L/week/1.73 m²). The user's own regimen in Step 4 is unchanged. In the UI, **APD is now called CCPD**.
+
+| Option | Dwells modeled |
+|---|---|
+| CAPD 3 × 2.0 L | 2 day dwells sharing 16 h + 8-h overnight long dwell |
+| CAPD 4 × 2.0 L | 3 day dwells sharing 16 h + 8-h overnight long dwell |
+| CAPD 4 × 2.5 L | as above, 2.5 L |
+| CCPD 4 × 2.0 L, 9 h, dry day | 4 night cycles of 135 min |
+| CCPD 4 × 2.0 L, 9 h + 2.0 L day dwell | + 15-h day dwell |
+| CCPD 5 × 2.0 L, 9 h + 2.0 L day dwell | 5 cycles of 108 min + 15-h day dwell |
+| CCPD 5 × 2.5 L, 9 h + 2.0 L day dwell | as above, 2.5 L cycles |
+
+Each option with a long dwell (all CAPD; CCPD with a day dwell) also appears as “+ Extraneal long dwell”.
+
+Sources for the option set:
+- **CAPD volumes and exchanges:** Daugirdas JT, Blake PG, Ing TS. *Handbook of Dialysis*, 4th ed. 2006, as reproduced in DeVita MV, *Peritoneal dialysis modalities* (ISPD North American Chapter teaching slides, May 2011): “4 ( number of exchanges) x 2L ( dwell volumes) is the typical prescription. 4 x 2.5L in larger patients with small RRF or anuric patients who weigh >75 kg. 3 x 2L in smaller patients or in patients with good RRF.”
+- **ADEMEX** (Paniagua R et al. *J Am Soc Nephrol.* 2002;13:1307-1320): control group “four daily exchanges with 2 L of standard PD solution”; the intervention group was modified “to achieve a peritoneal creatinine clearance (pCrCl) of 60 L/wk per 1.73 m(2)”.
+- **CCPD:** same slides: “Continuous cycled peritoneal dialysis 3 to 7 cycles of 1.5 to 2.5 L delivered over 9 hours at nighttime”; “Cycle frequency- 3 to 5 cycles per 9 hour cycling session”; “Cycler dwell volumes - 2 to 2.5 L”; “Can start with NIPD if patient has good residual volume.” *Peritoneal Dialysis Prescription and Adequacy in Clinical Practice: Core Curriculum 2023* (Am J Kidney Dis): “Patients should not receive more than 5 exchanges per night on the cycler”.
+- **Overnight CAPD dwell 8 h:** “8 to 10 hours during the overnight exchange” (IHE/dialysisinterop *Peritoneal Dialysis Therapy and Devices*); the app uses the low end, 8 h. CCPD day dwell = 24 h − 9 h = 15 h. Day-dwell volume 2.0 L is the typical exchange volume above (judgment, to confirm).
+- **Extraneal (icodextrin 7.5%):** prescribing information: “indicated for a single daily exchange for the long (8- to 16- hour) dwell during continuous ambulatory peritoneal dialysis (CAPD) or automated peritoneal dialysis (APD)”. Both long dwells in the table (8 h, 15 h) are within that range.
+
+Verification note: the slide deck PDF returned an error (HTTP 500/502) when I tried to open it directly on 14 Nov 2026; the quotes above are from its indexed text. Please check them against your copy of the Handbook.
+
+**Icodextrin is not modeled.** No published relationship that converts icodextrin into a small-solute clearance change for this model was used. The Extraneal long dwell is the same Garred diffusive dwell. Its clearance differs from the dextrose row only if the user enters an expected long-dwell UF (optional fields “Long-dwell UF, dextrose” and “Long-dwell UF, Extraneal”). With nothing entered, the two rows are identical, and the screen says “icodextrin’s UF advantage is not modeled”. No UF numbers are assumed. Short dwells count net UF as 0. CCPD fill/drain time counts as 0, which overstates dwell time.
+
+**Worked example (same patient, High-average typical, no urine data), CrCl L/week/1.73 m²:** CAPD 3 × 2.0 L 34.3 · CAPD 4 × 2.0 L 42.1 · CAPD 4 × 2.5 L 48.5 · CCPD 4 × 2.0 L dry day 26.0 · CCPD 4 × 2.0 L + day 38.2 · CCPD 5 × 2.0 L + day 40.0 · CCPD 5 × 2.5 L + day 41.5. Each Extraneal row matches its dextrose row (no UF entered). Kt/V “—” (needs D/P urea).
+
+- [ ] Sign-off: regimen option set and sources, 8-h CAPD overnight / 15-h CCPD day dwell, 2.0 L day-dwell volume, Extraneal rows with icodextrin not modeled, CCPD naming
+
+---
+
+## 12. Height in feet and inches; weight in kg or lb — added after Dr D asked “Height should be in ft and inches”
+
+Height is entered as feet + inches and converted internally: cm = (ft × 12 + in) × 2.54 (exact by definition of the international inch). Weight can be entered in kg (default) or lb: kg = lb × 0.45359237 (exact by definition of the international pound). Watson, Hume-Weyers and Mosteller still use cm and kg. Example: 5 ft 9 in = 175.26 cm.
+
+- [ ] Sign-off: ft/in height entry, optional lb weight entry, conversions
 
 ---
 
