@@ -21,8 +21,25 @@
     return SOLUTIONS[key] || "____";
   }
 
+  // App Critic M5: the copied/printed text keeps its draft and model-estimate status. Exact wording: Dr D.
+  const TITLE = "PD regimen summary (model estimate)";
+  const DRAFT_LINE = "DRAFT – model estimate, not an order – verify before use";
+  const DISCLAIMER = "Not a medical device. Not cleared or approved by FDA. Estimates do not replace measured adequacy or clinical judgment.";
+
+  /** App Critic S8: the solutions the estimate assumed, printed with the sheet. */
+  function modelAssumed(s) {
+    if (s.modality === "apd") {
+      const a = s.apd || {};
+      if (!(isNum(a.lastFillL) && a.lastFillL > 0)) return "1.5% dextrose cycles, dry day";
+      if (a.lastSolution === "ico") return "1.5% dextrose cycles, icodextrin 7.5% day dwell";
+      return "1.5% dextrose cycles, 2.5% dextrose " + (a.dayDwells === 2 ? "for both day dwells" : "day dwell");
+    }
+    const c = s.capd || {};
+    return "1.5% dextrose exchanges, " + (c.longSolution === "ico" ? "icodextrin 7.5%" : "2.5% dextrose") + " long dwell";
+  }
+
   function build(s) {
-    const lines = ["PD PRESCRIPTION"];
+    const lines = [TITLE, DRAFT_LINE, "Patient: ____", "Date: ____", "Prescriber: ____", ""];
     if (s.modality === "apd") {
       const a = s.apd || {};
       lines.push("Modality: CCPD");
@@ -63,19 +80,20 @@
       }
       if (isNum(e.crcl)) lines.push("Weekly CrCl: " + n1(e.crcl) + " L/week/1.73 m²");
     }
+    lines.push("Model assumed: " + modelAssumed(s) + " (solution strengths are the model's assumptions, not a choice)");
     const u = s.uf;
     if (u && isNum(u.dailyUfMl)) {
-      lines.push("Predicted daily UF (experimental three-pore model): " + (u.dailyUfMl / 1000).toFixed(2) + " L" + (u.longSource === "published" ? ", assuming 1.5% dextrose exchanges; Extraneal long dwell = published value" : u.longSource === "model" && u.dayDwells === 2 ? ", assuming 1.5% dextrose cycles and two 2.5% dextrose day dwells" : u.longSource === "model" ? ", assuming 1.5% dextrose exchanges and a 2.5% dextrose long dwell" : ", assuming 1.5% dextrose cycles"));
+      lines.push("Predicted daily UF (experimental three-pore model): " + (u.dailyUfMl / 1000).toFixed(2) + " L" + (u.longSource === "published" ? ", assuming 1.5% dextrose exchanges; icodextrin long dwell = published value for 2 L, 9 h/15 h, not adjusted" : u.longSource === "model" && u.dayDwells === 2 ? ", assuming 1.5% dextrose cycles and two 2.5% dextrose day dwells" : u.longSource === "model" ? ", assuming 1.5% dextrose exchanges and a 2.5% dextrose long dwell" : ", assuming 1.5% dextrose cycles"));
     }
     if (s.transport) lines.push("PET transport: " + s.transport + (s.basis ? " (typical values)" : ""));
     if (s.basis) lines.push(s.basis);
-    const footer = "Educational estimate only. Confirm with a measured 24-h collection.";
+    const footer = DISCLAIMER + " Confirm with a measured 24-h collection.";
     lines.push("");
     lines.push(footer);
-    return { title: "PD PRESCRIPTION", lines, text: lines.join("\n"), footer };
+    return { title: TITLE, lines, text: lines.join("\n"), footer, draftLine: DRAFT_LINE };
   }
 
-  const RX = { build, SOLUTIONS };
+  const RX = { build, SOLUTIONS, TITLE, DRAFT_LINE, DISCLAIMER, modelAssumed };
   global.PdPrescription = RX;
   if (typeof module !== "undefined" && module.exports) module.exports = RX;
 })(typeof globalThis !== "undefined" ? globalThis : this);

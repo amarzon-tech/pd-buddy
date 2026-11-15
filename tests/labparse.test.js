@@ -80,4 +80,19 @@ section("Nothing invented");
   eq(P.parse("").warnings.length, 0, "empty text is fine");
 }
 
+section("App Critic M4 strings (0.4.3)");
+{
+  const v = (t, k) => (P.parse(t).values[k] || {}).value;
+  eq(v("Weekly Kt/V: renal 0.52, peritoneal 1.61, total 2.13", "measuredKtv"), 2.13, "total Kt/V 2.13, not renal 0.52");
+  eq(v("Serum creatinine (ref 0.7-1.3) 9.4 mg/dL", "serumCr"), 9.4, "serum creatinine 9.4, not the reference 0.7");
+  eq((P.parse("Serum creatinine (ref 0.7-1.3) 9.4 mg/dL").values.serumCr || {}).unit, "mg/dl", "unit after the value");
+  eq(v("24h dialysate volume 9.6 L", "dialVolL"), 9.6, "dialysate 9.6 L, not 24");
+  eq(v("PET drain volume 2,350 mL", "petDrain"), 2350, "PET drain 2,350 mL kept");
+  const r = P.parse("Dialysate creatinine 5.1\nSerum creatinine 725");
+  isTrue(r.values.dialCr.needsUnit && r.values.serumCr.needsUnit, "no units printed → unit must be chosen");
+  isTrue(r.warnings.filter((w) => /no unit printed/.test(w)).length === 2, "one missing-unit warning per value");
+  eq(P.parse("Dialysate urea 40 mg/dL\nSerum urea 12 mmol/L").conflicts.length, 1, "unit conflict returned for blocking");
+  eq(P.parse("Dialysate urea 40 mg/dL\nSerum urea 12 mmol/L").values.serumUrea.line, "Serum urea 12 mmol/L", "source line kept");
+}
+
 done("labparse");

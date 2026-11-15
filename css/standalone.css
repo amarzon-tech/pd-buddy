@@ -429,12 +429,16 @@ body { padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .predictors-box { background: color-mix(in srgb, var(--teal) 16%, var(--bg-elevated)); }
 }
+/* 0.4.3 (App Critic M5): PD Buddy's summary card is on step 2; print only it, and keep the draft banner. */
 @media print {
-  .stepper, .step-bar, .draft-banner { display: none !important; }
+  .stepper, .step-bar, header.top, .foot-links { display: none !important; }
+  .draft-banner { display: block !important; position: static !important; }
   .step { display: none !important; }
-  #step-4, #step-4.is-on { display: block !important; }
-  #step-4 > :not(#rx-card):not(#dose-check-card) { display: none !important; }
-  #rx-card, #dose-check-card { display: block !important; }
+  #step-2, #step-2.is-on { display: block !important; }
+  #step-2 > :not(#rx-card) { display: none !important; }
+  #step-2 #rx-card { display: block !important; }
+  #step-2 #rx-card .rx-card-h { display: flex !important; }
+  #rx-card .rx-actions, #rx-card .about-btn { display: none !important; }
 }
 @media (max-width: 959px) {
   #dose-card, #flow-card, #optional-card, #filter-card, #ac-card, #citrate-card, #ratio-card, #rx-card { order: unset; }

@@ -139,3 +139,33 @@ blockquote.gq cite { display: block; margin-top: 4px; font-size: 11.5px; font-st
 .ico-line { display: block; margin-top: 6px; font-size: 12.5px; font-weight: 650; color: var(--teal-deep); }
 .ts-row.ts-cap { background: var(--bg-sunken); border-style: dashed; }
 .cap-note { margin-top: 8px; }
+
+/* ── 0.4.3 App Critic fixes ── */
+/* S7: dark-mode primary buttons use dark text on the light-blue fill (white on #7eb0ff was 2.2:1). */
+[data-theme="dark"] .step-btn.primary, [data-theme="dark"] .scan-btn, [data-theme="dark"] .rx-btn.primary { color: #0b1a33; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .step-btn.primary, :root:not([data-theme="light"]) .scan-btn { color: #0b1a33; }
+}
+/* S7: no text under 12 px; every control at least 44 px high. */
+.tn i, .est-mini, .est-chip, .exp-chip, .tag, .tn i em.exp { font-size: 12px; }
+.lab-field.unconfirmed .field-label::after { font-size: 12px; }
+.about-btn, .chips.small .chip, .unit-pill.btn, .rx-btn, .confirm-btn, .chip { min-height: 44px; }
+.icon-btn { min-width: 44px; min-height: 44px; }
+.foot a, .foot-links a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 6px; }
+.about-btn.inline { min-height: 0; }
+/* M4: source line and unit choice under each unconfirmed OCR value. */
+.src-line { display: block; margin-top: 6px; font-size: 12px; line-height: 1.4; color: var(--ink-secondary); }
+.src-line .src-txt { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.src-line .unit-pick { display: flex; align-items: center; gap: 8px; margin-top: 6px; font-weight: 650; }
+.src-line select { min-height: 44px; padding: 6px 8px; border-radius: 10px; border: 1px solid var(--hairline-strong); background: var(--bg-elevated); color: var(--ink); font: inherit; }
+.src-line .src-block { display: block; margin-top: 6px; color: var(--amber-ink); font-weight: 700; }
+.confirm-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+/* M1/S5/N2 */
+.ispd-line { font-size: 13px; }
+.link-btn { display: inline-flex; align-items: center; min-height: 44px; padding: 0 4px; border: 0; background: none; color: var(--teal-deep); font: inherit; font-weight: 700; text-decoration: underline; cursor: pointer; }
+.try-wrap { margin-top: 10px; }
+.try-wrap .step-btn { width: 100%; }
+/* M5/M6 */
+.rx-draft { margin: 2px 0 8px; padding: 6px 10px; border-radius: 8px; background: var(--amber-bg); color: var(--amber-ink); font-weight: 800; }
+.rx-disc { font-weight: 650; }
+@media print { .rx-draft { border: 2px solid #000; color: #000 !important; background: #fff !important; } }

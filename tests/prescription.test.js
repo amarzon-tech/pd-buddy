@@ -17,7 +17,13 @@ section("CAPD");
   isTrue(r.lines.includes("Weekly Kt/V urea: 1.70 (peritoneal 1.29 + renal 0.41)"), "Kt/V split");
   isTrue(r.lines.includes("Weekly CrCl: 56.6 L/week/1.73 m²"), "CrCl line");
   isTrue(r.lines.includes("PET transport: High-average"), "transport line");
-  isTrue(/Educational estimate only/.test(r.text), "educational footer");
+  isTrue(/Not a medical device\. Not cleared or approved by FDA\./.test(r.text), "not-a-medical-device footer (App Critic M6)");
+  isTrue(r.lines[0] === "PD regimen summary (model estimate)", "title is a model-estimate summary, not PD PRESCRIPTION (M5)");
+  isTrue(r.lines[1] === "DRAFT – model estimate, not an order – verify before use", "copied text starts with the DRAFT line (M5)");
+  isTrue(/^DRAFT – model estimate/.test(r.text.split("\n")[1]), "DRAFT line in text");
+  isTrue(["Patient: ____", "Date: ____", "Prescriber: ____"].every((x) => r.lines.includes(x)), "blank patient, date and prescriber lines (M5)");
+  isTrue(!/PD PRESCRIPTION/.test(r.text), "no PD PRESCRIPTION title");
+  isTrue(r.lines.some((l) => /^Model assumed: /.test(l)), "model solution assumption printed (S8)");
   const l = RX.build({ modality: "capd", capd: { exchanges: 4, fillL: 2, solution: "1.5", longDwellH: 9, longSolution: "ico" } });
   isTrue(l.lines.includes("Long dwell: 9 h, Icodextrin 7.5%"), "icodextrin long dwell");
   const s = RX.build({ modality: "capd", capd: { exchanges: 4, fillL: 2, solution: "2.5", longDwellH: 9, longSolution: "same" } });
@@ -65,7 +71,15 @@ section("No electrolyte or uncited content");
 section("Predicted UF line (0.4)");
 {
   const r = RX.build({ modality: "capd", capd: { exchanges: 4, fillL: 2 }, uf: { dailyUfMl: 420, longSource: "published" } });
-  isTrue(r.lines.some((l) => /^Predicted daily UF \(experimental three-pore model\): 0\.42 L, assuming 1\.5% dextrose exchanges; Extraneal long dwell = published value$/.test(l)), "UF line labelled experimental with assumptions");
+  isTrue(r.lines.some((l) => /^Predicted daily UF \(experimental three-pore model\): 0\.42 L, assuming 1\.5% dextrose exchanges; icodextrin long dwell = published value for 2 L, 9 h\/15 h, not adjusted$/.test(l)), "UF line labelled experimental with assumptions");
+  {
+    const RX2 = require("../js/prescription.js");
+    isTrue(RX2.modelAssumed({ modality: "capd", capd: { longSolution: "ico" } }) === "1.5% dextrose exchanges, icodextrin 7.5% long dwell", "S8 CAPD icodextrin assumption");
+    isTrue(RX2.modelAssumed({ modality: "capd", capd: {} }) === "1.5% dextrose exchanges, 2.5% dextrose long dwell", "S8 CAPD dextrose assumption");
+    isTrue(RX2.modelAssumed({ modality: "apd", apd: { lastFillL: 0 } }) === "1.5% dextrose cycles, dry day", "S8 CCPD dry");
+    isTrue(RX2.modelAssumed({ modality: "apd", apd: { lastFillL: 2, dayDwells: 2 } }) === "1.5% dextrose cycles, 2.5% dextrose for both day dwells", "S8 CCPD midday");
+    isTrue(RX2.modelAssumed({ modality: "apd", apd: { lastFillL: 2, lastSolution: "ico" } }) === "1.5% dextrose cycles, icodextrin 7.5% day dwell", "S8 CCPD icodextrin");
+  }
   const r2 = RX.build({ modality: "capd", capd: { exchanges: 4, fillL: 2 } });
   isTrue(!r2.lines.some((l) => /Predicted daily UF/.test(l)), "no UF line without a prediction");
 }

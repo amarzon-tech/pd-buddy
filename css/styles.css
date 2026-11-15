@@ -6,7 +6,7 @@
   --bg-sunken: #e3e9f3;
   --ink: #0b1830;
   --ink-secondary: #3a4f6a;
-  --ink-tertiary: #5a6e86;
+  --ink-tertiary: #4a5b70; /* 0.4.3 App Critic S7: was #5a6e86 (4.29:1 on #e3e9f3) */
   --teal: #1e63d6;
   --teal-deep: #1348a8;
   --teal-soft: #e7f0fc;

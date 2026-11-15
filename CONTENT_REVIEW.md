@@ -541,7 +541,7 @@ Approved by Dr D after the 0.4.0 example showed no CCPD option reaching Kt/V 1.7
 
 - [ ] Sign-off: CCPD midday-exchange candidates (last fill + one manual exchange, 2 × 2.0 L and 2 × 2.5 L, day split equally 7.5 / 7 / 6.5 h) and their sources
 - [ ] Sign-off: 3.0 L CCPD night fills (large fills, flagged on cards, still ranked) — superseded in 0.4.2 by the BSA fill cap (§24)
-- [ ] Sign-off: 10- and 11-h cycler time candidates (in addition to 9 h)
+- [ ] Sign-off: 10- and 11-h cycler time candidates (in addition to 9 h) — **Decided by Dr D, Nov 14 2026:** keep the 0.05 L fill tolerance, 3.0 L fills (within the 1.5 L/m² BSA cap) and 9–11 h cycler time despite the AJKD Core Curriculum 2023 limits, because adequacy targets are hard to reach with those restrictions. This records the decision only; full sign-off pending.
 - [ ] Sign-off: CCPD burden order (midday > day dwell > cycler time > cycles > night fill > day volume); large fill not counted as burden
 - [ ] Sign-off: no Extraneal variant for split midday dwells; published 15-h Extraneal UF reused for 13–14-h day dwells
 - [ ] Sign-off: midday UF modelled with two 2.5% dextrose day dwells; entered long-dwell UF applied to the midday dwell only (Kt/V)
@@ -557,7 +557,7 @@ Dr D's decision; replaces the 0.4.1 "Large fill" flag (§23 3.0 L item is supers
   - Teitelbaum I. Crafting the prescription for patients starting peritoneal dialysis. *Clin J Am Soc Nephrol.* 2018;13(3):483-485. doi:10.2215/CJN.10770917 (PMC5967680): “Patients are generally able to tolerate intraperitoneal volumes of 1.25–1.5 L/m 2 BSA. As intraperitoneal pressure is lowest when supine, intermediate when erect, and highest when sitting, patients will often tolerate larger volumes when recumbent at night than when upright during the day.” (read from PMC this session)
   - Auguste BL, Bargman JM. Peritoneal dialysis prescription and adequacy in clinical practice: Core Curriculum 2023. *Am J Kidney Dis.* 2023;81(1):100-109. doi:10.1053/j.ajkd.2022.07.004: “Most patients can tolerate a maximum fill volume of 1,250-1,500 L/m2 or about 2,000-2,500 mL per exchange. In the average adult patient, this will result in intraperitoneal hydrostatic pressures of less than 18 cm of H2O. … an IPP of greater than 18 cm of H2O is usually associated with discomfort.” (“L/m2” is as printed; mL/m² is meant.) Text taken from the AJKD full-text page as returned by a search index; the page itself blocked direct download, so re-check against the article.
   - ISPD 2020 (Brown EA et al. *Perit Dial Int.* 2020;40:244-253) gives no numeric fill limit (per Dr D; the full text was not re-read this session).
-- **Same Core Curriculum, not applied (for Dr D):** “fill volumes beyond 2,000-2,500 mL are not usually recommended given the increased risk of patient discomfort” and “Patients should not be routinely prescribed >8 hours on cycler therapy”. The app still offers 3.0 L fills (within the BSA cap) and 9–11 h cycler time.
+- **Same Core Curriculum, not applied (decided by Dr D, Nov 14 2026, to keep; see the items below):** “fill volumes beyond 2,000-2,500 mL are not usually recommended given the increased risk of patient discomfort” and “Patients should not be routinely prescribed >8 hours on cycler therapy”. The app still offers 3.0 L fills (within the BSA cap) and 9–11 h cycler time.
 - **Tolerance 0.05 L.** Allows for rounding of BSA and bag volumes. Effect at the edge: the example patient (BSA 1.988 m² → 2.98 L) keeps 3.0 L fills (3.0 ≤ 3.03); without tolerance they would be excluded. 3.0 L is allowed from BSA 1.967 m²; 2.5 L from 1.634 m²; 2.0 L from 1.30 m².
 - **Example patient re-run** (male 55 y, high-average, 500 mL urine not counted):
   - 5 ft 10 in, 80 kg (BSA 1.99, max 2.98 L): unchanged from 0.4.1 because of the tolerance. Without it: type-only CAPD 5 × 2.5 L (1.84) only one meeting; CCPD 5 × 2.5 L 11 h + day (1.75).
@@ -565,13 +565,57 @@ Dr D's decision; replaces the 0.4.1 "Large fill" flag (§23 3.0 L item is supers
 - Tests: `tests/fillcap.test.js`.
 
 - [ ] Sign-off: fill cap 1.5 L/m² BSA applied to every fill (CAPD exchanges, CCPD night fills, day dwell, both midday dwells); options above it excluded from ranking, table and troubleshoot
-- [ ] Sign-off: 0.05 L tolerance (fill ≤ 1.5 × BSA + 0.05 L); keeps 3.0 L for BSA ≥ 1.967 m² (incl. the example patient at 1.988)
+- [ ] Sign-off: 0.05 L tolerance (fill ≤ 1.5 × BSA + 0.05 L); keeps 3.0 L for BSA ≥ 1.967 m² (incl. the example patient at 1.988) — **Decided by Dr D, Nov 14 2026:** keep the 0.05 L fill tolerance, 3.0 L fills (within the 1.5 L/m² BSA cap) and 9–11 h cycler time despite the AJKD Core Curriculum 2023 limits, because adequacy targets are hard to reach with those restrictions. This records the decision only; full sign-off pending.
 - [ ] Sign-off: fill-cap sources (Teitelbaum CJASN 2018 1.25–1.5 L/m²; Auguste & Bargman AJKD 2023 IPP < 18 cm H2O; ISPD 2020 no numeric limit) and the note text on the Top 3 lists
-- [ ] Sign-off: Core Curriculum 2023 “fill volumes beyond 2,000-2,500 mL are not usually recommended” and “>8 hours on cycler” not applied (3.0 L fills and 9–11 h still offered)
+- [ ] Sign-off: Core Curriculum 2023 “fill volumes beyond 2,000-2,500 mL are not usually recommended” and “>8 hours on cycler” not applied (3.0 L fills and 9–11 h still offered) — **Decided by Dr D, Nov 14 2026:** keep the 0.05 L fill tolerance, 3.0 L fills (within the 1.5 L/m² BSA cap) and 9–11 h cycler time despite the AJKD Core Curriculum 2023 limits, because adequacy targets are hard to reach with those restrictions. This records the decision only; full sign-off pending.
 - [ ] Sign-off: troubleshoot respects the fill cap (larger fill / larger midday volumes shown as “fill cap reached”, not suggested)
 - [ ] Sign-off: current-prescription list still includes regimens above the cap, marked “above fill cap”
 - [ ] Sign-off: BSA and max fill shown on step 1 and in the step 2 summary
 - [ ] Sign-off: release 0.4.2-draft, service-worker cache pd-buddy-v6, DRAFT=true, noindex unchanged
+
+## 25. App Critic review fixes (0.4.3-draft)
+
+Dr D approved all 18 items of the App Critic review (`pd-buddy-review/REPORT.md`, reviewed at 7a03a68); each was re-checked against 0d7f71e (CCPD candidates and fill cap) before the change. Wording proposed by the reviewer is used where it was given; no clinical number was added or changed. Items marked **[Dr D]** still need a clinical choice and are listed as questions.
+
+- **M1 Kt/V framing.** "Top 3 CAPD / CCPD" → "CAPD / CCPD options to consider" (card header chip "model estimate"). Badges "Meets target / Below target" → "Est. Kt/V ≥ your reference value (1.7)" / "Est. Kt/V below your reference value (1.7)" (CrCl the same way). The "none reach" note, step 3 ("Measured ≥ reference" / "Measured below reference"), step 3 diff and step 4 badges use the same wording. Step 1 card "Ranking target" → "Reference Kt/V (optional)". Step 2 summary quotes ISPD 2020 (Brown EA et al. *Perit Dial Int.* 2020;40:244-253): “There is no specific clearance target that guarantees sufficient dialysis for an individual.” Order unchanged: options at or above the reference value still come first **[Dr D: keep ordering by the reference value?]**.
+- **M2 Input bounds.** Hard blocks (`checkPatient` in js/formulas.js): age < 18 ("adult-only"; Watson is an adult equation, KDOQI CPR 2.6), ft > 8 or < 0, inches ≥ 12 or < 0, height in cm ≤ 0, weight ≤ 0. Options stay hidden and the step cannot be left until fixed. New height unit: cm (ft + in stays the default). Amber plausibility ranges for height, weight, urine volume and the Kt/V reference value were **not** added: the report leaves the ranges to Dr D **[Dr D]**.
+- **M3 D/P checks.** `checkDp`: ≤ 0 blocked; > 1.5 blocked with "Did you mean 0.70?" (value ÷ 100, button fills it in); ≥ 1.1 blocked; 1.0–1.1 blocked because the Garred model needs D/P < 1 (no MTAC can be fitted) **[Dr D: the Twardowski High band runs to 1.03; is blocking 1.00–1.03 right, or should those fall back to the type?]**. The "none reach" note never shows with the empty state.
+- **M4 OCR parser.** Reference ranges ("(ref 0.7-1.3)", "0.7–1.3") stripped; numbers attached to h/hr ("24h", "4-h") skipped; the number after the label is used; "2,350" read as 2350 (comma + exactly 3 digits); Kt/V takes the number after/nearest "total". Concentrations printed without a unit need a unit chosen (mg/dL, mmol/L, µmol/L) before Confirm; Confirm is blocked while fluid and serum units differ. Each unconfirmed value shows the report line it came from. All five report strings are in `tests/labparse.test.js`.
+- **M5 Print / copy.** Print CSS now prints the step 2 summary card (was pointed at a step 4 card from another app, so printed blank) and keeps the draft banner. Title "PD PRESCRIPTION" → "PD regimen summary (model estimate)"; the text starts "DRAFT – model estimate, not an order – verify before use" and has blank Patient / Date / Prescriber lines **[Dr D: exact wording]**.
+- **M6 Not a medical device.** "Not a medical device. Not cleared or approved by FDA. Estimates do not replace measured adequacy or clinical judgment." on the footer, the summary card, the copied/printed text, privacy and support. A regulatory opinion before any non-draft release is still needed **[Dr D]**.
+- **M7 Naming.** UI label "icodextrin 7.5%" (the About options sheet says "(e.g., Extraneal®)" once); "Published Adequest grid" → "Published prescription grid (Akonur et al. 2016)"; "PD Adequest" removed from on-screen text (kept only in the trademark notice and the code comments that cite the source). Notice in the footer and About sheets: "PD Adequest and Extraneal are trademarks of Baxter International Inc.; PD Buddy is not affiliated with or endorsed by Baxter." The grid source line now cites the PDI figures only; the 9 "Unverified" flags say "a second published version" instead of naming the guide (they still come from that comparison) **[Dr D: keep the flags, or drop the cross-check?]**. Type-only label is now "typical-patient estimate from published parameters (Akonur et al. 2016), not measured" (it replaces the earlier "Adequest-derived" wording Dr D saw) **[Dr D: OK?]**.
+- **S1 BSA range.** When typical (type-only) values are used and BSA is outside 1.7–2.0 m² (Akonur 2016, PDI 36:79-84, Table 1: “typical patients with BSA between 1.7 and 2.0 m²”), step 1 and step 2 say "Typical values come from patients with BSA 1.7–2.0 m²; estimate less reliable". Not blocked **[Dr D: block?]**.
+- **S2 Icodextrin UF.** Card line: "published value for 2 L, 9 h/15 h; not adjusted to this regimen". UF card, options table, prescription text and About say the same, with the 350 mL residual volume.
+- **S3 UF order.** Step 4 note: "Suggestions for UF are ordered by the experimental UF model." Elsewhere "never changes … the ranking" → "never changes Kt/V or the step 2 order".
+- **S4 Fill flag / CrCl.** The CCPD-only "Large fill" flag no longer exists (0.4.2 fill cap applies to both modalities), so the first point does not apply. **[Dr D]**: CCPD CrCl reference 60 vs 45 L/wk/1.73 m²; Low transport creatinine by D/P band midpoint vs published MTAC for the other types.
+- **S5 Residual function.** When urine is entered without urine and serum urea, step 2 says "Ranking assumes no residual kidney function: add urine and serum urea to include it" with a button to those fields.
+- **S6 Current prescription.** Step 3 list grouped with `<optgroup>` (CAPD; CCPD 9 / 10 / 11 h) and labelled "closest match … the fit is approximate". Free regimen fields not added (partial) **[Dr D: add them?]**.
+- **S7 Accessibility.** Dark-mode primary buttons use dark text (#0b1a33 on #7eb0ff); light-mode tertiary grey #5a6e86 → #4a5b70; small text raised to 12 px; buttons, chips, About buttons, Copy/Print, Confirm, theme toggle and footer links at least 44 px; inch input labelled "Height, inches" (feet "Height, feet"); steps wrapped in `<main>`.
+- **S8 Solutions.** The summary text prints "Model assumed: 1.5% dextrose exchanges, 2.5% dextrose long dwell (or icodextrin)…"; solution lines stay blank for the clinician. 4.25% in UF troubleshooting **[Dr D]**.
+- **N1 Citations.** On-screen "Akonur 2016" now says PDI 36:79-84 (MTACs, icodextrin UF, three-pore checks) or names the grid paper (PDI 36:188-195).
+- **N2 First run.** Step 1 card numbers (1–2, 3, 4, 5) removed; "Nothing is saved; reloading clears the form."; step 1 shows "Try an example patient" until anything is typed (step 2 cannot be opened empty, so the button sits on step 1 and opens step 2) (male 55 y, 5 ft 10 in, 80 kg, high-average, 500 mL/day urine: the example used in §23–24; not a real patient).
+- **N3 Model documentation.** About "How the regimen estimate works": short-dwell UF 0 underestimates, CCPD fill/drain time 0 overestimates; check against Akonur 2013 (PDI 33:646-654) standard APD, assumed as 5 × 2 L over 10 h plus a 2 L 14-h day dwell with the typical TBW 40.6 / 41.3 / 42.3 L: this model 1.74 / 1.61 / 1.44 vs a published average of about 1.67 (about 4% lower; the reviewer's run gave about −5%). Step 3 shows "Renal Kt/V assumed 0" when a reported total Kt/V is entered without a 24-h urine **[Dr D: the regimen assumed for the Akonur 2013 check]**.
+- Tests: `tests/critic.test.js` (new), `tests/labparse.test.js`, `tests/prescription.test.js`, `tests/static.test.js`.
+
+- [ ] Sign-off: M1 neutral wording (options to consider, reference-value badges, ISPD 2020 line, Reference Kt/V card); ordering by the reference value kept
+- [ ] Sign-off: M2 hard blocks (age < 18, ft > 8, inches ≥ 12, height/weight ≤ 0) and the cm height option; plausibility ranges still to be set
+- [ ] Sign-off: M3 D/P blocks (≤ 0, > 1.5 with "Did you mean", ≥ 1.1, 1.0–1.1 not fittable)
+- [ ] Sign-off: M4 OCR parser rules, unit choice and blocked Confirm on unit conflict, source line under each value
+- [ ] Sign-off: M5 summary title, DRAFT line, blank Patient / Date / Prescriber, print of the step 2 card with the draft banner
+- [ ] Sign-off: M6 not-a-medical-device statement (footer, summary card, copied text, privacy, support); regulatory opinion pending
+- [ ] Sign-off: M7 naming (icodextrin 7.5%, grid heading, trademark notice, grid cited from PDI figures only, type-only label wording)
+- [ ] Sign-off: S1 BSA 1.7–2.0 m² warning for typical values (warn, not block)
+- [ ] Sign-off: S2 icodextrin UF labelled "published value for 2 L, 9 h/15 h; not adjusted to this regimen"
+- [ ] Sign-off: S3 step 4 UF suggestions ordered by the experimental UF model (stated)
+- [ ] Sign-off: S4 CCPD CrCl reference (60 vs 45) and Low creatinine method
+- [ ] Sign-off: S5 residual-function assumption note and link on step 2
+- [ ] Sign-off: S6 current prescription as closest match with groups; free regimen fields not added
+- [ ] Sign-off: S7 accessibility changes (contrast, 12 px, 44 px, labels, main landmark)
+- [ ] Sign-off: S8 model solution assumption printed; 4.25% in UF troubleshooting
+- [ ] Sign-off: N1 Akonur 2016 citations disambiguated
+- [ ] Sign-off: N2 first-run changes (no card numbers, nothing-saved note, Try an example patient)
+- [ ] Sign-off: N3 model documentation (UF 0 / fill-drain 0, Akonur 2013 check, renal Kt/V assumed 0)
+- [ ] Sign-off: release 0.4.3-draft, service-worker cache pd-buddy-v7, DRAFT=true, noindex unchanged
 
 ---
 

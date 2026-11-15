@@ -50,7 +50,7 @@
 
 
   /* chip groups (in-memory state only) */
-  const state = { sex: "male", wunit: "kg", ptype: null, pick: null, cur: null, calib: null, problem: "clearance", parseWarnings: [] };
+  const state = { sex: "male", wunit: "kg", hunit: "ftin", labUnits: {}, ptype: null, pick: null, cur: null, calib: null, problem: "clearance", parseWarnings: [] };
   function bindChips(groupId, key) {
     const g = $(groupId);
     g.addEventListener("click", (e) => {
@@ -67,6 +67,7 @@
   }
   bindChips("p-sex", "sex");
   bindChips("p-wunit", "wunit");
+  bindChips("p-hunit", "hunit");
   bindChips("pet-type", "ptype");
 
   /* ── calculations ── */
@@ -102,7 +103,7 @@
 
   function readInputs() {
     return {
-      sex: state.sex, age: num("p-age"), ft: num("p-ft"), inch: num("p-in"), wIn: num("p-wt"), wunit: state.wunit, ptype: state.ptype,
+      sex: state.sex, age: num("p-age"), hunit: state.hunit, cm: num("p-cm"), ft: num("p-ft"), inch: num("p-in"), wIn: num("p-wt"), wunit: state.wunit, ptype: state.ptype,
       dpcr: num("pet-dpcr"), dpu: num("pet-dpu"), drainIn: num("pet-drain"),
       uvol: num("l-uvol"), uu: num("l-uu"), pu: num("l-pu"), ucr: num("l-ucr"), pcr: num("l-pcr"),
       ktvTarget: num("t-ktv"), ufDex: num("o-uf-dex"), ufIco: num("o-uf-ico"), calib: state.calib,
@@ -112,7 +113,10 @@
   /** The whole model for one set of inputs (no DOM writes). */
   function compute(inp) {
     const r = { inp };
-    r.ht = safe(() => F.ftInToCm(inp.ft, inp.inch));
+    r.ht = inp.hunit === "cm" ? (F.isNum(inp.cm) && inp.cm > 0 ? inp.cm : null) : safe(() => F.ftInToCm(inp.ft, inp.inch));
+    // Hard blocks (App Critic M2/M3): impossible or out-of-scope entries hide every option.
+    r.inputErrors = F.checkPatient({ age: inp.age, hunit: inp.hunit, cm: inp.cm, ft: inp.ft, inch: inp.inch, weight: inp.wIn });
+    r.dpErrors = [["dpcr", F.checkDp(inp.dpcr, "D/P creatinine")], ["dpu", F.checkDp(inp.dpu, "D/P urea")]].filter((x) => x[1]);
     r.htCm = r.ht;
     r.wtKg = inp.wunit === "lb" ? safe(() => F.lbToKg(inp.wIn)) : inp.wIn;
     r.V = safe(() => F.watsonV(inp.sex, inp.age, r.ht, r.wtKg));
@@ -120,7 +124,8 @@
     r.bsa = safe(() => F.bsaMosteller(r.ht, r.wtKg));
 
     // Transport: picked type, or PET numbers (numbers win)
-    const dpcr = inp.dpcr, dpu = inp.dpu, drainIn = inp.drainIn;
+    const dpBlocked = (k) => r.dpErrors.some((x) => x[0] === k);
+    const dpcr = dpBlocked("dpcr") ? null : inp.dpcr, dpu = dpBlocked("dpu") ? null : inp.dpu, drainIn = inp.drainIn;
     r.numCat = safe(() => F.petCategoryCr(dpcr));
     r.typeCat = inp.ptype ? safe(() => F.typicalPet(inp.ptype)) : null;
     r.cat = r.numCat ? r.numCat : r.typeCat ? { key: r.typeCat.key, label: r.typeCat.label, outside: null } : null;
@@ -130,13 +135,13 @@
     r.drainTypical = !(F.isNum(drainIn) && drainIn > 0);
     const fillL = F.TARGETS.PET_FILL_L;
     const drainL = F.isNum(r.drainMlUsed) ? r.drainMlUsed / 1000 : null;
-    // Creatinine MTAC: measured D/P Cr → Garred; else published Adequest-derived (H/HA/LA); else band midpoint (Low)
+    // Creatinine MTAC: measured D/P Cr → Garred; else published typical value (Akonur 2013; H/HA/LA); else band midpoint (Low)
     r.crSource = null;
     if (r.numCat) { r.mtacCr = safe(() => F.garredMtac(dpcr, fillL, drainL, F.TARGETS.PET_MINUTES)); r.crSource = "pet"; }
     else if (typ && F.isNum(typ.mtacCr)) { r.mtacCr = typ.mtacCr; r.crSource = "typical"; }
     else if (typ) { r.mtacCr = safe(() => F.garredMtac(typ.dpCr, fillL, drainL, F.TARGETS.PET_MINUTES)); r.crSource = "midpoint"; }
     else r.mtacCr = null;
-    // Urea MTAC: measured D/P urea → Garred; else published Adequest-derived typical value
+    // Urea MTAC: measured D/P urea → Garred; else published typical value (Akonur 2016, PDI 36:79-84)
     r.ureaSource = null;
     r.mtacU = null;
     if (F.isNum(dpu) && F.isNum(drainL)) { r.mtacU = safe(() => F.garredMtac(dpu, fillL, drainL, F.TARGETS.PET_MINUTES)); r.ureaSource = F.isNum(r.mtacU) ? "pet" : "invalid"; }
@@ -149,11 +154,13 @@
     r.typical = r.ureaSource === "typical";
     r.typeOnly = !!r.typeCat && !r.numCat && !F.isNum(dpu) && r.drainTypical;
     r.basis = "";
+    r.bsaOutside = F.isNum(r.bsa) && (r.bsa < F.TYPICAL_BSA_RANGE[0] || r.bsa > F.TYPICAL_BSA_RANGE[1]);
+    const bsaNote = () => (r.bsaOutside ? " Typical values come from patients with BSA 1.7–2.0 m² (Akonur 2016, PDI 36:79-84); estimate less reliable at BSA " + fmt(r.bsa, 2) + " m²." : "");
     if (r.ureaSource === "fitted") r.basis = "Estimated from the measured 24-h clearance: the model's urea MTAC (" + fmt(r.mtacU, 1) + " mL/min) was fitted to it" + (inp.calib && inp.calib.on ? " on " + inp.calib.on : "") + ".";
     else if (r.typical && r.cat) {
-      r.basis = "Estimated from typical values for " + r.cat.label.toLowerCase() + " transporters: " + F.TYPICAL_LABEL + " (urea MTAC " + fmt(typ.mtacUrea, 2) + " mL/min, Akonur 2016";
+      r.basis = "Estimated from typical values for " + r.cat.label.toLowerCase() + " transporters: " + F.TYPICAL_LABEL + " (urea MTAC " + fmt(typ.mtacUrea, 2) + " mL/min, Akonur 2016, PDI 36:79-84";
       if (r.crSource === "typical") r.basis += "; creatinine MTAC " + fmt(typ.mtacCr, 2) + " mL/min, Akonur 2013";
-      r.basis += ")." + (r.crSource === "midpoint" ? " Creatinine uses the Twardowski D/P band midpoint (no published Low value)." : "") + " Enter PET numbers for a patient-specific estimate.";
+      r.basis += ")." + (r.crSource === "midpoint" ? " Creatinine uses the Twardowski D/P band midpoint (no published Low value)." : "") + " Enter PET numbers for a patient-specific estimate." + bsaNote();
     }
 
     // Residual urine (renal clearance only with urine + serum values)
@@ -166,7 +173,8 @@
     r.kruMlMin = r.urineMl === 0 ? 0 : r.res ? r.res.ureaMlMin : null;
 
     r.ktvTarget = F.isNum(inp.ktvTarget) && inp.ktvTarget > 0 ? inp.ktvTarget : KTV_DEFAULT;
-    r.ready = F.isNum(r.V) && F.isNum(r.bsa) && F.isNum(r.mtacCr);
+    r.blocked = r.inputErrors.length > 0 || r.dpErrors.length > 0;
+    r.ready = !r.blocked && F.isNum(r.V) && F.isNum(r.bsa) && F.isNum(r.mtacCr);
     r.options = r.ready
       ? safe(() => F.candidateOptions({ mtacUrea: r.mtacU, mtacCr: r.mtacCr, V: r.V, bsa: r.bsa, ktvRenal: r.ktvR, rkfLDay: r.rkfLDay, longUfDextroseMl: inp.ufDex, longUfIcodextrinMl: inp.ufIco, ufFn: r.cat ? ufFor(r.cat.key) : null }))
       : null;
@@ -207,7 +215,7 @@
       const mU = F.isNum(ktP) ? safe(() => F.fitMtacToClearance(dw, ktP, "urea")) : null;
       const mC = F.isNum(out.m.crLDay) ? safe(() => F.fitMtacToClearance(dw, out.m.crLDay, "cr")) : null;
       if (F.isNum(mU) || F.isNum(mC)) {
-        out.fit = { mtacU: mU, mtacCr: mC, on: shortName(cur) + (cur.longSolution === "icodextrin" ? " · Extraneal" : "") };
+        out.fit = { mtacU: mU, mtacCr: mC, on: shortName(cur) + (cur.longSolution === "icodextrin" ? " · icodextrin" : "") };
         inpL.calib = out.fit;
         r = compute(inpL);
         out.msgs.push("Clearance fitted to the measured " + (out.m.source === "collection" ? "24-h collection" : "weekly Kt/V") + " on " + out.fit.on + ".");
@@ -227,18 +235,27 @@
     const inp = readInputs();
     const r = compute(inp);
 
-    setText("o-v", F.isNum(r.V) ? fmt(r.V, 1) + " L" : "—");
-    setText("o-bsa", F.isNum(r.bsa) ? fmt(r.bsa, 2) + " m²" : "—");
-    setText("o-maxfill", F.isNum(r.bsa) ? fmt(F.maxFillL(r.bsa), 2) + " L" : "—");
+    $("p-cm-wrap").classList.toggle("hidden", state.hunit !== "cm");
+    $("p-ft-wrap").classList.toggle("hidden", state.hunit === "cm");
+    $("p-in-wrap").classList.toggle("hidden", state.hunit === "cm");
+    const okBody = !r.inputErrors.length;
+    setText("o-v", okBody && F.isNum(r.V) ? fmt(r.V, 1) + " L" : "—");
+    setText("o-bsa", okBody && F.isNum(r.bsa) ? fmt(r.bsa, 2) + " m²" : "—");
+    setText("o-maxfill", okBody && F.isNum(r.bsa) ? fmt(F.maxFillL(r.bsa), 2) + " L" : "—");
     const capTxt = F.isNum(r.bsa)
       ? "Fill volumes capped at 1.5 L/m² BSA (BSA " + fmt(r.bsa, 2) + " m² → max fill " + fmt(F.maxFillL(r.bsa), 2) + " L, + 0.05 L rounding tolerance); individualize to comfort and intraperitoneal pressure (<18 cm H2O)."
       : "Fill volumes capped at 1.5 L/m² BSA; individualize to comfort and intraperitoneal pressure (<18 cm H2O).";
     document.querySelectorAll(".cap-note").forEach((e) => (e.textContent = capTxt));
     const conv = [];
-    if (F.isNum(r.ht)) conv.push(fmt(r.ht, 1) + " cm");
+    if (F.isNum(r.ht) && state.hunit !== "cm") conv.push(fmt(r.ht, 1) + " cm");
     if (F.isNum(r.wtKg) && state.wunit === "lb") conv.push(fmt(r.wtKg, 1) + " kg");
-    setText("p-msg", conv.length ? "= " + conv.join(", ") + "." : "");
-    $("p-msg").classList.remove("warn-text");
+    if (r.inputErrors.length) {
+      setText("p-msg", r.inputErrors.map((e) => e.msg).join(" ") + " Options are hidden until this is fixed.");
+      $("p-msg").classList.add("warn-text");
+    } else {
+      setText("p-msg", conv.length ? "= " + conv.join(", ") + "." : "");
+      $("p-msg").classList.remove("warn-text");
+    }
 
     // PET message
     let petMsg = "", flag = false;
@@ -257,7 +274,14 @@
       if (r.ureaSource === "typical") petMsg += " No D/P urea: Kt/V is a " + F.TYPICAL_LABEL + ".";
     }
     if (r.ureaSource === "fitted") petMsg += " Clearance fitted to the last measured 24-h collection.";
-    setText("pet-msg", petMsg);
+    if (r.typeOnly && r.bsaOutside) petMsg += " Typical values come from patients with BSA 1.7–2.0 m²; estimate less reliable at BSA " + fmt(r.bsa, 2) + " m².";
+    let dpHtml = "";
+    if (r.dpErrors.length) {
+      flag = true;
+      petMsg = r.dpErrors.map((x) => x[1].msg).join(" ") + " Options are hidden until this is fixed.";
+      dpHtml = r.dpErrors.filter((x) => F.isNum(x[1].suggest)).map((x) => ' <button type="button" class="link-btn" data-dpfix="' + x[0] + '" data-v="' + x[1].suggest + '">Use ' + fmt(x[1].suggest, 2) + "</button>").join("");
+    }
+    $("pet-msg").innerHTML = esc(petMsg) + dpHtml;
     $("pet-msg").classList.toggle("flag-text", flag);
     $("pet-msg").classList.toggle("basis-note", !!r.typeOnly);
 
@@ -289,11 +313,11 @@
   function words(o) {
     const p = o.opt;
     const ico = o.longSolution === "icodextrin";
-    if (p.mod === "capd") return p.exchanges + " exchanges a day × " + fmt(p.fillL, 1) + " L, one 8-h overnight dwell" + (ico ? " with Extraneal" : "");
+    if (p.mod === "capd") return p.exchanges + " exchanges a day × " + fmt(p.fillL, 1) + " L, one 8-h overnight dwell" + (ico ? " with icodextrin" : "");
     const th = p.therapyH || 9, dayH = 24 - th;
     const base = p.cycles + " cycles × " + fmt(p.fillL, 1) + " L over " + th + " h, ";
     if (p.dayDwells === 2) return base + "last fill " + fmt(p.lastFillL, 1) + " L plus one manual midday exchange (2 × " + fmt(p.lastFillL, 1) + " L day dwells, " + fmt(dayH / 2, 1).replace(/\.0$/, "") + " h each)";
-    return base + (p.lastFillL > 0 ? "plus a " + fmt(p.lastFillL, 1) + " L day dwell (" + dayH + " h)" + (ico ? " with Extraneal" : "") : "dry day");
+    return base + (p.lastFillL > 0 ? "plus a " + fmt(p.lastFillL, 1) + " L day dwell (" + dayH + " h)" + (ico ? " with icodextrin" : "") : "dry day");
   }
   function shortName(o) {
     const p = o.opt;
@@ -302,7 +326,7 @@
     return "CCPD " + p.cycles + " × " + fmt(p.fillL, 1) + " L" + th + (p.dayDwells === 2 ? " + midday exchange (2 × " + fmt(p.lastFillL, 1) + " L)" : p.lastFillL > 0 ? " + day dwell" : ", dry day");
   }
   function fullName(o) {
-    return shortName(o) + (o.longSolution === "icodextrin" ? " · Extraneal" : "");
+    return shortName(o) + (o.longSolution === "icodextrin" ? " · icodextrin" : "");
   }
   function ufText(o) {
     if (!o.uf || !F.isNum(o.uf.dailyUfMl)) return "—";
@@ -313,13 +337,20 @@
     if (!r || !r.options || o.longSolution !== "dextrose") return null;
     return r.options.find((x) => x.id === o.baseId + "-ico") || null;
   }
+  /** App Critic M1: neutral comparison wording, not pass/fail. */
+  function refBadge(meets, metric, target) {
+    const what = metric === "crcl" ? "Est. CrCl" : "Est. Kt/V";
+    const ref = metric === "crcl" ? fmt(target, 0) : fmt(target, 2).replace(/0$/, "");
+    return meets ? '<span class="badge-ok">' + what + " ≥ your reference value (" + ref + ")</span>" : '<span class="badge-warn">' + what + " below your reference value (" + ref + ")</span>";
+  }
   function topItemHtml(o, i, rank, pickable, r) {
     const sib = icoSibling(o, r);
-    const sibTxt = sib && sib.uf && F.isNum(sib.uf.dailyUfMl) ? '<span class="ico-line">With Extraneal long dwell: UF ' + fmt(sib.uf.dailyUfMl / 1000, 2) + " L/day (published long-dwell value" + (F.isNum(sib.ktv) ? "; Kt/V " + fmt(sib.ktv, 2) : "") + ")</span>" : "";
+    // App Critic S2: the published icodextrin UF is for 2 L and a 9-h CAPD / 15-h APD dwell; say so on the card.
+    const sibTxt = sib && sib.uf && F.isNum(sib.uf.dailyUfMl) ? '<span class="ico-line">With icodextrin long dwell: UF ' + fmt(sib.uf.dailyUfMl / 1000, 2) + " L/day (published value for 2 L, 9 h/15 h; not adjusted to this regimen" + (F.isNum(sib.ktv) ? "; Kt/V " + fmt(sib.ktv, 2) : "") + ")</span>" : "";
     const sel = state.pick === o.id;
     const ktv = F.isNum(o.ktv) ? fmt(o.ktv, 2) : "—";
-    const badge = o.meets ? '<span class="badge-ok">Meets target</span>' : '<span class="badge-warn">Below target</span>';
-    const ufSub = o.uf ? (o.uf.longSource === "published" ? "UF L/day · Extraneal published" : "UF L/day") : "UF L/day";
+    const badge = refBadge(o.meets, rank.metric, rank.target);
+    const ufSub = o.uf ? (o.uf.longSource === "published" ? "UF L/day · icodextrin published" : "UF L/day") : "UF L/day";
     const tag = pickable ? "button" : "div";
     return (
       "<li><" + tag + (pickable ? ' type="button"' : "") + ' class="top-item' + (sel && pickable ? " is-sel" : "") + '"' + (pickable ? ' data-pick="' + esc(o.id) + '"' : "") + ">" +
@@ -330,7 +361,7 @@
       '<span class="tn' + (rank.metric === "crcl" ? " lead" : "") + '"><b class="' + (rank.metric === "crcl" ? (o.meets ? "v-ok" : "v-warn") : "") + '">' + fmt(o.crcl, 1) + "</b><i>CrCl L/wk/1.73 m²</i></span>" +
       '<span class="tn uf"><b>' + esc(ufText(o)) + "</b><i>" + esc(ufSub) + ' <em class="exp">experimental</em></i></span></span>' +
       sibTxt +
-      (o.opt && o.opt.mod === "ccpd" && o.opt.dayDwells === 2 ? '<span class="ico-line">No Extraneal variant: the split day dwells are shorter than the labelled 8–16-h long dwell and no icodextrin UF is published for them.</span>' : "") +
+      (o.opt && o.opt.mod === "ccpd" && o.opt.dayDwells === 2 ? '<span class="ico-line">No icodextrin variant: the split day dwells are shorter than the labelled 8–16-h long dwell and no icodextrin UF is published for them.</span>' : "") +
       '<span class="top-foot">' + badge + '<span class="est-mini">model estimate, not measured</span></span></span></' + tag + "></li>"
     );
   }
@@ -339,14 +370,14 @@
     const el = $(listId);
     const note = noteId ? $(noteId) : null;
     if (!rank || !rank.top.length) {
-      el.innerHTML = '<li class="top-empty">Enter body size and transport type to see options.</li>';
+      el.innerHTML = '<li class="top-empty">' + (r && r.blocked ? "Fix the inputs flagged on step 1 to see options." : "Enter body size and transport type to see options.") + "</li>";
       if (note) note.classList.add("hidden");
       return;
     }
     const tgtTxt = rank.metric === "ktv" ? "Kt/V " + fmt(rank.target, 1) : "CrCl " + fmt(rank.target, 0);
     if (note) {
-      if (!rank.anyMeet) { note.textContent = "None of these options reaches the target (" + tgtTxt + "). Showing the 3 highest-clearance options."; note.classList.remove("hidden"); }
-      else if (rank.meetCount < rank.top.length) { note.textContent = "Only " + rank.meetCount + " option" + (rank.meetCount === 1 ? "" : "s") + " reach" + (rank.meetCount === 1 ? "es" : "") + " the target (" + tgtTxt + "); the rest are the highest-clearance options below it."; note.classList.remove("hidden"); }
+      if (!rank.anyMeet) { note.textContent = "No option's estimate reaches your reference value (" + tgtTxt + "). Showing the 3 with the highest estimated clearance."; note.classList.remove("hidden"); }
+      else if (rank.meetCount < rank.top.length) { note.textContent = "Only " + rank.meetCount + " option" + (rank.meetCount === 1 ? "'s estimate reaches" : "s' estimates reach") + " your reference value (" + tgtTxt + "); the rest are the highest-clearance options below it."; note.classList.remove("hidden"); }
       else note.classList.add("hidden");
     }
     el.innerHTML = rank.top.map((o, i) => topItemHtml(o, i, rank, pickable !== false, r)).join("");
@@ -356,7 +387,7 @@
     const bits = [];
     if (F.isNum(r.V)) bits.push(state.sex === "female" ? "Female" : "Male");
     if (F.isNum(r.inp.age)) bits.push(r.inp.age + " y");
-    if (F.isNum(r.htCm)) bits.push(r.inp.ft + " ft " + (r.inp.inch || 0) + " in");
+    if (F.isNum(r.htCm)) bits.push(state.hunit === "cm" ? fmt(r.htCm, 0) + " cm" : r.inp.ft + " ft " + (r.inp.inch || 0) + " in");
     if (F.isNum(r.wtKg)) bits.push(fmt(r.wtKg, 1) + " kg");
     if (F.isNum(r.V)) bits.push("V " + fmt(r.V, 1) + " L");
     if (F.isNum(r.bsa)) bits.push("BSA " + fmt(r.bsa, 2) + " m²");
@@ -367,9 +398,14 @@
     const rb = $("rank-basis");
     const anyRank = r.rankCapd || r.rankCcpd;
     let basis = "";
-    if (!r.ready) basis = "Enter body size and a transport type (or PET numbers) on step 1.";
-    else if (anyRank && anyRank.metric === "ktv") basis = "Ranked by estimated total weekly Kt/V against your target of " + fmt(r.ktvTarget, 2).replace(/0$/, "") + " (CrCl shown alongside)." + (r.basis ? " " + r.basis : "");
-    else basis = "Ranked by weekly CrCl: Kt/V could not be estimated. Reference " + CRCL_TARGET + " L/week/1.73 m² (historical CAPD figure).";
+    if (r.blocked) basis = "Some step 1 inputs are out of range; fix them to see options.";
+    else if (!r.ready) basis = "Enter body size and a transport type (or PET numbers) on step 1.";
+    else if (anyRank && anyRank.metric === "ktv") basis = "Ordered by estimated total weekly Kt/V compared with your reference value of " + fmt(r.ktvTarget, 2).replace(/0$/, "") + " (CrCl shown alongside)." + (r.basis ? " " + r.basis : "");
+    else basis = "Ordered by weekly CrCl: Kt/V could not be estimated. Reference " + CRCL_TARGET + " L/week/1.73 m² (historical CAPD figure).";
+    // App Critic S5: urine without urea is not counted; say so where the options are.
+    $("sum-rkf").classList.toggle("hidden", !(r.ready && r.urineMl > 0 && !r.res));
+    // App Critic N2: a first-time user (nothing entered yet) can try an example patient.
+    $("try-wrap").classList.toggle("hidden", !!r.ready || [r.inp.age, r.inp.ft, r.inp.inch, r.inp.cm, r.inp.wIn].some(F.isNum));
     rb.textContent = basis;
     rb.classList.toggle("warn-note", r.ready && (!!r.typical || (!!anyRank && anyRank.metric === "crcl")));
 
@@ -385,8 +421,8 @@
     const el = $("uf-note");
     if (!r.cat) { el.textContent = "Pick a transport type to see predicted UF."; return; }
     el.innerHTML =
-      "Daily peritoneal UF on the cards comes from an open three-pore model (Rippe; Öberg &amp; Rippe 2017) with the published typical-patient membrane parameters for a " + esc(r.cat.label.toLowerCase()) + " transporter (Akonur 2016). It assumes 1.5% dextrose for exchanges and cycles and 2.5% dextrose for the long dwell, fluid absorption 0.6 mL/min and residual volume 10% of fill (PD Adequest defaults). " +
-      "<b>Experimental:</b> against the published Akonur 2016 predictions it differs by up to about 250 mL per period (RMSE about 110 mL), so it is not validated. Extraneal UF is the published typical value for the long dwell (" + TPM.ICO_PUBLISHED_UF.capd[r.cat.key] + " mL CAPD 9-h; " + TPM.ICO_PUBLISHED_UF.ccpd[r.cat.key] + " mL APD 15-h, also used for 13–14-h day dwells; Akonur 2016 Table 3), not simulated. Midday-exchange options model both day dwells as 2.5% dextrose. UF never changes Kt/V or the ranking.";
+      "Daily peritoneal UF on the cards comes from an open three-pore model (Rippe; Öberg &amp; Rippe 2017) with the published typical-patient membrane parameters for a " + esc(r.cat.label.toLowerCase()) + " transporter (Akonur 2016, PDI 36:79-84). It assumes 1.5% dextrose for exchanges and cycles and 2.5% dextrose for the long dwell, fluid absorption 0.6 mL/min and residual volume 10% of fill (published defaults, Vonesh et al. PDI 1999). " +
+      "<b>Experimental:</b> against the published Akonur 2016 predictions it differs by up to about 250 mL per period (RMSE about 110 mL), so it is not validated. Icodextrin UF is the published typical value for a 2 L long dwell (" + TPM.ICO_PUBLISHED_UF.capd[r.cat.key] + " mL CAPD 9-h; " + TPM.ICO_PUBLISHED_UF.ccpd[r.cat.key] + " mL APD 15-h; Akonur 2016, PDI 36:79-84, Table 3, 350 mL residual volume), not simulated and not adjusted to the fill volume or dwell length shown (8-h CAPD dwell, 13–14-h day dwells, 2.5–3.0 L fills). Midday-exchange options model both day dwells as 2.5% dextrose. UF never changes Kt/V or the step 2 order; it does order the step 4 UF suggestions.";
   }
 
   function renderGrid(r) {
@@ -406,7 +442,7 @@
     body.innerHTML =
       '<h3 class="sub-h">CAPD (8-h overnight)</h3><ul class="gr-list">' + rows("capd") + "</ul>" +
       '<h3 class="sub-h">APD (9-h cycler)</h3><ul class="gr-list">' + rows("ccpd") + "</ul>";
-    setText("grid-src", "Published PD Adequest 2.0 modelling, shown as published, not computed here. Targets: Kt/V ≥ 1.7 and UF ≥ 1 L/day; 1.5%/2.5% dextrose and icodextrin only. Source: " + g.source + ".");
+    setText("grid-src", "Published kinetic modelling, shown as published, not computed here. Targets: Kt/V ≥ 1.7 and UF ≥ 1 L/day; 1.5%/2.5% dextrose and icodextrin only. Source: " + g.source + ".");
   }
 
   function renderOptions(r) {
@@ -428,11 +464,11 @@
         out.push('<div class="op-row grp"><span>' + (grp === "capd" ? "CAPD · 8-h overnight long dwell" : "CCPD · 9, 10 or 11 h on cycler") + "</span></div>");
       }
       const ico = o.longSolution === "icodextrin";
-      const label = ico ? "+ Extraneal long dwell" : o.label.replace(/^(CAPD|CCPD) /, "").replace(", 9 h", "").replace(" + 2.0 L day dwell", " + 2 L day").replace(/ \+ midday exchange \(2 × ([\d.]+) L day dwells, [\d.]+ h each\)/, " + midday 2 × $1 L") + (o.longSolution === "dextrose" ? " · dextrose" : "");
+      const label = ico ? "+ icodextrin long dwell" : o.label.replace(/^(CAPD|CCPD) /, "").replace(", 9 h", "").replace(" + 2.0 L day dwell", " + 2 L day").replace(/ \+ midday exchange \(2 × ([\d.]+) L day dwells, [\d.]+ h each\)/, " + midday 2 × $1 L") + (o.longSolution === "dextrose" ? " · dextrose" : "");
       out.push('<div class="op-row four' + (ico ? " ico" : "") + '"><span class="ol">' + esc(label) + "</span><span>" + kt(o.ktv) + "</span><span>" + fmt(o.crcl, 1) + "</span><span>" + esc(ufText(o)) + "</span></div>");
     });
     el.innerHTML = out.join("");
-    let b = (hidden ? hidden + " regimen" + (hidden === 1 ? "" : "s") + " with a fill above 1.5 L/m² BSA (max " + fmt(F.maxFillL(r.bsa), 2) + " L + 0.05 L) not shown. " : "") + "Weekly totals (renal included when entered). Kt/V green at or above your target, amber below; CrCl in L/week/1.73 m². *UF: experimental three-pore prediction (Extraneal rows: published long-dwell value).";
+    let b = (hidden ? hidden + " regimen" + (hidden === 1 ? "" : "s") + " with a fill above 1.5 L/m² BSA (max " + fmt(F.maxFillL(r.bsa), 2) + " L + 0.05 L) not shown. " : "") + "Weekly totals (renal included when entered). Kt/V green at or above your reference value, amber below; CrCl in L/week/1.73 m². *UF: experimental three-pore prediction (icodextrin rows: published value for 2 L, 9 h/15 h, not adjusted).";
     if (r.basis) b = r.basis + " " + b;
     basis.textContent = b;
   }
@@ -482,7 +518,16 @@
     const id = currentId(r);
     const sig = r.options.map((o) => o.id + (o.overCap ? "!" : "")).join();
     if (sel.dataset.sig !== sig) {
-      sel.innerHTML = r.options.map((o) => '<option value="' + esc(o.id) + '">' + esc(fullName(o) + (o.overCap ? " (above fill cap)" : "")) + "</option>").join("");
+      // App Critic S6: grouped list; the fit is only as good as the closest match.
+      const grpOf = (o) => (o.mod === "capd" ? "CAPD" : "CCPD · " + (o.opt && o.opt.therapyH ? o.opt.therapyH : 9) + " h on cycler");
+      const groups = [];
+      r.options.forEach((o) => {
+        const g = grpOf(o);
+        let G = groups.find((x) => x.g === g);
+        if (!G) groups.push((G = { g, items: [] }));
+        G.items.push(o);
+      });
+      sel.innerHTML = groups.map((G) => '<optgroup label="' + esc(G.g) + '">' + G.items.map((o) => '<option value="' + esc(o.id) + '">' + esc(fullName(o) + (o.overCap ? " (above fill cap)" : "")) + "</option>").join("") + "</optgroup>").join("");
       sel.dataset.sig = sig;
     }
     if (id) sel.value = id;
@@ -518,7 +563,8 @@
     if (F.isNum(m.ktv)) {
       const met = m.meets;
       rows.push(kv("Measured weekly Kt/V", "<b>" + fmt(m.ktv, 2) + "</b>" + (m.source === "collection" ? " (peritoneal " + fmt(m.ktvP, 2) + (F.isNum(m.ktvR) ? " + renal " + fmt(m.ktvR, 2) : "") + ")" : " (as reported)")));
-      rows.push(kv("Target", fmt(r.ktvTarget, 2) + ' <span class="' + (met ? "badge-ok" : "badge-warn") + '">' + (met ? "Met" : "Not met") + "</span>"));
+      rows.push(kv("Reference value", fmt(r.ktvTarget, 2) + ' <span class="' + (met ? "badge-ok" : "badge-warn") + '">' + (met ? "Measured ≥ reference" : "Measured below reference") + "</span>"));
+      if (m.source === "entered" && !F.isNum(L.r ? L.r.ktvR : r.ktvR)) rows.push(kv("Renal Kt/V", "assumed 0 (no 24-h urine with urea entered) — the fitted peritoneal clearance is overstated if the patient has residual function", "flag-text"));
       if (F.isNum(m.crcl)) rows.push(kv("Measured weekly CrCl", fmt(m.crcl, 1) + " L/week/1.73 m²"));
       if (cur) rows.push(kv("Model estimate for " + fullName(cur) + " before these labs", "Kt/V " + fmt(cur.ktv, 2)));
     } else rows.push(kv("Measured weekly Kt/V", "needs 24-h dialysate volume, dialysate urea and serum urea, or a reported Kt/V"));
@@ -548,7 +594,7 @@
       return;
     }
     const nr = L.r;
-    basis.textContent = (nr.basis || "Using the new labs.") + " Ranked by " + (nr.rankCapd && nr.rankCapd.metric === "crcl" ? "weekly CrCl" : "weekly Kt/V") + ".";
+    basis.textContent = (nr.basis || "Using the new labs.") + " Ordered by " + (nr.rankCapd && nr.rankCapd.metric === "crcl" ? "weekly CrCl" : "weekly Kt/V") + " compared with your reference value.";
     const name = (id) => {
       const o = (nr.options || []).concat(r.options || []).find((x) => x.id === id);
       return o ? fullName(o) : id;
@@ -557,14 +603,14 @@
       const parts = [];
       if (df.added.length) parts.push("<b>New:</b> " + df.added.map((id) => esc(name(id))).join("; "));
       if (df.removed.length) parts.push("<b>Dropped:</b> " + df.removed.map((id) => esc(name(id))).join("; "));
-      if (!parts.length) parts.push("Same top 3 as before.");
+      if (!parts.length) parts.push("Same 3 options as before.");
       return '<p class="note diff-line"><span class="diff-h">' + lbl + "</span> " + parts.join(" · ") + "</p>";
     };
     let curTxt = "";
     const curId = currentId(r);
     const before = r.options ? r.options.find((o) => o.id === curId) : null;
     const after = L.curRow;
-    if (before && after) curTxt = '<p class="note diff-line"><span class="diff-h">Current Rx</span> ' + esc(fullName(after)) + ": Kt/V " + fmt(before.ktv, 2) + " → <b>" + fmt(after.ktv, 2) + "</b> (" + (after.meets !== undefined ? "" : "") + (F.isNum(after.ktv) && after.ktv >= nr.ktvTarget - 1e-9 ? "meets" : "below") + " target)</p>";
+    if (before && after) curTxt = '<p class="note diff-line"><span class="diff-h">Current Rx</span> ' + esc(fullName(after)) + ": Kt/V " + fmt(before.ktv, 2) + " → <b>" + fmt(after.ktv, 2) + "</b> (" + (after.meets !== undefined ? "" : "") + (F.isNum(after.ktv) && after.ktv >= nr.ktvTarget - 1e-9 ? "≥" : "below") + " reference value)</p>";
     diff.innerHTML = curTxt + d("CAPD", L.diffCapd) + d("CCPD", L.diffCcpd);
     renderTop("upd-capd", null, nr.rankCapd, nr, false);
     renderTop("upd-ccpd", null, nr.rankCcpd, nr, false);
@@ -572,8 +618,24 @@
   }
 
   // OCR / paste → UNCONFIRMED values
+  // App Critic M4: keep the matched report line and unit for each OCR value.
+  let parsedMeta = {};
+  const UNIT_CHOICES = [["mg/dl", "mg/dL"], ["mmol/l", "mmol/L"], ["µmol/l", "µmol/L"]];
+  function labConflicts() {
+    return LP.unitConflicts(parsedMeta, state.labUnits);
+  }
+  function confirmBlock(k) {
+    const m = parsedMeta[k];
+    if (!m) return "";
+    if (m.needsUnit && !state.labUnits[k]) return "Choose the unit printed on the report before confirming.";
+    const c = labConflicts().find((x) => x[0] === k || x[1] === k);
+    if (c) return "Units differ: " + LP.FIELDS[c[0]] + " and " + LP.FIELDS[c[1]] + " must use the same unit. Convert, then type the value in.";
+    return "";
+  }
   function applyParsed(res) {
     const keys = Object.keys(res.values);
+    parsedMeta = res.values;
+    state.labUnits = {};
     keys.forEach((k) => {
       const id = LAB_IDS[k];
       if (!id) return;
@@ -591,7 +653,11 @@
     const on = unconfirmed.has(k);
     wrap.classList.toggle("unconfirmed", on);
     let b = wrap.querySelector(".confirm-btn");
+    let src = wrap.querySelector(".src-line");
     if (on && !b) {
+      src = document.createElement("div");
+      src.className = "src-line";
+      wrap.appendChild(src);
       b = document.createElement("button");
       b.type = "button";
       b.className = "confirm-btn";
@@ -599,12 +665,35 @@
       b.setAttribute("data-confirm", k);
       wrap.appendChild(b);
     }
-    if (!on && b) b.remove();
+    if (!on) {
+      if (b) b.remove();
+      if (src) src.remove();
+      return;
+    }
+    const m = parsedMeta[k] || {};
+    const block = confirmBlock(k);
+    let html = m.line ? 'From report: “<span class="src-txt">' + esc(m.line) + "</span>”" : "";
+    if (m.needsUnit) {
+      html += '<span class="unit-pick">Unit on report <select data-unitpick="' + esc(k) + '" aria-label="Unit for ' + esc(LP.FIELDS[k]) + '"><option value="">choose…</option>' +
+        UNIT_CHOICES.map((u) => '<option value="' + u[0] + '"' + (state.labUnits[k] === u[0] ? " selected" : "") + ">" + u[1] + "</option>").join("") + "</select></span>";
+    }
+    if (block) html += '<span class="src-block">' + esc(block) + "</span>";
+    src.innerHTML = html;
+    b.disabled = !!block;
   }
+  document.addEventListener("change", (e) => {
+    const sel = e.target.closest && e.target.closest("[data-unitpick]");
+    if (!sel) return;
+    const k = sel.getAttribute("data-unitpick");
+    if (sel.value) state.labUnits[k] = sel.value;
+    else delete state.labUnits[k];
+    Object.keys(LAB_IDS).forEach(markField);
+  });
   document.addEventListener("click", (e) => {
     const b = e.target.closest("[data-confirm]");
     if (!b) return;
     e.preventDefault();
+    if (confirmBlock(b.getAttribute("data-confirm"))) return;
     unconfirmed.delete(b.getAttribute("data-confirm"));
     markField(b.getAttribute("data-confirm"));
     recalc();
@@ -625,9 +714,10 @@
   // Typing in a lab field by hand confirms that field.
   document.addEventListener("input", (e) => {
     const wrap = e.target && e.target.closest && e.target.closest(".lab-field");
-    if (wrap && unconfirmed.has(wrap.dataset.lab)) {
+    if (wrap && unconfirmed.has(wrap.dataset.lab) && e.target.tagName === "INPUT") {
       unconfirmed.delete(wrap.dataset.lab);
-      markField(wrap.dataset.lab);
+      delete parsedMeta[wrap.dataset.lab];
+      Object.keys(LAB_IDS).forEach(markField);
     }
   }, true);
 
@@ -648,6 +738,8 @@
     state.calib = L.fit ? L.fit : anyKey(labs, ["dpcr", "dpu", "petDrain"]) ? null : state.calib;
     Object.values(LAB_IDS).forEach((id) => ($(id).value = ""));
     unconfirmed.clear();
+    parsedMeta = {};
+    state.labUnits = {};
     Object.keys(LAB_IDS).forEach(markField);
     state.parseWarnings = [];
     $("scan-text").value = "";
@@ -698,8 +790,8 @@
               '<div class="ts-n"><span>' + fmt(s.cappedFillL, 1) + " L would exceed 1.5 L/m² BSA (max " + fmt(F.maxFillL(R.bsa), 2) + " L + 0.05 L). Not suggested.</span></div></div>"
             : '<div class="ts-row"><div class="ts-h"><b>' + esc(s.label) + "</b> → " + esc(fullName(s.row)) + "</div>" +
             '<div class="ts-n"><span>Kt/V ' + fmt(s.row.ktv, 2) + " (" + sign(s.dKtv, 2) + ")</span><span>CrCl " + fmt(s.row.crcl, 1) + " (" + sign(s.dCrcl, 1) + ")</span><span>UF " + ufText(s.row) + " L/d (" + sign(F.isNum(s.dUfMl) ? s.dUfMl / 1000 : null, 2) + ")*</span></div>" +
-            (s.meetsKtv === true ? '<span class="badge-ok">Meets Kt/V target</span>' : s.meetsKtv === false ? '<span class="badge-warn">Below Kt/V target</span>' : "") + "</div>").join("") +
-          '</div><p class="note">Same model and assumptions as step 2, one change at a time from the current prescription. *UF is the experimental three-pore prediction (Extraneal: published long-dwell value). Model estimates, not measured; confirm with a 24-h collection.</p>'
+            (s.meetsKtv === true ? refBadge(true, "ktv", R.ktvTarget) : s.meetsKtv === false ? refBadge(false, "ktv", R.ktvTarget) : "") + "</div>").join("") +
+          '</div><p class="note">Same model and assumptions as step 2, one change at a time from the current prescription. *UF is the experimental three-pore prediction (icodextrin: published value for 2 L, 9 h/15 h, not adjusted). ' + (problem === "uf" ? "Suggestions for UF are ordered by the experimental UF model. " : "Ordered by the estimated change in clearance. ") + 'Model estimates, not measured; confirm with a 24-h collection.</p>'
         : '<p class="note">No one-step change in the candidate set (CAPD up to 5 × 3.0 L; CCPD up to 5 cycles × 3.0 L, 11 h), within the fill cap.</p>';
     }
     $("ts-guide").innerHTML = W.GUIDANCE[problem].map((g) => '<blockquote class="gq"><p>“' + esc(g.text) + '”</p><cite>' + esc(g.src) + "</cite></blockquote>").join("");
@@ -741,7 +833,7 @@
         <p class="eq">High 0.12–0.25 · High-average 0.26–0.38 · Low-average 0.39–0.49 · Low 0.50–0.61</p>
         <p>Category follows D/P creatinine; D/D₀ is supportive and discordance is flagged.</p>
         <h4>Transport type only</h4>
-        <p>Picking a type without PET numbers uses typical values for that type: the midpoint of the Twardowski D/P creatinine band (Low 0.415 · Low-average 0.57 · High-average 0.73 · High 0.925) and the midpoint of the 4-h drain volume listed for the same class (Low 2,989 · Low-average 2,510 · High-average 2,226 · High 1,832 mL; Twardowski, <em>Semin Dial.</em> 1990;3:141-142). No published typical D/P urea by type was found. Instead Kt/V uses the published typical-patient urea MTAC for the type (PD Adequest 2.0 estimates, TARGET cohort; Akonur A et al. <em>Perit Dial Int.</em> 2016;36:79-84, Table 1: High 27.71 · High-average 23.14 · Low-average 18.40 · Low 15.92 mL/min) and creatinine MTAC (Akonur A et al. <em>Perit Dial Int.</em> 2013;33:646-654, Table 1: High 19.15 · High-average 11.92 · Low-average 8.60 mL/min; no Low value, so Low uses the band midpoint) in the same Garred model. This is a typical-patient estimate from published Adequest-derived parameters, not measured. Entered PET numbers always win.</p>
+        <p>Picking a type without PET numbers uses typical values for that type: the midpoint of the Twardowski D/P creatinine band (Low 0.415 · Low-average 0.57 · High-average 0.73 · High 0.925) and the midpoint of the 4-h drain volume listed for the same class (Low 2,989 · Low-average 2,510 · High-average 2,226 · High 1,832 mL; Twardowski, <em>Semin Dial.</em> 1990;3:141-142). No published typical D/P urea by type was found. Instead Kt/V uses the published typical-patient urea MTAC for the type (TARGET cohort, typical patients with BSA 1.7–2.0 m²; Akonur A et al. <em>Perit Dial Int.</em> 2016;36:79-84, Table 1: High 27.71 · High-average 23.14 · Low-average 18.40 · Low 15.92 mL/min) and creatinine MTAC (Akonur A et al. <em>Perit Dial Int.</em> 2013;33:646-654, Table 1: High 19.15 · High-average 11.92 · Low-average 8.60 mL/min; no Low value, so Low uses the band midpoint) in the same Garred model. This is a typical-patient estimate from published parameters (Akonur et al. 2016), not measured. Outside BSA 1.7–2.0 m² the app warns that the estimate is less reliable. Entered PET numbers always win.</p>
         <h4>UF screen (ISPD 2021, GRADE 1B)</h4>
         <p>Insufficient UF if 4-h net UF &lt; 400 mL on 4.25% dextrose, or &lt; 100 mL on 2.5% dextrose.</p>
         <h4>Sources</h4>
@@ -769,28 +861,32 @@
         <h4>Sources</h4>
         <p>Garred LJ, Canaud B, Farrell PC. <em>ASAIO J.</em> 1983;6:131-137. Equation as written in Asghar RB et al. <em>Kidney Int.</em> 2003;64:1911-1915. Waniewski J et al. <em>Blood Purif.</em> 1991;9:129-141: “The differences between the simple models were small from the clinical point of view for urea, creatinine”.</p>
         <h4>What it does not do</h4>
-        <ul><li>It is not a validated prescribing model and is not a copy of any commercial program. It cites published parameters derived with PD Adequest 2.0 (Akonur 2013/2016).</li>
+        <ul><li>It is not a validated prescribing model and is not a copy of any commercial program. It cites published parameters from Akonur 2013 (PDI 33:646-654) and Akonur 2016 (PDI 36:79-84).</li>
         <li>Kt/V uses short-dwell UF 0 and the long-dwell UF you enter; the predicted (experimental) UF is shown separately and never changes Kt/V.</li>
+        <li>Two simplifications pull in opposite directions: short-dwell net UF counted as 0 underestimates clearance; CCPD fill/drain time counted as 0 overestimates it.</li>
+        <li>Check against Akonur 2013 (PDI 33:646-654), standard APD (assumed here as 5 × 2 L over 10 h plus a 2 L 14-h day dwell, typical TBW 40.6 / 41.3 / 42.3 L): this model gives weekly Kt/V 1.74 / 1.61 / 1.44 (High / High-average / Low-average) against a published average of about 1.67, about 4% lower overall. The App Critic review found about −5%. A comparison, not a validation.</li>
+        <li>A reported total Kt/V entered without a 24-h urine (urine and serum urea) is fitted with renal Kt/V assumed 0; the app says so on step 3.</li>
         <li>MTAC is held constant: no fill-volume, posture or recruitment effect, no residual volume, no lymphatic absorption.</li>
         <li>No middle-molecule or sodium estimate.</li></ul>`,
     },
     options: {
-      title: "Options compared and how they are ranked",
+      title: "Options compared and how they are ordered",
       html: `<h4>Candidate set</h4>
         <p class="eq">CAPD 3, 4 or 5 exchanges × 2.0, 2.5 or 3.0 L, 8-h overnight long dwell<br>
         CCPD 4 or 5 cycles × 2.0, 2.5 or 3.0 L over 9, 10 or 11 h, with a dry day, a 2.0 L day dwell (24 h − cycler time), or a manual midday exchange (last fill + one exchange, 2 × 2.0 L or 2 × 2.5 L, the day split equally: 7.5 / 7 / 6.5 h each)<br>
-        Each option with one long dwell also with an Extraneal long dwell (not the split midday dwells)<br>
+        Each option with one long dwell also with an icodextrin 7.5% long dwell (not the split midday dwells)<br>
         Fill cap: any option with a fill (exchange, night fill, day dwell or midday exchange) above 1.5 L/m² BSA × Mosteller BSA + 0.05 L is left out</p>
         <h4>Fill cap (1.5 L/m² BSA)</h4>
         <p>Teitelbaum I. Crafting the prescription for patients starting peritoneal dialysis. <em>Clin J Am Soc Nephrol.</em> 2018;13(3):483-485 (PMC5967680): “Patients are generally able to tolerate intraperitoneal volumes of 1.25–1.5 L/m2 BSA.” Auguste BL, Bargman JM. Peritoneal dialysis prescription and adequacy in clinical practice: Core Curriculum 2023. <em>Am J Kidney Dis.</em> 2023;81(1):100-109: “an IPP of greater than 18 cm of H2O is usually associated with discomfort.” ISPD 2020 (Brown EA et al.) gives no numeric fill limit. The 0.05 L tolerance allows for rounding (e.g. BSA 1.99 m² → 2.99 L, so 3.0 L is allowed). Individualize to comfort and intraperitoneal pressure.</p>
-        <h4>Ranking</h4>
-        <p>Metric: total weekly Kt/V (peritoneal + renal) when a D/P urea is available; otherwise weekly CrCl (L/week/1.73 m²). Target: Kt/V ≥ 1.7 by default (KDOQI 2006 minimum), or CrCl ≥ 60 (historical CANUSA-based CAPD figure, also used for CCPD here).</p>
-        <p>Options meeting the target come first, least burdensome first. CAPD: fewer exchanges, then smaller fills. CCPD (within the fill cap): no midday exchange before a midday exchange, then dry day before a day dwell, then shorter cycler time (9 &lt; 10 &lt; 11 h), then fewer cycles, then smaller night fills, then smaller day dwells. If fewer than 3 meet it, the rest are the highest-clearance options below target. The dextrose and Extraneal versions of a regimen count once (dextrose unless only Extraneal meets the target).</p>
+        <h4>Order</h4>
+        <p>Metric: total weekly Kt/V (peritoneal + renal) when a D/P urea is available; otherwise weekly CrCl (L/week/1.73 m²). Reference value: Kt/V 1.7 by default (KDOQI 2006 minimum), or CrCl 60 (historical CANUSA-based CAPD figure, also used for CCPD here). The reference value is for comparison only: ISPD 2020 sets no clearance target that guarantees adequate dialysis (see About targets). Options are a comparison, not a recommendation.</p>
+        <p>Options whose estimate reaches the reference value come first, least burdensome first. CAPD: fewer exchanges, then smaller fills. CCPD (within the fill cap): no midday exchange before a midday exchange, then dry day before a day dwell, then shorter cycler time (9 &lt; 10 &lt; 11 h), then fewer cycles, then smaller night fills, then smaller day dwells. If fewer than 3 reach it, the rest are the highest-clearance options below it. The dextrose and icodextrin versions of a regimen count once (dextrose unless only icodextrin reaches the reference value).</p>
         <h4>Sources</h4>
-        <p>Handbook of Dialysis, 4th ed. (Daugirdas, Blake, Ing 2006), as reproduced in ISPD teaching slides: “4 x 2L ... is the typical prescription. 4 x 2.5L in larger patients with small RRF or anuric patients who weigh &gt;75 kg. 3 x 2L in smaller patients or in patients with good RRF.” CCPD: “3 to 5 cycles per 9 hour cycling session”, “Cycler dwell volumes - 2 to 2.5 L”, “Can start with NIPD if patient has good residual volume.” ADEMEX (Paniagua R et al. <em>J Am Soc Nephrol.</em> 2002;13:1307-1320) control arm: “four daily exchanges with 2 L”. Core Curriculum 2023 (<em>Am J Kidney Dis</em>): no more than 5 exchanges per night on the cycler. 3.0 L fills and 5 CAPD exchanges go beyond these quotes and are awaiting Dr D’s review. CCPD midday exchange: PD Adequest-modelled APD prescriptions with “2x2L” day dwells (last fill plus one daytime exchange; Akonur A et al. <em>Perit Dial Int.</em> 2016;36:188-195, Figs 4–5) and the “midday exchange” option in Akonur A et al. <em>Perit Dial Int.</em> 2013 (Table 3). 10- and 11-h cycler times, 3.0 L cycler fills and the equal day split are judgments awaiting Dr D’s review.</p>
-        <h4>Extraneal (icodextrin 7.5%)</h4>
-        <p>Used once a day for the long dwell (CAPD overnight, CCPD day dwell). For Kt/V the Extraneal dwell is the same diffusion dwell (differs only if you enter a measured long-dwell UF). Its UF on the cards is the published typical-patient value by transport type (Akonur 2016 Table 3), not simulated.</p>
-        <h4>Caveats</h4><p>Same Garred model and limits as the estimate. For Kt/V, short-dwell net UF counts as 0. CCPD fill/drain time counts as 0, which overstates dwell time. The 8-h CAPD overnight dwell is the low end of the usual 8–10 h. The Extraneal UF for 10- and 11-h cycler days (13–14-h day dwell) is the published 15-h value. Burden ordering is a judgment, not a published rule.</p>`,
+        <p>Handbook of Dialysis, 4th ed. (Daugirdas, Blake, Ing 2006), as reproduced in ISPD teaching slides: “4 x 2L ... is the typical prescription. 4 x 2.5L in larger patients with small RRF or anuric patients who weigh &gt;75 kg. 3 x 2L in smaller patients or in patients with good RRF.” CCPD: “3 to 5 cycles per 9 hour cycling session”, “Cycler dwell volumes - 2 to 2.5 L”, “Can start with NIPD if patient has good residual volume.” ADEMEX (Paniagua R et al. <em>J Am Soc Nephrol.</em> 2002;13:1307-1320) control arm: “four daily exchanges with 2 L”. Core Curriculum 2023 (<em>Am J Kidney Dis</em>): no more than 5 exchanges per night on the cycler. 3.0 L fills and 5 CAPD exchanges go beyond these quotes and are awaiting Dr D’s review. CCPD midday exchange: published modelled APD prescriptions with “2x2L” day dwells (last fill plus one daytime exchange; Akonur A et al. <em>Perit Dial Int.</em> 2016;36:188-195, Figs 4–5) and the “midday exchange” option in Akonur A et al. <em>Perit Dial Int.</em> 2013 (Table 3). 10- and 11-h cycler times, 3.0 L cycler fills and the equal day split are judgments awaiting Dr D’s review.</p>
+        <h4>Icodextrin 7.5% (e.g., Extraneal®)</h4>
+        <p>Used once a day for the long dwell (CAPD overnight, CCPD day dwell). For Kt/V the icodextrin dwell is the same diffusion dwell (differs only if you enter a measured long-dwell UF). Its UF on the cards is the published typical-patient value by transport type (Akonur 2016, PDI 36:79-84, Table 3: 2 L fill, 9-h CAPD / 15-h APD dwell, 350 mL residual volume), not simulated and not adjusted to the regimen.</p>
+        <p class="note">PD Adequest and Extraneal are trademarks of Baxter International Inc.; PD Buddy is not affiliated with or endorsed by Baxter.</p>
+        <h4>Caveats</h4><p>Same Garred model and limits as the estimate. For Kt/V, short-dwell net UF counts as 0. CCPD fill/drain time counts as 0, which overstates dwell time. The 8-h CAPD overnight dwell is the low end of the usual 8–10 h. The icodextrin UF for 8-h CAPD dwells, 2.5–3.0 L fills and 13–14-h day dwells is the published 2 L, 9-h / 15-h value. Burden ordering is a judgment, not a published rule.</p>`,
     },
     uf: {
       title: "Predicted UF (experimental)",
@@ -798,19 +894,20 @@
         <p>Open three-pore model written from published equations (Rippe B et al. <em>Kidney Int.</em> 1991;40:315-325; Öberg CM, Rippe B. <em>Kidney Int Rep.</em> 2017;2:943-951; Bergling K, Lund University thesis 2023). Water crosses aquaporins (2%), small pores (90%) and large pores (8%) of LpS, driven by ΔP, protein oncotic pressure and the crystalloid osmotic gradient; glucose, urea and sodium follow the Patlak equation; lymphatic/fluid absorption is constant.</p>
         <p class="eq">J<sub>v,i</sub> = α<sub>i</sub>·LpS·[ΔP − σ<sub>prot,i</sub>·Δπ − RT Σ φσ<sub>i</sub>(C<sub>P</sub> − C<sub>D</sub>)]<br>dV/dt = ΣJ<sub>v,i</sub> − L<br>J<sub>s</sub> = J<sub>v,S</sub>(1−σ)(C<sub>P</sub> − C<sub>D</sub>e<sup>−Pe</sup>)/(1 − e<sup>−Pe</sup>)</p>
         <h4>Parameters</h4>
-        <p>Per transport type LpS (LPA 0.0554–0.0575 mL/min/mmHg), A0/Δx and glucose MTAC: Akonur 2016 Table 1. σ glucose 0.028 / 0.001 / 1 and σ albumin 0.95 / 0.085 / 1 (small / large / aquaporin): Rippe B, Davies S. <em>Perit Dial Int.</em> 2011;31:249-258. Δπ 22 mmHg, dialysate Na 132 mmol/L, φ 0.93, plasma urea 20 mmol/L and glucose 6.5 mmol/L: Öberg &amp; Rippe 2017. ΔP 8 mmHg (“about 8 or 9 mmHg”): Bergling 2023. Time-dependent MTAC [1 + 0.66·e<sup>−0.02t</sup>]: Vonesh 1999 eq. A7. Fluid absorption 0.6 mL/min and residual volume 10% of fill: PD Adequest 2.0 defaults (Vonesh EF et al. <em>Perit Dial Int.</em> 1999;19:556-571).</p>
+        <p>Per transport type LpS (LPA 0.0554–0.0575 mL/min/mmHg), A0/Δx and glucose MTAC: Akonur 2016 (PDI 36:79-84) Table 1. σ glucose 0.028 / 0.001 / 1 and σ albumin 0.95 / 0.085 / 1 (small / large / aquaporin): Rippe B, Davies S. <em>Perit Dial Int.</em> 2011;31:249-258. Δπ 22 mmHg, dialysate Na 132 mmol/L, φ 0.93, plasma urea 20 mmol/L and glucose 6.5 mmol/L: Öberg &amp; Rippe 2017. ΔP 8 mmHg (“about 8 or 9 mmHg”): Bergling 2023. Time-dependent MTAC [1 + 0.66·e<sup>−0.02t</sup>]: Vonesh 1999 eq. A7. Fluid absorption 0.6 mL/min and residual volume 10% of fill: published defaults (Vonesh EF et al. <em>Perit Dial Int.</em> 1999;19:556-571).</p>
         <h4>Validation</h4>
-        <p>Against the published PD Adequest-based predictions in Akonur 2016 Tables 3–4 (28 glucose cells, 2 L, residual 350 mL): RMSE about 111 mL, largest error about 245 mL (High transporter, 15-h 2.27% day dwell), and the order across transport types matches in every row. That is not close enough to call validated, so UF is labelled experimental and never changes Kt/V or the ranking.</p>
-        <h4>Extraneal</h4><p>Not simulated (icodextrin fraction data are not published). Long-dwell UF is the published value: CAPD 9-h H 388 · HA 386 · LA 382 · L 389 mL; APD 15-h H 465 · HA 488 · LA 501 · L 524 mL (Akonur 2016 Table 3, 2 L fill). The app’s CAPD long dwell is 8 h.</p>`,
+        <p>Against the published three-pore predictions in Akonur 2016 (PDI 36:79-84) Tables 3–4 (28 glucose cells, 2 L, residual 350 mL): RMSE about 111 mL, largest error about 245 mL (High transporter, 15-h 2.27% day dwell), and the order across transport types matches in every row. That is not close enough to call validated, so UF is labelled experimental and never changes Kt/V or the step 2 order. It does order the step 4 suggestions when the problem is UF.</p>
+        <h4>Icodextrin 7.5%</h4><p>Not simulated (icodextrin fraction data are not published). Long-dwell UF is the published value: CAPD 9-h H 388 · HA 386 · LA 382 · L 389 mL; APD 15-h H 465 · HA 488 · LA 501 · L 524 mL (Akonur 2016, PDI 36:79-84, Table 3, 2 L fill, 350 mL residual volume). The app’s CAPD long dwell is 8 h, and fills of 2.5–3.0 L are not adjusted.</p>`,
     },
     grid: {
-      title: "Published Adequest prescription grid",
+      title: "Published prescription grid (Akonur et al. 2016)",
       html: `<h4>What it is</h4>
-        <p>Feasible prescriptions found by PD Adequest 2.0 modelling of TARGET-cohort patients, by transport type × urea volume band (V1 &lt; 34 L, V2 34 to &lt; 42 L, V3 ≥ 42 L) × residual urea clearance (&lt; 2 or ≥ 2 mL/min). Targets: weekly urea Kt/V 1.7 and 1 L daily UF; only 1.5%/2.5% dextrose and icodextrin; CAPD 8-h overnight exchange; APD 9-h cycler time.</p>
+        <p>Feasible prescriptions found by the authors’ kinetic modelling of TARGET-cohort patients, by transport type × urea volume band (V1 &lt; 34 L, V2 34 to &lt; 42 L, V3 ≥ 42 L) × residual urea clearance (&lt; 2 or ≥ 2 mL/min). Targets: weekly urea Kt/V 1.7 and 1 L daily UF; only 1.5%/2.5% dextrose and icodextrin; CAPD 8-h overnight exchange; APD 9-h cycler time.</p>
         <h4>Sources</h4>
-        <p>Akonur A, Firanek C, Gellens M, Hutchcraft A, Kathuria P, Sloand JA. Volume-based peritoneal dialysis prescription guide to achieve adequacy targets. <em>Perit Dial Int.</em> 2016;36:188-195, Figures 4–5. The same grid is in the Baxter PD Prescription Management Quick Reference Guide, pp. 10–11.</p>
+        <p>Akonur A, Firanek C, Gellens M, Hutchcraft A, Kathuria P, Sloand JA. Volume-based peritoneal dialysis prescription guide to achieve adequacy targets. <em>Perit Dial Int.</em> 2016;36:188-195, Figures 4–5. Cited from the journal figures only.</p>
+        <p class="note">PD Adequest and Extraneal are trademarks of Baxter International Inc.; PD Buddy is not affiliated with or endorsed by Baxter.</p>
         <h4>Verification</h4>
-        <p>Transcribed from the paper’s figures and checked cell by cell against the text and colour squares of the guide. 9 rows differ or lack a colour square in the guide; they are marked “Unverified” with both readings. The paper’s reading is shown.</p>`,
+        <p>Transcribed from the paper’s figures and checked cell by cell against a second published version of the grid. 9 rows differ or could not be confirmed; they are marked “Unverified”. The paper’s reading is shown.</p>`,
     },
     labs: {
       title: "Labs and the loop",
@@ -826,7 +923,7 @@
       html: `<h4>On this device only</h4>
         <p>Text recognition runs in your browser with Tesseract.js 5.1.1 (Apache-2.0) and the tessdata_fast English model (Apache-2.0), bundled with the app (about 10 MB, loaded only on first scan). No upload, no network call to any other server, nothing saved: the photo and text are discarded after reading.</p>
         <h4>Confirm every value</h4>
-        <p>The reader recognises labels such as D/P creatinine, D/P urea, dialysate / urine / serum urea and creatinine, volumes and Kt/V. Values found are highlighted and are not used until you tap Confirm (or type over them). Check units: dialysate, urine and serum must use the same units.</p>`,
+        <p>The reader recognises labels such as D/P creatinine, D/P urea, dialysate / urine / serum urea and creatinine, volumes and Kt/V. Values found are highlighted and are not used until you tap Confirm (or type over them). Each highlighted value shows the report line it came from. Reference ranges and durations such as “24 h” are skipped, and “2,350” is read as 2350. A concentration printed without a unit needs a unit chosen first, and Confirm stays blocked while dialysate or urine and serum units differ: convert, then type the value in.</p>`,
     },
     targets: {
       title: "Targets",
@@ -880,7 +977,7 @@
       if (!t || t === rx.title) return;
       const i = t.indexOf(":");
       if (i < 0) {
-        bits.push('<div class="' + (t === rx.footer || /^Estimated from typical/.test(t) ? "rx-note" : "rx-section") + '">' + esc(t) + "</div>");
+        bits.push('<div class="' + (t === rx.draftLine ? "rx-draft" : t === rx.footer || /^Estimated from typical/.test(t) ? "rx-note" : "rx-section") + '">' + esc(t) + "</div>");
         return;
       }
       const v = t.slice(i + 1).trim();
@@ -902,6 +999,33 @@
   });
   $("rx-print").addEventListener("click", () => window.print());
 
+  // App Critic M3: "Did you mean 0.70?" for D/P entered as a percentage.
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest && e.target.closest("[data-dpfix]");
+    if (!b) return;
+    $(b.getAttribute("data-dpfix") === "dpcr" ? "pet-dpcr" : "pet-dpu").value = Number(b.getAttribute("data-v")).toFixed(2);
+    recalc();
+  });
+  // App Critic S5: jump to the residual-function inputs.
+  $("go-rkf").addEventListener("click", () => {
+    showStep(1);
+    $("rkf-details").open = true;
+    $("rkf-details").scrollIntoView && $("rkf-details").scrollIntoView({ block: "start" });
+    $("l-uu").focus();
+  });
+  // App Critic N2: a sample adult so a first-time user can see the output. Not a real patient.
+  $("try-example").addEventListener("click", () => {
+    const pick = (g, attr, v) => { const c = $(g).querySelector('[data-' + attr + '="' + v + '"]'); if (c) c.click(); };
+    pick("p-sex", "sex", "male");
+    pick("p-hunit", "hunit", "ftin");
+    pick("p-wunit", "wunit", "kg");
+    $("p-age").value = "55"; $("p-ft").value = "5"; $("p-in").value = "10"; $("p-wt").value = "80";
+    pick("pet-type", "ptype", "high-average");
+    $("l-uvol").value = "500";
+    recalc();
+    showStep(2);
+  });
+
 
   document.addEventListener("input", (e) => {
     if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") && e.target.id !== "scan-text") recalc();
@@ -910,6 +1034,16 @@
   /* ── steps ── */
   const NEXT_LABEL = { 1: "Start prescription", 2: "Check adequacy", 3: "Troubleshoot" };
   function canLeaveStep(n) {
+    if (n === 1 && last.inputErrors && last.inputErrors.length) {
+      setText("p-msg", last.inputErrors.map((e) => e.msg).join(" "));
+      $("p-msg").classList.add("warn-text");
+      $("patient-card").scrollIntoView && $("patient-card").scrollIntoView({ block: "start" });
+      return false;
+    }
+    if (n === 1 && last.dpErrors && last.dpErrors.length) {
+      $("pet-card").scrollIntoView && $("pet-card").scrollIntoView({ block: "start" });
+      return false;
+    }
     if (n === 1 && !(F.isNum(last.V) && F.isNum(last.bsa))) {
       setText("p-msg", "Enter age, height and weight to continue.");
       $("p-msg").classList.add("warn-text");

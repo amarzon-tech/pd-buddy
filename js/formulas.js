@@ -167,7 +167,10 @@
     "low-average": Object.freeze({ urea: 18.4, cr: 8.6 }),
     low: Object.freeze({ urea: 15.92, cr: null }),
   });
-  const TYPICAL_LABEL = "typical-patient estimate from published Adequest-derived parameters, not measured";
+  // 0.4.3 (App Critic M7, approved by Dr D): no product name in the UI wording.
+  const TYPICAL_LABEL = "typical-patient estimate from published parameters (Akonur et al. 2016), not measured";
+  /** Akonur 2016 (PDI 36:79-84) Table 1: "typical patients with BSA between 1.7 and 2.0 m²". */
+  const TYPICAL_BSA_RANGE = Object.freeze([1.7, 2.0]);
   const PET_DRAIN_BANDS_ML = Object.freeze({
     low: [2651, 3326],
     "low-average": [2369, 2650],
@@ -193,6 +196,40 @@
 
   /* Height and weight unit conversion (exact by definition:
    * 1 in = 2.54 cm; 1 lb = 0.45359237 kg). */
+  /* ═══════════════════════════════════════════════════════════════════════
+   * Input checks (0.4.3, App Critic M2/M3, approved by Dr D). Only hard blocks
+   * for impossible or out-of-scope entries; no clinical plausibility ranges
+   * (those are Dr D's call and are not set here).
+   *  age < 18: Watson is an adult equation (KDOQI 2006 CPR 2.6 "in adults").
+   *  feet > 8 or inches ≥ 12: not a height in ft + in (e.g. cm typed into feet).
+   *  weight ≤ 0, height ≤ 0.
+   *  D/P ≥ 1.0: the Garred model needs D/P < 1. A value > 1.5 is read as a
+   *  percent slip and the /100 value is offered ("Did you mean 0.70?").
+   * ═══════════════════════════════════════════════════════════════════════ */
+  function checkPatient(o) {
+    const errors = [];
+    if (isNum(o.age) && o.age < 18) errors.push({ field: "age", msg: "Adults only (18 years or older): the Watson volume equation is for adults." });
+    if (o.hunit === "cm") {
+      if (isNum(o.cm) && o.cm <= 0) errors.push({ field: "cm", msg: "Height must be more than 0 cm." });
+    } else {
+      if (isNum(o.ft) && (o.ft > 8 || o.ft < 0)) errors.push({ field: "ft", msg: "Feet must be between 0 and 8. Entering centimetres? Switch height to cm." });
+      if (isNum(o.inch) && (o.inch >= 12 || o.inch < 0)) errors.push({ field: "inch", msg: "Inches must be 0 to 11.9." });
+    }
+    if (isNum(o.weight) && o.weight <= 0) errors.push({ field: "weight", msg: "Weight must be more than 0." });
+    return errors;
+  }
+  function checkDp(x, label) {
+    if (!isNum(x)) return null;
+    if (x <= 0) return { block: true, msg: label + " must be more than 0." };
+    if (x > 1.5) {
+      const s = x / 100;
+      return { block: true, suggest: s < 1 ? Math.round(s * 100) / 100 : null, msg: label + " " + x + " is not a ratio." + (s < 1 ? " Did you mean " + (Math.round(s * 100) / 100).toFixed(2) + "?" : "") };
+    }
+    if (x >= 1.1) return { block: true, msg: label + " " + x + " is 1.1 or more; check the value (a D/P ratio is below 1)." };
+    if (x >= 1.0) return { block: true, msg: label + " " + x + " is 1 or more. The Garred diffusion model needs D/P below 1, so no MTAC can be fitted; recheck the value or pick the transport type instead." };
+    return null;
+  }
+
   function ftInToCm(ft, inch) {
     const f = isNum(ft) ? ft : 0;
     const i = isNum(inch) ? inch : 0;
@@ -701,6 +738,9 @@
     PET_DRAIN_BANDS_ML,
     ADEQUEST_TYPICAL_MTAC,
     TYPICAL_LABEL,
+    TYPICAL_BSA_RANGE,
+    checkPatient,
+    checkDp,
     typicalPet,
     fitMtacToClearance,
     ftInToCm,

@@ -1,5 +1,5 @@
 /**
- * Workflow tests: type-only Kt/V from published Adequest-derived MTACs (option 1),
+ * Workflow tests: type-only Kt/V from published typical MTACs (Akonur 2016) (option 1),
  * prescription grid look-up (option 3), lab loop (measured adequacy, MTAC fit,
  * diff), troubleshooting and cited guidance.
  * Run: node tests/workflow.test.js
@@ -28,7 +28,7 @@ section("Option 1: published typical MTACs (Akonur 2016 / 2013)");
   eq(M["low-average"].cr, 8.6, "creatinine MTAC LA 8.60");
   eq(M.low.cr, null, "no published Low creatinine MTAC");
   eq(F.typicalPet("low").mtacCr, null, "typicalPet(low) has no creatinine MTAC → midpoint method");
-  eq(F.TYPICAL_LABEL, "typical-patient estimate from published Adequest-derived parameters, not measured", "label wording");
+  eq(F.TYPICAL_LABEL, "typical-patient estimate from published parameters (Akonur et al. 2016), not measured", "label wording");
   // Type-only example patient → Kt/V available → ranked by Kt/V
   const typ = F.typicalPet("high-average");
   const rows = F.candidateOptions({ mtacUrea: typ.mtacUrea, mtacCr: typ.mtacCr, V, bsa, ktvRenal: 0, rkfLDay: 0 });
