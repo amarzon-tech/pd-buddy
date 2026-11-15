@@ -1,0 +1,19 @@
+{
+  "name": "pd-buddy",
+  "version": "1.0.0",
+  "description": "Draft educational peritoneal dialysis prescribing tool for nephrologists",
+  "scripts": {
+    "ios:sync": "rm -rf www && mkdir -p www && cp -R index.html privacy.html support.html manifest.json sw.js CONTENT_REVIEW.md css js icons vendor www/ && npx cap sync ios",
+    "ios:open": "npx cap open ios"
+  },
+  "keywords": [],
+  "author": "Wellness Tech LLC",
+  "license": "UNLICENSED",
+  "private": true,
+  "type": "commonjs",
+  "dependencies": {
+    "@capacitor/cli": "8.5.3",
+    "@capacitor/core": "8.5.3",
+    "@capacitor/ios": "8.5.3"
+  }
+}

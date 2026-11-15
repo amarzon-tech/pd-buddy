@@ -1,0 +1,573 @@
+/* CRRT Rx (standalone) — additions on top of the shared styles.css. */
+
+/* Bigger tap targets and simpler data entry */
+:root { --field-h: 56px; }
+.field-control input { font-size: 20px; }
+.chips.big .chip { min-height: 48px; padding: 10px 16px; font-size: 15px; }
+.unit-pill.btn { min-height: 40px; min-width: 64px; }
+.about-btn { min-height: 36px; padding: 6px 12px; }
+.grid-2.simple, .grid-3.simple { gap: 12px; }
+@media (max-width: 520px) {
+  .grid-3.simple { grid-template-columns: 1fr 1fr; }
+}
+
+.tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-transform: none;
+  background: var(--teal-soft);
+  color: var(--teal-deep);
+  vertical-align: 1px;
+}
+[data-theme="dark"] .tag { color: var(--teal-mid); }
+.tag.req { background: var(--amber-bg); color: var(--amber-ink); }
+.h2-sub {
+  margin-left: 6px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--ink-tertiary);
+  opacity: 0.85;
+}
+
+/* Section jump links */
+.jump {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px 0 4px;
+  scrollbar-width: none;
+}
+.jump::-webkit-scrollbar { display: none; }
+.jump a {
+  flex: none;
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--hairline-strong);
+  color: var(--ink-secondary);
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+}
+.jump a.jump-cit {
+  background: linear-gradient(135deg, #fff1d6, #ffe3b8);
+  color: #6b3500;
+  border-color: rgba(154, 77, 8, 0.25);
+}
+[data-theme="dark"] .jump a.jump-cit { background: var(--amber-bg); color: var(--amber-ink); }
+html { scroll-behavior: smooth; scroll-padding-top: 12px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+/* Live rate list in the Dose card */
+.rates {
+  margin-top: 16px;
+  border-radius: 16px;
+  background: linear-gradient(160deg, var(--teal-soft), var(--bg-sunken));
+  padding: 6px 14px;
+}
+.rate {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--hairline);
+}
+.rate:last-child { border-bottom: 0; }
+.rate .rk { font-size: 14.5px; color: var(--ink-secondary); font-weight: 600; }
+.rate .rv { font-size: 19px; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.rate:first-child .rv { color: var(--teal-deep); font-size: 22px; }
+[data-theme="dark"] .rate:first-child .rv { color: var(--teal-mid); }
+.rate.dim { display: none; }
+
+.metric-grid.three { grid-template-columns: 1fr 1fr 1fr; }
+.metric-grid.two { grid-template-columns: 1fr 1fr; }
+@media (max-width: 420px) {
+  .metric-grid.three .mv { font-size: 18px; }
+}
+.metric .mv.small { font-size: 16px; line-height: 1.3; }
+
+.callout a { color: inherit; font-weight: 700; }
+.callout { line-height: 1.45; }
+.callout:not(.warn):not(.bad) { background: var(--teal-soft); color: var(--teal-deep); }
+[data-theme="dark"] .callout:not(.warn):not(.bad) { color: var(--ink); }
+
+/* Citrate precautions */
+.cit-card { border-top: 4px solid #e8a33a; }
+.draft-tag {
+  display: inline-block;
+  margin: -6px 0 12px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--draft-bg);
+  color: var(--draft-ink);
+  border: 1px solid var(--draft-border);
+  font-size: 12px;
+  font-weight: 700;
+}
+details.cit {
+  margin-top: 12px;
+  border: 1px solid var(--hairline);
+  border-radius: 14px;
+  background: var(--bg-sunken);
+  overflow: hidden;
+}
+details.cit summary {
+  list-style: none;
+  cursor: pointer;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  font-weight: 700;
+  font-size: 15.5px;
+  color: var(--ink);
+}
+details.cit summary::-webkit-details-marker { display: none; }
+details.cit summary::after {
+  content: "";
+  width: 9px; height: 9px;
+  border-right: 2px solid var(--ink-tertiary);
+  border-bottom: 2px solid var(--ink-tertiary);
+  transform: rotate(45deg);
+  transition: transform var(--dur) var(--ease);
+  margin-right: 4px;
+}
+details.cit[open] summary::after { transform: rotate(-135deg); }
+details.cit ul { margin: 0; padding: 0 16px 12px 32px; }
+details.cit li { margin: 7px 0; font-size: 14.5px; line-height: 1.45; color: var(--ink-secondary); }
+details.cit li strong { color: var(--ink); }
+details.cit li em { color: var(--amber-ink); font-style: normal; font-weight: 600; }
+
+/* Prismocitrate 18 reference-protocol block */
+.protocol-box {
+  margin: 14px 0 4px;
+  padding: 14px;
+  border-radius: 16px;
+  background: linear-gradient(165deg, #fff7ea, #ffe9c8);
+  border: 1.5px solid rgba(154, 77, 8, 0.28);
+}
+[data-theme="dark"] .protocol-box { background: var(--amber-bg); border-color: color-mix(in srgb, var(--amber-ink) 35%, transparent); }
+.protocol-box h3 {
+  margin: 0 0 4px;
+  font-size: 15.5px;
+  line-height: 1.3;
+  color: var(--ink);
+}
+.protocol-src {
+  margin: 0 0 12px;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--ink-secondary);
+}
+.protocol-metrics { display: grid; gap: 8px; }
+.protocol-metric {
+  background: rgba(255,255,255,0.72);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+[data-theme="dark"] .protocol-metric { background: color-mix(in srgb, var(--bg-elevated) 80%, transparent); }
+.protocol-metric .pk {
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--ink-tertiary);
+  line-height: 1.3;
+}
+.protocol-metric .pv {
+  margin-top: 2px;
+  font-size: 22px;
+  font-weight: 750;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+.protocol-metric .pu { font-size: 14px; font-weight: 650; letter-spacing: 0; color: var(--ink-secondary); }
+.protocol-metric .ps {
+  margin-top: 4px;
+  font-size: 12.5px;
+  line-height: 1.35;
+  color: var(--ink-secondary);
+}
+.protocol-box h4 {
+  margin: 14px 0 6px;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-tertiary);
+}
+.protocol-p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--ink-secondary);
+}
+.protocol-box ul { margin: 0; padding: 0 0 0 18px; }
+.protocol-box li {
+  margin: 5px 0;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--ink-secondary);
+}
+.protocol-box li strong { color: var(--ink); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .protocol-box { background: var(--amber-bg); border-color: color-mix(in srgb, var(--amber-ink) 35%, transparent); }
+  :root:not([data-theme="light"]) .protocol-metric { background: color-mix(in srgb, var(--bg-elevated) 80%, transparent); }
+}
+.cit-p { padding: 0 16px 4px; font-size: 14.5px; color: var(--ink-secondary); line-height: 1.45; }
+sup { font-size: 0.68em; font-weight: 700; color: var(--teal); margin-left: 1px; }
+.ratio-box {
+  margin-top: 16px;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1.5px dashed color-mix(in srgb, var(--teal) 45%, transparent);
+}
+.ratio-h { font-weight: 700; font-size: 15.5px; margin-bottom: 10px; color: var(--ink); }
+ol.refs {
+  margin: 16px 0 0;
+  padding-left: 20px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--ink-tertiary);
+}
+ol.refs li { margin: 4px 0; }
+
+@media print {
+  .jump { display: none !important; }
+}
+.mod-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 16px; }
+.warn-text { color: var(--amber-ink); font-weight: 600; }
+
+/* Mobile order: inputs first, then the dose summary, then the rest. */
+@media (max-width: 959px) {
+  .panel.active.wrap { gap: 16px; }
+  .panel.active .col-main { display: contents; }
+  #dose-card { order: 1; }
+  .sticky-result { order: 2; }
+  #filter-card { order: 3; }
+  #ac-card { order: 4; }
+  #citrate-card { order: 5; }
+  #rx-card { order: 6; }
+}
+html { scroll-padding-top: 44px; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .jump a.jump-cit { background: var(--amber-bg); color: var(--amber-ink); }
+  :root:not([data-theme="light"]) .tag { color: var(--teal-mid); }
+}
+
+/* ── Step-by-step flow ── */
+.stepper {
+  display: flex;
+  gap: 6px;
+  padding: 4px 0 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.stepper::-webkit-scrollbar { display: none; }
+.stepper-item {
+  flex: 1;
+  min-width: 0;
+  min-height: 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px 4px;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--ink-tertiary);
+  border: 1px solid transparent;
+  font: inherit;
+  cursor: pointer;
+}
+.stepper-item .stepper-num {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  background: var(--bg-sunken);
+  color: var(--ink-secondary);
+}
+.stepper-lbl {
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1.2;
+  text-align: center;
+  letter-spacing: 0.01em;
+}
+.stepper-item.is-on {
+  color: var(--ink);
+  background: var(--teal-soft);
+  border-color: color-mix(in srgb, var(--teal) 30%, transparent);
+}
+.stepper-item.is-on .stepper-num {
+  background: var(--teal);
+  color: #fff;
+}
+.stepper-item.is-done .stepper-num {
+  background: var(--teal-deep);
+  color: #fff;
+}
+.step { display: none; }
+.step.is-on { display: block; padding-bottom: 16px; }
+#rx-card, .cit-card, #c-heparin-block { scroll-margin-bottom: 96px; }
+.step.is-on .card + .card,
+.step.is-on .rates { margin-top: 16px; }
+
+body { padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
+.step-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid var(--hairline-strong);
+}
+.step-btn {
+  min-height: 48px;
+  min-width: 88px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  font-size: 16px;
+  font-weight: 700;
+  background: var(--bg-elevated);
+  color: var(--ink);
+  border: 1px solid var(--hairline-strong);
+  cursor: pointer;
+}
+.step-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.step-btn.primary {
+  background: var(--teal);
+  color: #fff;
+  border-color: transparent;
+  margin-left: auto;
+}
+.step-btn.primary[hidden] { display: none; }
+.step-hint {
+  flex: 1;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--amber-ink);
+  text-align: center;
+}
+.bolus-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.bolus-row .chips { margin: 0; }
+.recap {
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  font-size: 20px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.predictors-box {
+  margin: 14px 0 4px;
+  padding: 14px;
+  border-radius: 16px;
+  background: var(--teal-soft);
+  border: 1.5px solid color-mix(in srgb, var(--teal) 35%, transparent);
+}
+[data-theme="dark"] .predictors-box { background: color-mix(in srgb, var(--teal) 16%, var(--bg-elevated)); }
+.predictors-box h3 {
+  margin: 0 0 6px;
+  font-size: 15.5px;
+  line-height: 1.3;
+  color: var(--ink);
+}
+.predictors-src,
+.predictors-note {
+  margin: 0 0 8px;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--ink-secondary);
+}
+.predictors-note { margin: 8px 0 0; }
+.predictors-box ul { margin: 0; padding: 0 0 0 18px; }
+.predictors-box li {
+  margin: 4px 0;
+  font-size: 15.5px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--ink);
+}
+#rx-draft-tag { margin: 0 0 12px; }
+.rx-card .draft-tag { display: inline-block; }
+#dock { display: none !important; }
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .predictors-box { background: color-mix(in srgb, var(--teal) 16%, var(--bg-elevated)); }
+}
+/* 0.4.3 (App Critic M5): PD Buddy's summary card is on step 2; print only it, and keep the draft banner. */
+@media print {
+  .stepper, .step-bar, header.top, .foot-links { display: none !important; }
+  .draft-banner { display: block !important; position: static !important; }
+  .step { display: none !important; }
+  #step-2, #step-2.is-on { display: block !important; }
+  #step-2 > :not(#rx-card) { display: none !important; }
+  #step-2 #rx-card { display: block !important; }
+  #step-2 #rx-card .rx-card-h { display: flex !important; }
+  #rx-card .rx-actions, #rx-card .about-btn { display: none !important; }
+}
+@media (max-width: 959px) {
+  #dose-card, #flow-card, #optional-card, #filter-card, #ac-card, #citrate-card, #ratio-card, #rx-card { order: unset; }
+  .sticky-result { display: none; }
+}
+
+/* Compact anticoagulation targets (step 3) */
+.compact-targets {
+  margin: 8px 0 12px;
+  border-radius: 14px;
+  background: linear-gradient(165deg, #fff7ea, #ffe9c8);
+  border: 1.5px solid rgba(154, 77, 8, 0.28);
+  padding: 2px 12px;
+}
+[data-theme="dark"] .compact-targets { background: var(--amber-bg); border-color: color-mix(in srgb, var(--amber-ink) 35%, transparent); }
+.compact-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--ink) 10%, transparent);
+}
+.compact-row:last-child { border-bottom: 0; }
+.compact-row .ck { font-size: 14px; font-weight: 650; color: var(--ink-secondary); }
+.compact-row .cv { font-size: 16px; font-weight: 750; color: var(--ink); font-variant-numeric: tabular-nums; text-align: right; }
+.compact-h {
+  margin: 12px 0 4px;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-tertiary);
+}
+.compact-list { margin: 0; padding: 0 0 0 18px; }
+.compact-list li { margin: 3px 0; font-size: 14px; line-height: 1.3; color: var(--ink); }
+.predictors-line {
+  margin: 8px 0 6px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--teal-soft);
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--ink);
+}
+#hep-details, #cit-details { margin-top: 12px; }
+#dose-check-card { margin-top: 16px; }
+.rx-rows.machine { gap: 0; }
+.rx-rows.machine .rx-row {
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  padding: 8px 0;
+  border-bottom: 1px solid var(--hairline);
+  font-size: 15px;
+}
+.rx-rows.machine .rx-row .rk { color: var(--ink-secondary); font-weight: 600; }
+.rx-rows.machine .rx-row .rv { font-weight: 750; font-size: 16px; }
+.rx-rows.machine .rx-note {
+  margin: 8px 0 0;
+  padding-top: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink-secondary);
+  line-height: 1.35;
+}
+@media print {
+  #dose-check-card { display: block !important; break-before: avoid; }
+}
+
+#c-flow-metrics { margin-top: 10px !important; }
+#c-qnet-24h { margin-top: 6px; }
+
+#ratio-card .ratio-subhead {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+#ratio-card .ratio-subhead .h2-sub { font-weight: 600; }
+
+.split-note {
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--ink-tertiary);
+}
+
+/* Prismocitrate 18 / calcium rate block (shown only when citrate is selected) */
+.citrate-calc {
+  margin: 4px 0 14px;
+  padding: 10px 12px 8px;
+  border-radius: 14px;
+  background: var(--teal-soft);
+  border: 1.5px solid color-mix(in srgb, var(--teal) 28%, transparent);
+}
+.citrate-calc .compact-h { margin-top: 4px; }
+.citrate-calc .compact-h:first-child { margin-top: 0; }
+
+/* iOS: keep scrolled content from drawing under the status bar / notch.
+   body already uses env(safe-area-inset-*); this fixed cover paints the
+   inset with the page background so text cannot show through. */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--safe-t, env(safe-area-inset-top, 0px));
+  background: var(--bg);
+  z-index: 200;
+  pointer-events: none;
+}
+
+/* iPad / wide screens: the combined CRRT+PD stylesheet reserves a 360px
+   sticky sidebar that this standalone app does not use. Use one centered
+   column so cards are not stuck to the left, and keep room for the step bar. */
+@media (min-width: 960px) {
+  .wrap,
+  .panel.active.wrap {
+    grid-template-columns: 1fr !important;
+    max-width: 760px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .top, .foot {
+    max-width: 760px;
+  }
+  body {
+    padding-bottom: calc(76px + var(--safe-b, env(safe-area-inset-bottom, 0px)));
+  }
+}

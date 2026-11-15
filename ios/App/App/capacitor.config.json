@@ -1,0 +1,11 @@
+{
+	"appId": "com.drd.pdbuddy",
+	"appName": "PD Buddy",
+	"webDir": "www",
+	"ios": {
+		"contentInset": "never",
+		"backgroundColor": "#eef2f8",
+		"preferredContentMode": "mobile"
+	},
+	"packageClassList": []
+}

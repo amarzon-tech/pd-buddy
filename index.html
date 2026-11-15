@@ -502,7 +502,11 @@
   <script src="./js/app.js"></script>
   <script>
     if ("serviceWorker" in navigator) {
-      window.addEventListener("load", function () { navigator.serviceWorker.register("./sw.js"); });
+      window.addEventListener("load", function () {
+        // iOS app (Capacitor): assets are bundled, so no service worker inside the native WebView.
+        var native = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
+        if (!native) navigator.serviceWorker.register("./sw.js");
+      });
     }
   </script>
 </body>

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="PD Buddy">
+  <defs><linearGradient id="g" x1="0" y1="0" x2="0.7" y2="1"><stop offset="0" stop-color="#3D7AE8"/><stop offset="0.55" stop-color="#1E63D6"/><stop offset="1" stop-color="#1348A8"/></linearGradient></defs>
+  <rect width="512" height="512" fill="url(#g)"/>
+  <path d="M118 330c18 70 92 118 178 118 70 0 128-32 158-82" fill="none" stroke="#E8F0FF" stroke-width="20" stroke-linecap="round" opacity="0.85"/>
+  <path d="M394 182C376 112 302 64 216 64c-70 0-128 32-158 82" fill="none" stroke="#E8F0FF" stroke-width="20" stroke-linecap="round" opacity="0.85"/>
+  <text x="256" y="320" text-anchor="middle" font-family="Source Serif Pro, Times New Roman, serif" font-weight="900" font-size="210" fill="#fff">PD</text>
+</svg>
