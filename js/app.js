@@ -135,16 +135,19 @@
     r.drainTypical = !(F.isNum(drainIn) && drainIn > 0);
     const fillL = F.TARGETS.PET_FILL_L;
     const drainL = F.isNum(r.drainMlUsed) ? r.drainMlUsed / 1000 : null;
-    // Creatinine MTAC: measured D/P Cr → Garred; else published typical value (Akonur 2013; H/HA/LA); else band midpoint (Low)
+    // Creatinine MTAC: measured D/P Cr → PET fit (model-2c: Vonesh A4 inverse); else published typical value (Akonur 2013; H/HA/LA); else band midpoint (Low)
     r.crSource = null;
-    if (r.numCat) { r.mtacCr = safe(() => F.garredMtac(dpcr, fillL, drainL, F.TARGETS.PET_MINUTES)); r.crSource = "pet"; }
+    // model-2c: PET → MTAC with the Vonesh 1999 eq. A4 inverse (prior long-dwell UF from the three-pore model).
+    const prior = r.cat && TPM && TPM.petPriorUfMl ? TPM.petPriorUfMl(r.cat.key) : null;
+    const petM = (dp) => F.petMtac(dp, fillL, drainL, F.TARGETS.PET_MINUTES, { priorUfMl: prior });
+    if (r.numCat) { r.mtacCr = safe(() => petM(dpcr)); r.crSource = "pet"; }
     else if (typ && F.isNum(typ.mtacCr)) { r.mtacCr = typ.mtacCr; r.crSource = "typical"; }
-    else if (typ) { r.mtacCr = safe(() => F.garredMtac(typ.dpCr, fillL, drainL, F.TARGETS.PET_MINUTES)); r.crSource = "midpoint"; }
+    else if (typ) { r.mtacCr = safe(() => petM(typ.dpCr)); r.crSource = "midpoint"; }
     else r.mtacCr = null;
-    // Urea MTAC: measured D/P urea → Garred; else published typical value (Akonur 2016, PDI 36:79-84)
+    // Urea MTAC: measured D/P urea → PET fit (model-2c: Vonesh A4 inverse); else published typical value (Akonur 2016, PDI 36:79-84)
     r.ureaSource = null;
     r.mtacU = null;
-    if (F.isNum(dpu) && F.isNum(drainL)) { r.mtacU = safe(() => F.garredMtac(dpu, fillL, drainL, F.TARGETS.PET_MINUTES)); r.ureaSource = F.isNum(r.mtacU) ? "pet" : "invalid"; }
+    if (F.isNum(dpu) && F.isNum(drainL)) { r.mtacU = safe(() => petM(dpu)); r.ureaSource = F.isNum(r.mtacU) ? "pet" : "invalid"; }
     if (!F.isNum(r.mtacU) && typ && r.ureaSource !== "invalid") { r.mtacU = typ.mtacUrea; r.ureaSource = "typical"; }
     // Lab-loop calibration (fitted to a measured 24-h clearance) wins
     if (inp.calib) {
@@ -220,7 +223,7 @@
     const cur = r.options ? r.options.find((o) => o.id === curId) : null;
     if (cur && out.m && (out.m.source === "collection" || out.m.source === "entered")) {
       const ufMl = cur.longSolution === "icodextrin" ? inp.ufIco : inp.ufDex;
-      const dw = F.optionDwells(cur.opt, ufMl);
+      const dw = F.dwellsWithUf(cur.opt, ufMl, cur.uf);
       const ktP = W.measuredPeritonealKt(out.m, r.V, r.ktvR);
       const mU = F.isNum(ktP) ? safe(() => F.fitMtacToClearance(dw, ktP, "urea")) : null;
       const mC = F.isNum(out.m.crLDay) ? safe(() => F.fitMtacToClearance(dw, out.m.crLDay, "cr")) : null;
@@ -552,6 +555,7 @@
       uf: o && o.uf ? o.uf : null,
       transport: r.cat ? r.cat.label : null,
       lowTransport: !!(o && r.lowTransport && !r.blocked),
+      modelNote: o ? RX.MODEL_2C_NOTE : null,
       basis: r.belowModel ? belowModelText(r) : r.noFit ? noFitText(r) : (r.basis || null),
     });
     renderSheet($("rx-sheet"), rx);

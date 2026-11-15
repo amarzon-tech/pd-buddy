@@ -216,6 +216,7 @@
       const sh = d2.slice(0, shortDwells.length).reduce((a, r) => a + r.ufMl, 0);
       const dayUf = d2.slice(shortDwells.length).reduce((a, r) => a + r.ufMl, 0);
       return {
+        dwellUfMl: d2.map((r) => r.ufMl),
         dailyUfMl: sh + dayUf,
         shortUfMl: sh,
         longUfMl: dayUf,
@@ -235,7 +236,9 @@
     if (longDwell && !ico) { longUf = day2[day2.length - 1].ufMl; longSource = "model"; }
     if (ico) { longUf = ICO_PUBLISHED_UF[mod === "capd" ? "capd" : "ccpd"][typeKey]; longSource = "published"; }
     const glu = day2.reduce((a, r) => a + r.gluAbsorbedG, 0);
+    const dwellUfMl = day2.slice(0, shortDwells.length).map((r) => r.ufMl).concat(longDwell ? [longUf] : []);
     return {
+      dwellUfMl,
       dailyUfMl: shortUf + longUf,
       shortUfMl: shortUf,
       longUfMl: longDwell ? longUf : null,
@@ -246,7 +249,14 @@
     };
   }
 
-  const T = { TPM, UF_STATUS, regimenUf, GLUCOSE_MMOL, TYPE_PARAMS, ICO_PUBLISHED_UF, areaFactor, patlak, simulateDwell, simulateSequence };
+  /** model-2c: net UF (mL) of the long dwell before a PET: 2.0 L 2.27% glucose, 480 min (Vonesh 1999 "> 8 hours"). */
+  function petPriorUfMl(typeKey) {
+    const p = TYPE_PARAMS[typeKey];
+    if (!p) return null;
+    return simulateDwell(p, { fillMl: 2000, residualMl: TPM.residualFrac * 2000, minutes: 480, glucoseMmol: GLUCOSE_MMOL["2.5"] }).ufMl;
+  }
+
+  const T = { petPriorUfMl, TPM, UF_STATUS, regimenUf, GLUCOSE_MMOL, TYPE_PARAMS, ICO_PUBLISHED_UF, areaFactor, patlak, simulateDwell, simulateSequence };
   global.PdThreePore = T;
   if (typeof module !== "undefined" && module.exports) module.exports = T;
 })(typeof globalThis !== "undefined" ? globalThis : this);

@@ -3,6 +3,7 @@
  * Run: node tests/neguf.test.js
  */
 "use strict";
+require("./_garred.js"); // model-2c: legacy pins use the Garred model
 const fs = require("fs");
 const path = require("path");
 global.PdFormulas = require("../js/formulas.js");

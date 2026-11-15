@@ -694,6 +694,22 @@ Dr D, Nov 15 2026, 7:26 AM ET, relayed by App Critic: “Add a warning now, and 
 - [ ] Sign-off: placement, including the iPhone SE placement above the first option — wording approved by Dr D Nov 15 2026, full sign-off pending
 - [ ] Sign-off: release 0.4.8-draft, service-worker cache pd-buddy-v12, DRAFT=true, noindex unchanged — approved by Dr D Nov 15 2026, full sign-off pending
 
+## 31. Model fix Option 2c (branch `model-2c`, REVIEW ONLY — not merged, not deployed)
+
+Dr D, Nov 15 2026, 7:55 AM ET, relayed by App Critic, in his own words: “Build model fix 2c on a branch and show me the before/after table.” Not approved for release.
+- Solute model: Vonesh EF, Story KO, O'Neill WT. Perit Dial Int 1999;19:556-571, Appendix eq. A4 (with eq. A6 fill scaling and A8 dwell-time factor), checked against the publisher PDF. Defaults from the same paper: QL 0.60 mL/min, V0D = 10% of the PET fill (200 mL).
+- Residual volume carried over: each fill starts at C1D = residual × previous drain D/P / (fill + residual); the day is repeated to steady state; a CCPD dry period equilibrates the residual.
+- PET → MTAC: bisection on the same forward model. The PET is preceded by an 8-h 2.0 L 2.27% long dwell (Vonesh 1999 says “> 8 hours”; 8 h is an assumption) with three-pore UF. Vonesh 1999 says PET KPA is estimated as in version 1.4 (Vonesh 1996, PDI 16:471), which I could not obtain: unconfirmed.
+- Each option's clearance now uses the experimental three-pore UF per dwell (an entered long-dwell UF still overrides the long dwell), so UF now changes Kt/V, CrCl and the ranking.
+- Flags: A6 bracket is typographically ambiguous in the text layer (read as the A5 function); A5's constant 1.1634 normalises at ≈ 2.36 L, not 2.0 L (A6 used, self-normalising). Under 2c the approved below-model-range message (“clearance close to zero”) and the low-transporter warning rationale (“predicts each option without that ultrafiltration”) would no longer be accurate; wording not changed.
+- Validation and before/after: `research/MODEL_2C_BEFORE_AFTER.md` (not in the repo). Tests: `tests/model2c.test.js`; legacy suites pinned to the Garred model via `tests/_garred.js`.
+
+- [ ] Sign-off: Option 2c solute model (Vonesh 1999 eq. A4, A6, A8; QL 0.60; V0D 10%) — proposal on branch, not approved
+- [ ] Sign-off: PET inverse with an assumed 8-h prior long dwell (Vonesh 1996 method unconfirmed) — proposal, not approved
+- [ ] Sign-off: three-pore UF used in clearance (experimental UF now affects Kt/V, CrCl and order) — proposal, not approved
+- [ ] Sign-off: “model calculation … review build, not validated” labels (basis card, Rx sheet) — proposal, not approved
+- [ ] Sign-off: below-model-range message and low-transporter warning wording to be revisited if 2c is adopted — open
+
 ---
 
 ## Status

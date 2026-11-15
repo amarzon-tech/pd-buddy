@@ -5,6 +5,7 @@
  * Run: node tests/ccpd.test.js
  */
 "use strict";
+require("./_garred.js"); // model-2c: legacy pins use the Garred model
 global.PdFormulas = require("../js/formulas.js");
 const F = global.PdFormulas;
 const T = require("../js/threepore.js");

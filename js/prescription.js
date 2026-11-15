@@ -47,6 +47,9 @@
   const LOW_TRANSPORT_WARNING = "Low transport: the model probably underestimates creatinine clearance (CrCl). It credits the large PET drain volume to ultrafiltration rather than diffusion, then predicts each option without that ultrafiltration. Do not rely on the estimated CrCl; confirm with a measured 24-h collection.";
   const LOW_TRANSPORT_SHORT = "Low transport: estimated CrCl is probably too low (model limit)";
 
+  /** model-2c (review branch only): every clearance shown is a model calculation. */
+  const MODEL_2C_NOTE = "model calculation with the Vonesh 1999 eq. A4 solute equation (Perit Dial Int 1999;19:556-571) and experimental three-pore ultrafiltration; review build, not validated.";
+
   /** 0.4.6: compact form for step 2 cards on small screens only (full wording elsewhere). */
   function negUfShort(dailyUfMl) {
     if (!isNum(dailyUfMl) || dailyUfMl >= 0) return null;
@@ -110,6 +113,7 @@
       if (isNum(e.crcl) && s.lowTransport) lines.push("Warning: " + LOW_TRANSPORT_WARNING);
     }
     lines.push("Model assumed: " + modelAssumed(s) + " (solution strengths are the model's assumptions, not a choice)");
+    if (s.modelNote) lines.push("Solute model: " + s.modelNote);
     const u = s.uf;
     if (u && isNum(u.dailyUfMl)) {
       // 0.4.4 (App Critic re-check): CCPD wording is cycles / day dwell, matching "Model assumed".
@@ -134,7 +138,7 @@
     return { title: TITLE, lines, text: lines.join("\n"), footer, draftLine: DRAFT_LINE };
   }
 
-  const RX = { build, SOLUTIONS, TITLE, DRAFT_LINE, DISCLAIMER, modelAssumed, negUfWarning, negUfShort, LOW_TRANSPORT_WARNING, LOW_TRANSPORT_SHORT };
+  const RX = { build, SOLUTIONS, TITLE, DRAFT_LINE, DISCLAIMER, modelAssumed, negUfWarning, negUfShort, LOW_TRANSPORT_WARNING, LOW_TRANSPORT_SHORT, MODEL_2C_NOTE };
   global.PdPrescription = RX;
   if (typeof module !== "undefined" && module.exports) module.exports = RX;
 })(typeof globalThis !== "undefined" ? globalThis : this);

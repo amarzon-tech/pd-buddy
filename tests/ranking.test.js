@@ -4,6 +4,7 @@
  * Run: node tests/ranking.test.js
  */
 "use strict";
+require("./_garred.js"); // model-2c: legacy pins use the Garred model
 const F = require("../js/formulas.js");
 const { approx, eq, isTrue, section, done } = require("./_h.js");
 

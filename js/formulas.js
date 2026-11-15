@@ -349,10 +349,10 @@
    * is on. Bisection on MTAC in [0.1, 200] mL/min. Returns null if the measured
    * value is outside what the model can produce for that regimen.
    */
-  function fitMtacToClearance(dwells, measuredLDay, which) {
+  function fitMtacToClearance(dwells, measuredLDay, which, model) {
     pos("measured clearance", measuredLDay);
     const f = (m) => {
-      const p = predictDaily(dwells, which === "cr" ? null : m, which === "cr" ? m : null);
+      const p = predictDaily(dwells, which === "cr" ? null : m, which === "cr" ? m : null, model);
       return (which === "cr" ? p.crLDay : p.ureaLDay) - measuredLDay;
     };
     let lo = 0.1, hi = 200;
@@ -434,7 +434,108 @@
    * "the total drained effluent volume ... adding ultrafiltration with the infused
    * dialysate volume").
    */
-  function predictDaily(dwells, mtacUrea, mtacCr) {
+  /* ═══════════════════════════════════════════════════════════════════════
+   * Option 2c (branch model-2c, REVIEW ONLY, not deployed): Vonesh 1999 solute equation.
+   * Vonesh EF, Story KO, O'Neill WT. Perit Dial Int 1999;19:556-571, Appendix
+   * (checked against the publisher PDF text layer, Nov 15 2026):
+   *  (A4) (CD − CB) = (V1D/VD)^0.5 × (C1D − CB) × exp[−(KPA + 0.5 × QL) × t/VD]
+   *       C1D = initial post-infusion dialysate concentration, V1D = volume infused + residual
+   *       (s = 1 and mean membrane concentration (CB + CD)/2 assumed by the authors).
+   *  (A5) KPA(V1D)/KPA(2 L) = 1.1634 × {1 − exp[−0.8305 × (V1D/1000)]}
+   *  (A6) KPA(V1D) = KPA × [1 − exp(−0.8305 × V1D)] / [1 − exp(−0.8305 × (VF + V0D))]
+   *       (litres; KPA = PET estimate, VF = PET fill, V0D = PET residual. The text layer prints
+   *       "exp(–0.8305) × (VF + V0D)"; read as the same function as A5 — flagged in review.)
+   *  (A8) KPA(V1D, t_dwell) = KPA(V1D) × [1 + 0.66 × exp(−0.02 × t_dwell)], once per exchange.
+   *  Defaults: V0D = 0.10 × VF (mL), QL = 0.60 mL/min.
+   * Clearance per dwell = drained volume × D/P_end; drained = fill + net UF when the residual
+   * volume is the same before and after (steady state). Residual solute is carried from each
+   * drain into the next fill; the day is repeated until steady state. Net UF per dwell comes
+   * from the experimental three-pore model (js/threepore.js) when supplied.
+   * ═══════════════════════════════════════════════════════════════════════ */
+  const SOLUTE_MODELS = Object.freeze(["garred", "vonesh2c"]);
+  const DEFAULT_SOLUTE_MODEL = (typeof process !== "undefined" && process.env && process.env.PD_SOLUTE_MODEL) || "vonesh2c";
+  const VONESH = Object.freeze({ QL: 0.6, V0D_FRAC: 0.1, KFILL: 0.8305, KT_A: 0.66, KT_B: 0.02, PET_FILL_L: 2.0, PET_PRIOR_MIN: 480 });
+  function vFill(vMl) { return 1 - Math.exp(-VONESH.KFILL * (vMl / 1000)); }
+  function vTime(min) { return 1 + VONESH.KT_A * Math.exp(-VONESH.KT_B * min); }
+  const V0D_ML = VONESH.V0D_FRAC * VONESH.PET_FILL_L * 1000; // 200 mL
+  const REF_V1D_ML = VONESH.PET_FILL_L * 1000 + V0D_ML; // PET: 2,000 + 200 mL
+  /** End-of-dwell D/P by eq. A4 for one dwell. cPrev = D/P of the residual left in the abdomen. */
+  function voneshDwellDp(kpaPet, fillMl, ufMl, minutes, cPrev, resMl) {
+    const res = isNum(resMl) ? resMl : V0D_ML;
+    const v1 = fillMl + res;
+    const vd = v1 + (isNum(ufMl) ? ufMl : 0);
+    if (!(v1 > 0) || !(vd > 0)) throw new Error("dwell volume must be positive");
+    const c1 = v1 > 0 ? (res * (isNum(cPrev) ? cPrev : 0)) / v1 : 0;
+    const kpa = kpaPet * (vFill(v1) / vFill(REF_V1D_ML)) * vTime(minutes);
+    const dp = 1 - Math.sqrt(v1 / vd) * (1 - c1) * Math.exp((-(kpa + 0.5 * VONESH.QL) * minutes) / vd);
+    return Math.min(1, Math.max(0, dp));
+  }
+  /** Daily clearance (L/day) at steady state for one solute; dwells: [{ fillL, minutes, ufMl }]. */
+  function voneshSequence(dwells, kpa, resMl) {
+    const res = isNum(resMl) ? resMl : V0D_ML;
+    const used = dwells.reduce((a, d) => a + d.minutes, 0);
+    const gap = Math.max(0, 24 * 60 - used); // e.g. a CCPD dry day: the residual stays in
+    let c = 0, rows = [], clear = 0;
+    for (let day = 0; day < 4; day++) {
+      rows = []; clear = 0;
+      for (const d of dwells) {
+        const dp = voneshDwellDp(kpa, d.fillL * 1000, d.ufMl || 0, d.minutes, c, res);
+        const drained = d.fillL + (d.ufMl || 0) / 1000;
+        clear += dp * drained;
+        rows.push({ dp, drainedL: drained });
+        c = dp;
+      }
+      if (gap > 0) c = voneshDwellDp(kpa, 0, 0, gap, c, res); // residual equilibrates, not drained
+    }
+    return { lDay: clear, rows };
+  }
+  /**
+   * KPA from a 4-h PET by eq. A4 (inverse, bisection). The PET follows a long dwell (Vonesh 1999:
+   * "a long-dwell (> 8 hours) exchange followed by a 4-hour PET exchange using the same percent
+   * dextrose concentration"); here 2.0 L for 480 min (the stated lower bound), with its net UF
+   * priorUfMl from the three-pore model; its end D/P is carried into the PET by the residual.
+   */
+  function voneshPetDp(kpa, drainL, minutes, priorUfMl) {
+    let c = 0;
+    for (let i = 0; i < 4; i++) c = voneshDwellDp(kpa, VONESH.PET_FILL_L * 1000, isNum(priorUfMl) ? priorUfMl : 0, VONESH.PET_PRIOR_MIN, c, V0D_ML);
+    const ufPet = drainL * 1000 - VONESH.PET_FILL_L * 1000; // drained = fill + UF at constant residual
+    return voneshDwellDp(kpa, VONESH.PET_FILL_L * 1000, ufPet, minutes, c, V0D_ML);
+  }
+  function voneshMtac(dp, fillL, drainL, minutes, priorUfMl) {
+    pos("D/P", dp);
+    if (dp >= 1) throw new Error("D/P must be below 1");
+    pos("drain volume", drainL);
+    if (Math.abs(fillL - VONESH.PET_FILL_L) > 1e-9) throw new Error("PET fill must be 2.0 L");
+    const f = (k) => voneshPetDp(k, drainL, minutes, priorUfMl) - dp;
+    if (f(0) >= 0) throw new Error("PET values give a non-positive MTAC (check D/P and drain volume)");
+    let lo = 0, hi = 200;
+    if (f(hi) < 0) throw new Error("PET D/P too high for the model");
+    for (let i = 0; i < 80; i++) { const m = (lo + hi) / 2; if (f(m) < 0) lo = m; else hi = m; }
+    return (lo + hi) / 2;
+  }
+  /** PET → MTAC with the active solute model. */
+  function petMtac(dp, fillL, drainL, minutes, opts) {
+    const o = opts || {};
+    const model = o.model || DEFAULT_SOLUTE_MODEL;
+    return model === "vonesh2c" ? voneshMtac(dp, fillL, drainL, minutes, o.priorUfMl) : garredMtac(dp, fillL, drainL, minutes);
+  }
+
+  function predictDaily(dwells, mtacUrea, mtacCr, model) {
+    if ((model || DEFAULT_SOLUTE_MODEL) === "vonesh2c") {
+      const u = isNum(mtacUrea) ? voneshSequence(dwells, mtacUrea) : null;
+      const cr = isNum(mtacCr) ? voneshSequence(dwells, mtacCr) : null;
+      let drainL = 0, instilledL = 0;
+      const rows = dwells.map((d, i) => {
+        const endL = d.fillL + (d.ufMl || 0) / 1000;
+        drainL += endL; instilledL += d.fillL;
+        return Object.assign({}, d, { endL, dpUrea: u ? u.rows[i].dp : null, dpCr: cr ? cr.rows[i].dp : null });
+      });
+      return { rows, ureaLDay: u ? u.lDay : null, crLDay: cr ? cr.lDay : null, drainLDay: drainL, instilledLDay: instilledL, netUfMlDay: (drainL - instilledL) * 1000, model: "vonesh2c" };
+    }
+    return predictDailyGarred(dwells, mtacUrea, mtacCr);
+  }
+
+  function predictDailyGarred(dwells, mtacUrea, mtacCr) {
     let ureaL = 0;
     let crL = 0;
     let drainL = 0;
@@ -491,6 +592,17 @@
     { id: "ccpd-5x2-day", mod: "ccpd", label: "CCPD 5 × 2.0 L, 9 h + 2.0 L day dwell", cycles: 5, fillL: 2.0, therapyH: 9, lastFillL: 2.0 },
     { id: "ccpd-5x2.5-day", mod: "ccpd", label: "CCPD 5 × 2.5 L, 9 h + 2.0 L day dwell", cycles: 5, fillL: 2.5, therapyH: 9, lastFillL: 2.0 },
   ]);
+
+  /**
+   * model-2c: dwells with per-dwell net UF from the three-pore model (ufObj.dwellUfMl, same order
+   * as optionDwells). An entered long-dwell UF (longUfMl) still overrides the last day/long dwell.
+   */
+  function dwellsWithUf(opt, longUfMl, ufObj, model) {
+    const dw = optionDwells(opt, longUfMl);
+    if ((model || DEFAULT_SOLUTE_MODEL) !== "vonesh2c" || !ufObj || !Array.isArray(ufObj.dwellUfMl) || ufObj.dwellUfMl.length !== dw.length) return dw;
+    const hasLong = opt.mod === "capd" || opt.lastFillL > 0;
+    return dw.map((d, i) => Object.assign({}, d, { ufMl: hasLong && i === dw.length - 1 && isNum(longUfMl) ? longUfMl : ufObj.dwellUfMl[i] }));
+  }
 
   function optionDwells(opt, longUfMl) {
     const uf = isNum(longUfMl) ? longUfMl : 0;
@@ -653,8 +765,8 @@
     const out = [];
     const ktvR = isNum(o.ktvRenal) ? o.ktvRenal : 0;
     const rkfL = isNum(o.rkfLDay) ? o.rkfLDay : 0;
-    const est = (opt, ufMl) => {
-      const p = predictDaily(optionDwells(opt, ufMl), o.mtacUrea, o.mtacCr);
+    const est = (opt, ufMl, ufObj) => {
+      const p = predictDaily(dwellsWithUf(opt, ufMl, ufObj, o.soluteModel), o.mtacUrea, o.mtacCr, o.soluteModel);
       const ktvP = isNum(p.ureaLDay) && isNum(o.V) && o.V > 0 ? weeklyKtv(p.ureaLDay, o.V) : null;
       return {
         ktvP,
@@ -673,9 +785,12 @@
       // Kt/V deliberately does NOT use the predicted UF (it stays the Garred estimate with
       // short-dwell UF 0 and the long-dwell UF the user enters), so an experimental UF
       // prediction never changes the clearance ranking.
+      // model-2c: with the Vonesh 1999 solute model the clearance DOES use the three-pore UF per
+      // dwell (UF given back), so the experimental UF now affects Kt/V, CrCl and the order.
       const uf = (sol) => (typeof o.ufFn === "function" ? o.ufFn(opt, sol) : null);
-      out.push(Object.assign({ id: opt.id }, base, { longSolution: hasLong || hasDay ? "dextrose" : null, uf: uf(hasLong || hasDay ? "dextrose" : null) }, est(opt, o.longUfDextroseMl)));
-      if (hasLong) out.push(Object.assign({ id: opt.id + "-ico" }, base, { longSolution: "icodextrin", uf: uf("icodextrin") }, est(opt, o.longUfIcodextrinMl)));
+      const ufD = uf(hasLong || hasDay ? "dextrose" : null);
+      out.push(Object.assign({ id: opt.id }, base, { longSolution: hasLong || hasDay ? "dextrose" : null, uf: ufD }, est(opt, o.longUfDextroseMl, ufD)));
+      if (hasLong) { const ufI = uf("icodextrin"); out.push(Object.assign({ id: opt.id + "-ico" }, base, { longSolution: "icodextrin", uf: ufI }, est(opt, o.longUfIcodextrinMl, ufI))); }
     }
     return out;
   }
@@ -812,6 +927,16 @@
     petNetUfMl,
     petUfScreen,
     garredMtac,
+    SOLUTE_MODELS,
+    DEFAULT_SOLUTE_MODEL,
+    VONESH,
+    voneshDwellDp,
+    voneshSequence,
+    voneshPetDp,
+    voneshMtac,
+    petMtac,
+    predictDailyGarred,
+    dwellsWithUf,
     garredDp,
     capdDwells,
     apdDwells,
