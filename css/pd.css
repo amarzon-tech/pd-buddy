@@ -222,3 +222,16 @@ blockquote.gq cite { display: block; margin-top: 4px; font-size: 11.5px; font-st
   .neg-uf-more { display: block; margin-top: 2px; }
 }
 @media print { .neg-uf-short, .neg-uf-more { display: none !important; } }
+
+/* ── low-warning (draft): low-transporter CrCl warning, compact on small screens ── */
+#sum-low { margin-top: 8px; }
+#sum-low .low-short { display: none; }
+#sum-low .low-short summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; list-style: none; }
+#sum-low .low-short summary::-webkit-details-marker { display: none; }
+#sum-low .low-short .nu-more { text-decoration: underline; }
+#sum-low .low-short[open] .nu-more { display: none; }
+@media (max-height: 760px), (max-width: 400px) {
+  #sum-low .low-full { display: none; }
+  #sum-low .low-short { display: block; }
+}
+@media print { #sum-low { display: none !important; } }

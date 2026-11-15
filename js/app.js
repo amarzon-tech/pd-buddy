@@ -178,6 +178,9 @@
     if (r.numCat && !F.isNum(r.mtacCr) && !dpBlocked("dpcr")) r.dpErrors.push(["dpcr", { block: true, belowModel: true, msg: F.belowModelMsg("D/P creatinine", inp.dpcr, Math.max(F.DP_MODEL_MIN.cr, 1 - fillL / drainL)) }]);
     if (r.ureaSource === "invalid" && !dpBlocked("dpu")) r.dpErrors.push(["dpu", { block: true, belowModel: true, msg: F.belowModelMsg("D/P urea", inp.dpu, Math.max(F.DP_MODEL_MIN.urea, 1 - fillL / drainL)) }]);
     r.belowModel = r.dpErrors.some((x) => x[1].belowModel);
+    // Low-transporter warning (draft, branch low-warning): Low by picked type or PET D/P Cr in the
+    // Low band (< 0.50), creatinine MTAC from the Garred PET fit (not fitted to a 24-h collection).
+    r.lowTransport = !!(r.cat && r.cat.key === "low" && r.crSource !== "fitted");
     r.blocked = r.inputErrors.length > 0 || r.dpErrors.length > 0;
     r.ready = !r.blocked && F.isNum(r.V) && F.isNum(r.bsa) && F.isNum(r.mtacCr);
     r.options = r.ready
@@ -439,6 +442,12 @@
     if (r.cat) bits.push(r.cat.label + (r.typeOnly ? " (typical)" : r.numCat ? " (PET)" : ""));
     bits.push(r.urineMl > 0 ? fmt(r.urineMl, 0) + " mL/day urine" + (r.res ? "" : " (not counted)") : "anuric");
     setText("sum-line", bits.join(" · "));
+    const lw = $("sum-low");
+    if (lw) {
+      const on = !!(r.lowTransport && !r.blocked && r.ready);
+      lw.classList.toggle("hidden", !on);
+      lw.innerHTML = on ? '<span class="low-full">⚠ ' + esc(RX.LOW_TRANSPORT_WARNING) + '</span><details class="low-short"><summary>⚠ ' + esc(RX.LOW_TRANSPORT_SHORT) + ' <span class="nu-more">Details</span></summary>' + esc(RX.LOW_TRANSPORT_WARNING) + "</details>" : "";
+    }
     const rb = $("rank-basis");
     const anyRank = r.rankCapd || r.rankCcpd;
     let basis = "";
@@ -542,6 +551,7 @@
       estimate: est,
       uf: o && o.uf ? o.uf : null,
       transport: r.cat ? r.cat.label : null,
+      lowTransport: !!(o && r.lowTransport && !r.blocked),
       basis: r.belowModel ? belowModelText(r) : r.noFit ? noFitText(r) : (r.basis || null),
     });
     renderSheet($("rx-sheet"), rx);
@@ -832,7 +842,7 @@
     }
     const curId = currentId(r);
     const cur = R.options ? R.options.find((o) => o.id === curId) : null;
-    $("ts-cur").innerHTML = esc(cur ? "Current prescription: " + fullName(cur) + " — model Kt/V " + fmt(cur.ktv, 2) + ", CrCl " + fmt(cur.crcl, 1) + ", predicted UF " + ufText(cur) + " L/day (experimental). " + (cur.overCap ? "Above the fill cap for this patient (max " + fmt(F.maxFillL(R.bsa), 2) + " L + 0.05 L); shown because it was chosen as the current prescription. " : "") + note : (R.belowModel ? belowModelText(R) : R.noFit ? noFitText(R) : "Complete steps 1–2 (and pick the current prescription on step 3).")) + (cur ? negUfHtml(cur, "span") : "");
+    $("ts-cur").innerHTML = esc(cur ? "Current prescription: " + fullName(cur) + " — model Kt/V " + fmt(cur.ktv, 2) + ", CrCl " + fmt(cur.crcl, 1) + ", predicted UF " + ufText(cur) + " L/day (experimental). " + (R.lowTransport ? RX.LOW_TRANSPORT_WARNING + " " : "") + (cur.overCap ? "Above the fill cap for this patient (max " + fmt(F.maxFillL(R.bsa), 2) + " L + 0.05 L); shown because it was chosen as the current prescription. " : "") + note : (R.belowModel ? belowModelText(R) : R.noFit ? noFitText(R) : "Complete steps 1–2 (and pick the current prescription on step 3).")) + (cur ? negUfHtml(cur, "span") : "");
     const sg = $("ts-sugg");
     if (!cur) { sg.innerHTML = ""; }
     else {
@@ -1031,7 +1041,7 @@
     rx.lines.forEach((line) => {
       const t = line.trim();
       if (!t || t === rx.title) return;
-      if (/^Warning: Predicted daily UF is negative/.test(t)) { bits.push('<div class="rx-neguf" role="note">⚠ ' + esc(t) + "</div>"); return; }
+      if (/^Warning: /.test(t)) { bits.push('<div class="rx-neguf" role="note">⚠ ' + esc(t) + "</div>"); return; }
       const i = t.indexOf(":");
       if (i < 0) {
         bits.push('<div class="' + (t === rx.draftLine ? "rx-draft" : t === rx.footer || /^Estimated from typical/.test(t) ? "rx-note" : "rx-section") + '">' + esc(t) + "</div>");

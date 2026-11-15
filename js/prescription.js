@@ -38,6 +38,15 @@
     return "Predicted daily UF is negative (" + amt + ", experimental model). Watch fluid balance; consider a higher-tonicity or icodextrin dwell.";
   }
 
+  /**
+   * DRAFT wording on branch low-warning, NOT approved: Dr D, Nov 15 2026 (relayed by App Critic):
+   * "Add a warning now" for low transporters; the text below still needs his OK.
+   * Why: the Garred PET fit credits the large Low PET drain to ultrafiltration, and the options
+   * are predicted with net UF 0 per dwell, so the model's CrCl reads low (research/MODEL_FIX_PROPOSAL.md).
+   */
+  const LOW_TRANSPORT_WARNING = "Low transport: the model probably underestimates creatinine clearance (CrCl). It credits the large PET drain volume to ultrafiltration rather than diffusion, then predicts each option without that ultrafiltration. Do not rely on the estimated CrCl; confirm with a measured 24-h collection.";
+  const LOW_TRANSPORT_SHORT = "Low transport: estimated CrCl is probably too low (model limit)";
+
   /** 0.4.6: compact form for step 2 cards on small screens only (full wording elsewhere). */
   function negUfShort(dailyUfMl) {
     if (!isNum(dailyUfMl) || dailyUfMl >= 0) return null;
@@ -98,6 +107,7 @@
         lines.push("Weekly Kt/V urea: " + t);
       }
       if (isNum(e.crcl)) lines.push("Weekly CrCl: " + n1(e.crcl) + " L/week/1.73 m²");
+      if (isNum(e.crcl) && s.lowTransport) lines.push("Warning: " + LOW_TRANSPORT_WARNING);
     }
     lines.push("Model assumed: " + modelAssumed(s) + " (solution strengths are the model's assumptions, not a choice)");
     const u = s.uf;
@@ -124,7 +134,7 @@
     return { title: TITLE, lines, text: lines.join("\n"), footer, draftLine: DRAFT_LINE };
   }
 
-  const RX = { build, SOLUTIONS, TITLE, DRAFT_LINE, DISCLAIMER, modelAssumed, negUfWarning, negUfShort };
+  const RX = { build, SOLUTIONS, TITLE, DRAFT_LINE, DISCLAIMER, modelAssumed, negUfWarning, negUfShort, LOW_TRANSPORT_WARNING, LOW_TRANSPORT_SHORT };
   global.PdPrescription = RX;
   if (typeof module !== "undefined" && module.exports) module.exports = RX;
 })(typeof globalThis !== "undefined" ? globalThis : this);
