@@ -29,7 +29,7 @@ isTrue(/Educational PD prescribing workflow for nephrologists/.test(html), "educ
 isTrue(/Educational use only; not a substitute for clinical judgment/.test(html), "educational disclaimer");
 isTrue(/Not a medical device\. Not cleared or approved by FDA\./.test(html), "not-a-medical-device statement (0.4.3)");
 isTrue(!fs.existsSync(path.join(root, "CNAME")), "no custom domain");
-isTrue(/amardamodar@gmail\.com/.test(html) && cfg.SUPPORT_EMAIL === "amardamodar@gmail.com", "support email");
+isTrue(/akd\.nephrology@gmail\.com/.test(html) && cfg.SUPPORT_EMAIL === "akd.nephrology@gmail.com" && !/amardamodar/.test(html), "support email akd.nephrology@gmail.com");
 
 section("Adequest / Baxter: cited, never claimed (Dr D approved citing, 0.4)");
 const CLAIM = /(reproduc(?:e|es|ing)|replicat(?:e|es|ing)|implement(?:s|ing)?|equivalent to|same as|powered by|based on|version of|clone of|is)\s+(?:the\s+)?(?:pd\s+)?adequest/i;
@@ -65,7 +65,7 @@ const assets = (sw.match(/"\.\/[^"]*"/g) || []).map((s) => s.slice(3, -1)).filte
 assets.forEach((a) => isTrue(fs.existsSync(path.join(root, a)), "service-worker asset exists: " + a));
 ["css/pd.css", "js/app.js", "js/formulas.js", "js/prescription.js", "js/config.js"].forEach((a) => isTrue(assets.includes(a), "service worker caches " + a));
 isTrue(/const CACHE = "pd-buddy-v\d+"/.test(sw), "versioned cache name");
-isTrue(/const CACHE = "pd-buddy-v13";/.test(sw), "cache bumped to pd-buddy-v13 for 0.4.9 (step 3 list rebuilt after a blocked D/P)");
+isTrue(/const CACHE = "pd-buddy-v14";/.test(sw), "cache bumped to pd-buddy-v14 (contact email akd.nephrology@gmail.com)");
 ["js/threepore.js", "js/rxgrid.js", "js/workflow.js", "js/labparse.js", "js/ocr.js"].forEach((a) => isTrue(assets.includes(a), "service worker caches " + a));
 isTrue(cfg.APP_VERSION === "0.4.9-draft", "version 0.4.9-draft");
 ["fill cap 1.5 L/m² BSA", "0.05 L tolerance", "fill-cap sources", "troubleshoot respects the fill cap", "release 0.4.2-draft"].forEach((k) =>

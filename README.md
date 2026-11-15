@@ -37,4 +37,4 @@ node tests/lowdp.test.js
 node tests/lowwarn.test.js
 ```
 
-Support and privacy: amardamodar@gmail.com
+Support and privacy: akd.nephrology@gmail.com

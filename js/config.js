@@ -10,7 +10,7 @@
   const DRAFT_BANNER = "Draft – not for clinical use until reviewed by Dr D";
   const APP_NAME = "PD Buddy";
   const APP_VERSION = "0.4.9-draft";
-  const SUPPORT_EMAIL = "amardamodar@gmail.com";
+  const SUPPORT_EMAIL = "akd.nephrology@gmail.com";
   const PUBLISHER = "Wellness Tech LLC";
 
   const config = { DRAFT, DRAFT_BANNER, APP_NAME, APP_VERSION, SUPPORT_EMAIL, PUBLISHER };

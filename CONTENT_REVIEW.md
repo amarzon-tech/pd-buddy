@@ -704,6 +704,13 @@ Dr D, Nov 15 2026, 2:01 PM ET, relayed by App Critic: fix the Step 3 empty-list 
 - [ ] Sign-off: step 3 list rebuilt after a blocked D/P is corrected — approved by Dr D Nov 15 2026, full sign-off pending
 - [ ] Sign-off: release 0.4.9-draft, service-worker cache pd-buddy-v13, DRAFT=true, noindex unchanged — approved by Dr D Nov 15 2026, full sign-off pending
 
+## 32. Contact email (cache pd-buddy-v14)
+
+Dr D, Nov 15 2026, 3:37 PM ET (relayed): contact email akd.nephrology@gmail.com. It replaces the placeholder amardamodar@gmail.com in the About contact line, privacy.html, support.html, `SUPPORT_EMAIL` and the README. No clinical change; version stays 0.4.9-draft.
+
+- [ ] Sign-off: contact email akd.nephrology@gmail.com — decided by Dr D Nov 15 2026, full sign-off pending
+- [ ] Sign-off: service-worker cache pd-buddy-v14, DRAFT=true, noindex unchanged — full sign-off pending
+
 ---
 
 ## Status
