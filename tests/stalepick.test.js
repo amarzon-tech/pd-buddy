@@ -48,7 +48,7 @@ section("No-fit 60 cm / 20 kg after a pick");
   eq(v.cur, null, "current cleared → step 4 shows the no-fit message");
   eq(n.capd.top.length, 0, "no fallback option, so no Kt/V 6.06");
   isTrue(/R\.noFit \? noFitText\(R\)/.test(app), "step 4 uses the no-fit message when nothing is current");
-  isTrue(/basis: r\.noFit \? noFitText\(r\)/.test(app), "summary sheet carries the no-fit message");
+  isTrue(/r\.noFit \? noFitText\(r\) : \(r\.basis/.test(app), "summary sheet carries the no-fit message");
 }
 
 section("Valid picks are kept and recomputed");

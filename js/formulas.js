@@ -236,9 +236,27 @@
     if (isNum(o.weight) && o.weight <= 0) errors.push({ field: "weight", msg: "Weight must be more than 0." });
     return errors;
   }
-  function checkDp(x, label) {
+  /**
+   * PROPOSED, NOT SIGNED OFF (branch lowdp-block, for Dr D). Lowest 4-h PET D/P the model accepts.
+   * Dr D, Nov 15 2026 (relayed by App Critic): "Block very low D/P with a 'below model range'
+   * message". The cutoff values are App Builder's proposal and must be confirmed by Dr D:
+   *  - cr 0.40: Garred's volume-corrected form has zero diffusion at D/P = 1 − V0/Vt; with a 2.0 L
+   *    fill and the top of the Twardowski Low drain band (3,326 mL; Twardowski, Semin Dial
+   *    1990;3:141-142) that is 1 − 2000/3326 = 0.399, so lower D/P Cr cannot give a positive MTAC
+   *    for every published Low drain volume.
+   *  - urea 0.70: no published adult D/P urea floor; Twardowski's adult mean 0.91 ± 0.07 (as cited
+   *    by Teixidó, Adv Perit Dial 1992;8:177-180) minus 3 SD (an inference, not a published band).
+   */
+  const DP_MODEL_MIN = Object.freeze({ cr: 0.40, urea: 0.70 });
+  const DP_KEY = { "D/P creatinine": "cr", "D/P urea": "urea" };
+  function belowModelMsg(label, x, min) {
+    return label + " " + (+x).toFixed(2) + " is below model range (the estimate needs " + min.toFixed(2) + " or more at 4 h). At values this low the diffusion model gives clearance close to zero for every regimen, so no options, prescription summary or troubleshooting are shown. Check the PET result.";
+  }
+  function checkDp(x, label, key) {
     if (!isNum(x)) return null;
     if (x <= 0) return { block: true, msg: label + " must be more than 0." };
+    const k = key || DP_KEY[label];
+    if (k && x < DP_MODEL_MIN[k]) return { block: true, belowModel: true, min: DP_MODEL_MIN[k], msg: belowModelMsg(label, x, DP_MODEL_MIN[k]) };
     if (x > 1.5) {
       const s = x / 100;
       return { block: true, suggest: s < 1 ? Math.round(s * 100) / 100 : null, msg: label + " " + x + " is not a ratio." + (s < 1 ? " Did you mean " + (Math.round(s * 100) / 100).toFixed(2) + "?" : "") };
@@ -770,6 +788,8 @@
     TYPICAL_BSA_RANGE,
     checkPatient,
     checkDp,
+    DP_MODEL_MIN,
+    belowModelMsg,
     typicalPet,
     fitMtacToClearance,
     ftInToCm,

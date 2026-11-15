@@ -664,6 +664,17 @@ Dr D, Nov 15 2026, 7:01 AM ET, relayed by App Critic, in his own words: “Send 
 - [ ] Sign-off: compact negative-UF warning on small screens with a full-wording disclosure (full wording on large screens, step 4 and print) — approved by Dr D via App Critic, Nov 15 2026, full sign-off pending
 - [ ] Sign-off: release 0.4.6-draft, service-worker cache pd-buddy-v10, DRAFT=true, noindex unchanged — approved by Dr D Nov 15 2026, full sign-off pending
 
+## 29. Below-model-range block for very low PET D/P (PROPOSED, branch `lowdp-block`, not shipped)
+
+App Critic N-M2 (re-check of c5ab8b9). Dr D, Nov 15 2026, 7:16 AM ET, relayed by App Critic, in his own words: “Block very low D/P with a 'below model range' message”. He gave no cutoff, so the values below are App Builder's **proposal** and must be confirmed by Dr D before anything ships.
+- Cause: the volume-corrected Garred fit (Asghar 2003 form) has zero diffusion at D/P = 1 − V0/Vt; with a 2.0 L fill and the typical Low drain (2,988.5 mL, Twardowski band midpoint) that is 0.331, so D/P Cr 0.34 gives a creatinine MTAC of 0.17 mL/min. Regimens are then predicted with net UF 0 per dwell, so the UF credit taken in the fit is never given back and clearance is close to zero for every regimen.
+- Proposed one constant `PdFormulas.DP_MODEL_MIN = { cr: 0.40, urea: 0.70 }`. Below it: hard block, no ranked options, a “below model range” message on the cards, the basis, the Rx sheet (Copy/Print) and step 4. The block also fires when the entered drain leaves no positive MTAC.
+- Tests: `tests/lowdp.test.js`.
+
+- [ ] Sign-off: D/P creatinine cutoff (proposed 0.40) — needs Dr D's decision
+- [ ] Sign-off: D/P urea cutoff (proposed 0.70; no published adult floor, mean − 3 SD is an inference) — needs Dr D's decision
+- [ ] Sign-off: “below model range” message wording and where it shows — needs Dr D's decision
+
 ---
 
 ## Status

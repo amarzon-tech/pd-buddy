@@ -173,6 +173,11 @@
     r.kruMlMin = r.urineMl === 0 ? 0 : r.res ? r.res.ureaMlMin : null;
 
     r.ktvTarget = F.isNum(inp.ktvTarget) && inp.ktvTarget > 0 ? inp.ktvTarget : KTV_DEFAULT;
+    // Below model range (proposed, branch lowdp-block): also when the entered drain leaves no
+    // positive Garred MTAC for the entered D/P (D/P at or under 1 − V0/Vt).
+    if (r.numCat && !F.isNum(r.mtacCr) && !dpBlocked("dpcr")) r.dpErrors.push(["dpcr", { block: true, belowModel: true, msg: F.belowModelMsg("D/P creatinine", inp.dpcr, Math.max(F.DP_MODEL_MIN.cr, 1 - fillL / drainL)) }]);
+    if (r.ureaSource === "invalid" && !dpBlocked("dpu")) r.dpErrors.push(["dpu", { block: true, belowModel: true, msg: F.belowModelMsg("D/P urea", inp.dpu, Math.max(F.DP_MODEL_MIN.urea, 1 - fillL / drainL)) }]);
+    r.belowModel = r.dpErrors.some((x) => x[1].belowModel);
     r.blocked = r.inputErrors.length > 0 || r.dpErrors.length > 0;
     r.ready = !r.blocked && F.isNum(r.V) && F.isNum(r.bsa) && F.isNum(r.mtacCr);
     r.options = r.ready
@@ -398,6 +403,9 @@
     if (!full) return "";
     return '<details class="neg-uf-more"><summary>Full UF warning</summary><span class="neg-uf">⚠ ' + esc(full) + "</span></details>";
   }
+  function belowModelText(r) {
+    return r.dpErrors.filter((x) => x[1].belowModel).map((x) => x[1].msg).join(" ");
+  }
   function noFitText(r) {
     return "No fill volume fits under this patient's fill cap of " + fmt(F.maxFillL(r.bsa), 2) + " L (1.5 L/m² × BSA " + fmt(r.bsa, 2) + " m², + 0.05 L tolerance). The smallest fill offered is " + F.fmtL(F.CANDIDATE_FILLS[0]) + " L.";
   }
@@ -407,7 +415,7 @@
     // 0.4.4: the amber note never survives a blocked or empty state (text cleared too).
     if (note && (!r || r.blocked || !r.ready || !rank || !rank.top.length)) { note.classList.add("hidden"); note.textContent = ""; }
     if (!r || r.blocked || !rank || !rank.top.length) {
-      el.innerHTML = '<li class="top-empty">' + (r && r.blocked ? "Fix the inputs flagged on step 1 to see options." : r && r.noFit ? esc(noFitText(r)) : "Enter body size and transport type to see options.") + "</li>";
+      el.innerHTML = '<li class="top-empty">' + (r && r.belowModel ? esc(belowModelText(r)) : r && r.blocked ? "Fix the inputs flagged on step 1 to see options." : r && r.noFit ? esc(noFitText(r)) : "Enter body size and transport type to see options.") + "</li>";
       return;
     }
     const tgtTxt = rank.metric === "ktv" ? "Kt/V " + fmt(rank.target, 1) : "CrCl " + fmt(rank.target, 0);
@@ -434,7 +442,8 @@
     const rb = $("rank-basis");
     const anyRank = r.rankCapd || r.rankCcpd;
     let basis = "";
-    if (r.blocked) basis = "Some step 1 inputs are out of range; fix them to see options.";
+    if (r.belowModel) basis = belowModelText(r);
+    else if (r.blocked) basis = "Some step 1 inputs are out of range; fix them to see options.";
     else if (!r.ready) basis = "Enter body size and a transport type (or PET numbers) on step 1.";
     else if (r.noFit) basis = noFitText(r) + " No candidate regimen is shown; individualize the prescription.";
     else if (anyRank && anyRank.metric === "ktv") basis = "Ordered by estimated total weekly Kt/V compared with your reference value of " + fmt(r.ktvTarget, 2).replace(/0$/, "") + " (CrCl shown alongside)." + (r.basis ? " " + r.basis : "");
@@ -533,7 +542,7 @@
       estimate: est,
       uf: o && o.uf ? o.uf : null,
       transport: r.cat ? r.cat.label : null,
-      basis: r.noFit ? noFitText(r) : (r.basis || null),
+      basis: r.belowModel ? belowModelText(r) : r.noFit ? noFitText(r) : (r.basis || null),
     });
     renderSheet($("rx-sheet"), rx);
   }
@@ -823,7 +832,7 @@
     }
     const curId = currentId(r);
     const cur = R.options ? R.options.find((o) => o.id === curId) : null;
-    $("ts-cur").innerHTML = esc(cur ? "Current prescription: " + fullName(cur) + " — model Kt/V " + fmt(cur.ktv, 2) + ", CrCl " + fmt(cur.crcl, 1) + ", predicted UF " + ufText(cur) + " L/day (experimental). " + (cur.overCap ? "Above the fill cap for this patient (max " + fmt(F.maxFillL(R.bsa), 2) + " L + 0.05 L); shown because it was chosen as the current prescription. " : "") + note : (R.noFit ? noFitText(R) : "Complete steps 1–2 (and pick the current prescription on step 3).")) + (cur ? negUfHtml(cur, "span") : "");
+    $("ts-cur").innerHTML = esc(cur ? "Current prescription: " + fullName(cur) + " — model Kt/V " + fmt(cur.ktv, 2) + ", CrCl " + fmt(cur.crcl, 1) + ", predicted UF " + ufText(cur) + " L/day (experimental). " + (cur.overCap ? "Above the fill cap for this patient (max " + fmt(F.maxFillL(R.bsa), 2) + " L + 0.05 L); shown because it was chosen as the current prescription. " : "") + note : (R.belowModel ? belowModelText(R) : R.noFit ? noFitText(R) : "Complete steps 1–2 (and pick the current prescription on step 3).")) + (cur ? negUfHtml(cur, "span") : "");
     const sg = $("ts-sugg");
     if (!cur) { sg.innerHTML = ""; }
     else {
