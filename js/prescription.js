@@ -39,8 +39,8 @@
   }
 
   /**
-   * DRAFT wording on branch low-warning, NOT approved: Dr D, Nov 15 2026 (relayed by App Critic):
-   * "Add a warning now" for low transporters; the text below still needs his OK.
+   * Dr D, Nov 15 2026 (relayed by App Critic): "Add a warning now" for low transporters;
+   * 7:55 AM ET: "Low-transporter warning wording is OK as written" (full and compact).
    * Why: the Garred PET fit credits the large Low PET drain to ultrafiltration, and the options
    * are predicted with net UF 0 per dwell, so the model's CrCl reads low (research/MODEL_FIX_PROPOSAL.md).
    */

@@ -679,19 +679,20 @@ App Critic N-M2 (re-check of c5ab8b9). Dr D, Nov 15 2026, 7:16 AM ET, relayed by
 - [ ] Sign-off: flagged over-cap current prescription chosen on purpose in step 3 is kept after small input changes (App Critic 1d; no change) — decided by Dr D Nov 15 2026, full sign-off pending
 - [ ] Sign-off: release 0.4.7-draft, service-worker cache pd-buddy-v11, DRAFT=true, noindex unchanged — approved by Dr D Nov 15 2026, full sign-off pending
 
-## 30. Low-transporter CrCl warning (DRAFT, branch `low-warning`, not shipped)
+## 30. Low-transporter CrCl warning (0.4.8-draft)
 
-Dr D, Nov 15 2026, 7:26 AM ET, relayed by App Critic: “Add a warning now, and have App Builder propose the model fix for my review”. The wording below is App Builder's draft and needs Dr D's OK before it ships.
+Dr D, Nov 15 2026, 7:26 AM ET, relayed by App Critic: “Add a warning now, and have App Builder propose the model fix for my review”. Dr D, 7:55 AM ET, relayed by App Critic, in his own words: “Low-transporter warning wording is OK as written” (full and compact) and “Keep the low-transport warning above the first option on small phones”.
 - Full: “Low transport: the model probably underestimates creatinine clearance (CrCl). It credits the large PET drain volume to ultrafiltration rather than diffusion, then predicts each option without that ultrafiltration. Do not rely on the estimated CrCl; confirm with a measured 24-h collection.”
 - Compact (small screens, with a Details disclosure to the full text): “Low transport: estimated CrCl is probably too low (model limit)”.
 - Trigger: the transport category used is Low, by picked type or by a PET D/P creatinine in the Twardowski Low band (0.40–0.49 after the below-model-range block; 0.50 and above is Low-average). Not shown when the creatinine MTAC was fitted to a measured 24-h collection, or when inputs are blocked.
 - Where: step 2 summary card (full; compact on small screens), the Rx sheet and Copy/Print (“Warning: …” after the CrCl line), step 4 current prescription (full).
-- iPhone SE (375×667), 170 cm/70 kg Low: with the compact warning the first CAPD option's numbers end at y = 674, below the step bar (y = 596); without it they end at 592. Needs Dr D's choice.
+- iPhone SE (375×667), 170 cm/70 kg Low: with the compact warning the first CAPD option's numbers end at y = 674, below the step bar (y = 596); without it they end at 592. Dr D chose to keep the warning above the first option.
 - Tests: `tests/lowwarn.test.js`.
 
-- [ ] Sign-off: low-transporter warning wording (full and compact) — needs Dr D's OK
-- [ ] Sign-off: trigger (Low by type or PET D/P Cr < 0.50; not when fitted) — needs Dr D's OK
-- [ ] Sign-off: placement, including the iPhone SE fold trade-off — needs Dr D's OK
+- [ ] Sign-off: low-transporter warning wording (full and compact) — wording approved by Dr D Nov 15 2026, full sign-off pending
+- [ ] Sign-off: trigger (Low by type or PET D/P Cr < 0.50; not when fitted) — shipped as drafted; Dr D has not explicitly approved the trigger, needs his OK
+- [ ] Sign-off: placement, including the iPhone SE placement above the first option — wording approved by Dr D Nov 15 2026, full sign-off pending
+- [ ] Sign-off: release 0.4.8-draft, service-worker cache pd-buddy-v12, DRAFT=true, noindex unchanged — approved by Dr D Nov 15 2026, full sign-off pending
 
 ---
 
