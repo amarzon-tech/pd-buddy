@@ -65,9 +65,9 @@ const assets = (sw.match(/"\.\/[^"]*"/g) || []).map((s) => s.slice(3, -1)).filte
 assets.forEach((a) => isTrue(fs.existsSync(path.join(root, a)), "service-worker asset exists: " + a));
 ["css/pd.css", "js/app.js", "js/formulas.js", "js/prescription.js", "js/config.js"].forEach((a) => isTrue(assets.includes(a), "service worker caches " + a));
 isTrue(/const CACHE = "pd-buddy-v\d+"/.test(sw), "versioned cache name");
-isTrue(/const CACHE = "pd-buddy-v10";/.test(sw), "cache bumped to pd-buddy-v10 for 0.4.6 (stale pick, print, compact warning)");
+isTrue(/const CACHE = "pd-buddy-v11";/.test(sw), "cache bumped to pd-buddy-v11 for 0.4.7 (below-model-range D/P block)");
 ["js/threepore.js", "js/rxgrid.js", "js/workflow.js", "js/labparse.js", "js/ocr.js"].forEach((a) => isTrue(assets.includes(a), "service worker caches " + a));
-isTrue(cfg.APP_VERSION === "0.4.6-draft", "version 0.4.6-draft");
+isTrue(cfg.APP_VERSION === "0.4.7-draft", "version 0.4.7-draft");
 ["fill cap 1.5 L/m² BSA", "0.05 L tolerance", "fill-cap sources", "troubleshoot respects the fill cap", "release 0.4.2-draft"].forEach((k) =>
   isTrue(new RegExp("^- \\[ \\] Sign-off: " + k.replace(/[.()]/g, "\\$&"), "m").test(read("CONTENT_REVIEW.md")), "unticked 0.4.2 review item: " + k));
 isTrue((html.match(/class="note cap-note">Fill volumes capped at 1\.5 L\/m² BSA; individualize to comfort and intraperitoneal pressure \(&lt;18 cm H2O\)\.<\/p>/g) || []).length === 3, "cap note under CAPD, CCPD and updated CCPD Top 3");

@@ -237,9 +237,9 @@
     return errors;
   }
   /**
-   * PROPOSED, NOT SIGNED OFF (branch lowdp-block, for Dr D). Lowest 4-h PET D/P the model accepts.
-   * Dr D, Nov 15 2026 (relayed by App Critic): "Block very low D/P with a 'below model range'
-   * message". The cutoff values are App Builder's proposal and must be confirmed by Dr D:
+   * Lowest 4-h PET D/P the model accepts. DECIDED by Dr D, Nov 15 2026 (relayed by App Critic,
+   * 7:26 AM ET): "D/P creatinine cutoff 0.40", "D/P urea cutoff 0.70" (full sign-off pending).
+   * Earlier, 7:16 AM ET: "Block very low D/P with a 'below model range' message". Basis:
    *  - cr 0.40: Garred's volume-corrected form has zero diffusion at D/P = 1 − V0/Vt; with a 2.0 L
    *    fill and the top of the Twardowski Low drain band (3,326 mL; Twardowski, Semin Dial
    *    1990;3:141-142) that is 1 − 2000/3326 = 0.399, so lower D/P Cr cannot give a positive MTAC

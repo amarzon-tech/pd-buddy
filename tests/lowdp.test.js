@@ -1,6 +1,6 @@
 /**
  * Below-model-range block for very low PET D/P (App Critic N-M2; Dr D Nov 15 2026: "Block very low
- * D/P with a 'below model range' message"). Cutoffs are PROPOSED (F.DP_MODEL_MIN), pending Dr D.
+ * D/P with a 'below model range' message"). Cutoffs (F.DP_MODEL_MIN) decided by Dr D Nov 15 2026: "D/P creatinine cutoff 0.40", "D/P urea cutoff 0.70".
  * Run: node tests/lowdp.test.js
  */
 "use strict";
@@ -28,11 +28,11 @@ section("Root cause: Garred zero-diffusion floor 1 − V0/Vt");
   approx(1 - 2000 / 3326, 0.399, 1e-3, "floor at the top of the Twardowski Low drain band (3,326 mL)");
 }
 
-section("One config constant, proposed values");
+section("One config constant, decided values");
 {
   isTrue(Object.isFrozen(MIN), "DP_MODEL_MIN frozen");
-  eq(MIN.cr, 0.40, "creatinine cutoff 0.40 (proposed)");
-  eq(MIN.urea, 0.70, "urea cutoff 0.70 (proposed)");
+  eq(MIN.cr, 0.40, "creatinine cutoff 0.40 (decided by Dr D)");
+  eq(MIN.urea, 0.70, "urea cutoff 0.70 (decided by Dr D)");
   isTrue(MIN.cr >= +(1 - 2000 / 3326).toFixed(2), "cr cutoff at or above the Garred floor for every published Low drain");
 }
 
@@ -74,6 +74,16 @@ section("Block wiring: no ranked options, step 4, Rx / Copy / Print");
   isTrue(/R\.belowModel \? belowModelText\(R\)/.test(app), "step 4 shows the message");
   isTrue(/r\.numCat && !F\.isNum\(r\.mtacCr\) && !dpBlocked\("dpcr"\)/.test(app), "drain-dependent floor also blocks (no positive MTAC)");
   isTrue(/r\.ureaSource === "invalid" && !dpBlocked\("dpu"\)/.test(app), "invalid urea MTAC blocks instead of silently dropping Kt/V");
+}
+
+section("Decided, not proposed");
+{
+  const src = fs.readFileSync(path.join(__dirname, "..", "js/formulas.js"), "utf8");
+  isTrue(!/PROPOSED/.test(src.slice(src.indexOf("Lowest 4-h PET D/P") - 200, src.indexOf("const DP_MODEL_MIN"))), "constant no longer marked PROPOSED");
+  isTrue(/DECIDED by Dr D, Nov 15 2026/.test(src), "constant marked decided by Dr D");
+  const rv = fs.readFileSync(path.join(__dirname, "..", "CONTENT_REVIEW.md"), "utf8");
+  ["D/P creatinine cutoff 0.40", "D/P urea cutoff 0.70", "below model range", "default Low drain", "over-cap current prescription"].forEach((k) =>
+    isTrue(new RegExp("^- \\[ \\] Sign-off: [^\\n]*" + k.replace(/[/.]/g, "\\$&") + "[^\\n]*decided by Dr D Nov 15 2026, full sign-off pending", "m").test(rv), "§29 item decided: " + k));
 }
 
 done("lowdp");
