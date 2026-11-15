@@ -577,7 +577,9 @@
   }
   function fillCurrentSelect(r) {
     const sel = $("cur-rx");
-    if (!r.options) { sel.innerHTML = '<option value="">Complete step 1 first</option>'; return; }
+    // 0.4.9 (App Critic, step 3 empty list): forget the old list signature when the placeholder
+    // replaces it (e.g. a blocked D/P), so the list is rebuilt when the same options come back.
+    if (!r.options) { sel.innerHTML = '<option value="">Complete step 1 first</option>'; delete sel.dataset.sig; return; }
     const id = currentId(r);
     const sig = r.options.map((o) => o.id + (o.overCap ? "!" : "")).join();
     if (sel.dataset.sig !== sig) {

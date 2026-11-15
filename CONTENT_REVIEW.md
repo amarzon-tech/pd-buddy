@@ -690,9 +690,19 @@ Dr D, Nov 15 2026, 7:26 AM ET, relayed by App Critic: “Add a warning now, and 
 - Tests: `tests/lowwarn.test.js`.
 
 - [ ] Sign-off: low-transporter warning wording (full and compact) — wording approved by Dr D Nov 15 2026, full sign-off pending
-- [ ] Sign-off: trigger (Low by type or PET D/P Cr < 0.50; not when fitted) — shipped as drafted; Dr D has not explicitly approved the trigger, needs his OK
+- [ ] Sign-off: trigger (Low by type or PET D/P Cr < 0.50; not when fitted) — decided by Dr D Nov 15 2026 (2:01 PM ET, relayed by App Critic: stays as shipped), full sign-off pending
 - [ ] Sign-off: placement, including the iPhone SE placement above the first option — wording approved by Dr D Nov 15 2026, full sign-off pending
 - [ ] Sign-off: release 0.4.8-draft, service-worker cache pd-buddy-v12, DRAFT=true, noindex unchanged — approved by Dr D Nov 15 2026, full sign-off pending
+
+## 31. Step 3 current-prescription list after a corrected D/P (0.4.9-draft)
+
+Dr D, Nov 15 2026, 2:01 PM ET, relayed by App Critic: fix the Step 3 empty-list bug; drop model fix 2c (branch `model-2c` not merged or deployed; main keeps the current model and the approved texts).
+- Bug: after a D/P was blocked (below model range or drain guard) and then corrected, the step 3 “Current prescription” list stayed at “Complete step 1 first”. The placeholder replaced the list but the saved list signature was kept, so the same options coming back were treated as already shown.
+- Fix: the placeholder path clears the signature, so the list is rebuilt. No clinical, formula or wording change.
+- Tests: `tests/steplist.test.js`.
+
+- [ ] Sign-off: step 3 list rebuilt after a blocked D/P is corrected — approved by Dr D Nov 15 2026, full sign-off pending
+- [ ] Sign-off: release 0.4.9-draft, service-worker cache pd-buddy-v13, DRAFT=true, noindex unchanged — approved by Dr D Nov 15 2026, full sign-off pending
 
 ---
 
