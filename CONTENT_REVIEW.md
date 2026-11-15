@@ -617,6 +617,31 @@ Dr D approved all 18 items of the App Critic review (`pd-buddy-review/REPORT.md`
 - [ ] Sign-off: N3 model documentation (UF 0 / fill-drain 0, Akonur 2013 check, renal Kt/V assumed 0)
 - [ ] Sign-off: release 0.4.3-draft, service-worker cache pd-buddy-v7, DRAFT=true, noindex unchanged
 
+## 26. Small fills and App Critic re-check fixes (0.4.4-draft)
+
+Dr D, Nov 15 2026, 6:33 AM ET, in his own words: “Fill can be as small as 1 l - agree with the other solutions”. The App Critic re-check of bed91b4 (`pd-buddy-review/RECHECK-bed91b4.md`) found R1: at BSA below about 1.30 m² every candidate (smallest fill 2.0 L) was above the 1.5 L/m² cap, so small adults got no options and a wrong reason. Not changed in this batch (still Dr D's open questions): the ranking order (M1), the amber plausibility ranges (M2), CrCl 60 vs 45 and the Low creatinine method (S4), 4.25% in UF troubleshooting (S8).
+
+- **Small fills.** Candidate fills now 1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0 L for CAPD exchanges and CCPD night fills (21 CAPD, 144 CCPD regimens). The 1.5 L/m² BSA + 0.05 L cap still applies to every fill. For CCPD night fills below 2.0 L the day volumes equal the night fill (dry day; one day dwell of the fill volume; or a midday exchange of 2 × the fill volume); at 2.0 L and above the day patterns are unchanged (2.0 L day dwell; midday 2 × 2.0 or 2 × 2.5 L). Pairing small night fills with equal day volumes is a judgment, not a published rule. The icodextrin UF stays the published 2 L value and is labelled “not adjusted” (S2), which matters more at 1.0–1.75 L. Step 4: “Larger fill” steps to the next candidate fill (1.25 → 1.5 L …); for small CCPD fills “Add a day dwell” and “Add a midday exchange” use the night-fill volume.
+- **Small-adult results** (male 70 y, high-average, typical values, anuric, reference Kt/V 1.7):
+  - 150 cm / 40 kg (V 25.3 L, BSA 1.29 m², max fill 1.94 L): CAPD 4 × 1.75 L (Kt/V 1.91, CrCl 59.5) · 5 × 1.25 L (1.71, 53.8) · 5 × 1.5 L (2.03, 61.7). CCPD 5 × 1.75 L 9 h dry (1.84, 42.7) · 5 × 1.5 L 10 h dry (1.75, 43.2) · 5 × 1.75 L 10 h dry (1.92, 45.8).
+  - 145 cm / 38 kg (V 24.1 L, BSA 1.24 m², max fill 1.86 L): CAPD 4 × 1.5 L (1.73, 54.9) · 4 × 1.75 L (2.01, 62.1) · 5 × 1.25 L (1.80, 56.1). CCPD 5 × 1.5 L 9 h dry (1.76, 42.3) · 5 × 1.75 L 9 h dry (1.93, 44.6) · 4 × 1.75 L 10 h dry (1.75, 43.9).
+  - The experimental UF model predicts negative daily UF for these small CAPD regimens (about −0.4 to −0.5 L/day with 1.5% exchanges and an 8-h 2.5% overnight dwell): for Dr D, not validated.
+  - Example patient (5 ft 10 in, 80 kg): CAPD and CCPD options unchanged from 0.4.3.
+- **No-fit message.** When every candidate is above the cap: “No fill volume fits under this patient's fill cap of X L (1.5 L/m² × BSA Y m², + 0.05 L tolerance). The smallest fill offered is 1.0 L.” on step 2 (basis and both cards) and step 4, instead of “Kt/V could not be estimated” or “Enter body size and transport type”. With 1.0 L fills this needs BSA below about 0.63 m².
+- **Height hard block.** Height outside the recorded range of adult human height is blocked in cm and in ft + in: 54.6 cm (Guinness World Records, shortest adult ever, Chandra Bahadur Dangi, measured 26 Feb 2012) to 272 cm (Guinness World Records, tallest man ever, Robert Wadlow, measured 27 Jun 1940). 1,780 cm and 8 ft 11.9 in are blocked with no ranked options. This is an impossible-value block only; 70 cm (inches typed into cm) is still accepted, pending Dr D's amber ranges (M2).
+- **Stale amber note.** The “No option's estimate reaches your reference value” / “Only n options…” note is hidden and emptied whenever inputs are blocked or no option is shown. (In the browser the note was already hidden; the re-check read it from the hidden step's text. Now the text is cleared too.)
+- **iPhone SE step 2.** At 375 × 667 the first CAPD option (name, plain words, Kt/V, CrCl, UF) is above the step bar: the “Ordered by … / typical values” basis moved to a new “How these are estimated” card below the CCPD options; summary text is smaller; on screens up to 760 px tall the brand row is hidden on steps 2–4 (the dark-mode toggle stays on step 1). The ISPD line and the residual-function note stay above the options.
+- **CCPD UF wording.** The CCPD copy/print UF line now reads “assuming 1.5% dextrose cycles and a 2.5% dextrose day dwell” (icodextrin: “icodextrin day dwell = published value…”), matching “Model assumed”. CAPD unchanged.
+- Tests: `tests/smallfill.test.js` (new), `tests/ranking.test.js`, `tests/static.test.js`, `tests/critic.test.js`.
+
+- [ ] Sign-off: small fills 1.0–1.75 L (CAPD and CCPD, still capped at 1.5 L/m² BSA + 0.05 L; small CCPD night fills paired with equal day volumes) — approved by Dr D Nov 15 2026, full sign-off pending
+- [ ] Sign-off: no-fit message when every candidate is above the fill cap — approved by Dr D Nov 15 2026, full sign-off pending
+- [ ] Sign-off: height hard block outside 54.6–272 cm (cm and ft + in) — approved by Dr D Nov 15 2026, full sign-off pending
+- [ ] Sign-off: stale amber note hidden and emptied when inputs are blocked — approved by Dr D Nov 15 2026, full sign-off pending
+- [ ] Sign-off: iPhone SE step 2 layout (basis card below the options, compact header on short screens) — approved by Dr D Nov 15 2026, full sign-off pending
+- [ ] Sign-off: CCPD UF wording “cycles / day dwell” in the copied and printed summary — approved by Dr D Nov 15 2026, full sign-off pending
+- [ ] Sign-off: release 0.4.4-draft, service-worker cache pd-buddy-v8, DRAFT=true, noindex unchanged — approved by Dr D Nov 15 2026, full sign-off pending
+
 ---
 
 ## Status

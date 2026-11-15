@@ -137,7 +137,7 @@ section("S1–S8");
   isTrue(/published value for 2 L, 9 h\/15 h; not adjusted to this regimen/.test(app), "S2 card wording");
   isTrue(/Suggestions for UF are ordered by the experimental UF model\./.test(app), "S3 note");
   isTrue(!/never changes Kt\/V or the ranking/.test(app + html), "S3 'ranking' claim removed");
-  isTrue(/Ranking assumes no residual kidney function: add urine and serum urea to include it\./.test(html) && /id="go-rkf"/.test(html), "S5 note and link");
+  isTrue(/Ranking assumes no residual kidney function: <button type="button" class="link-btn" id="go-rkf">add urine and serum urea to include it\.<\/button>/.test(html) && /id="go-rkf"/.test(html), "S5 note and link");
   isTrue(/<optgroup label=/.test(app) && /closest match/.test(html), "S6 groups and closest match");
   isTrue(/aria-label="Height, inches"/.test(html) && !/aria-label="&nbsp;"/.test(html), "S7 inch label");
   isTrue(/<main id="main">/.test(html) && /<\/main>/.test(html), "S7 main landmark");

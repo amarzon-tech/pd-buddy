@@ -5,7 +5,7 @@
   "use strict";
 
   const isNum = (x) => typeof x === "number" && Number.isFinite(x);
-  const L = (x) => (isNum(x) ? x.toFixed(1) + " L" : "____");
+  const L = (x) => (isNum(x) ? (Math.abs(x * 10 - Math.round(x * 10)) < 1e-9 ? x.toFixed(1) : x.toFixed(2)) + " L" : "____"); // 1.25 L stays 1.25 (0.4.4)
   const H = (x) => (isNum(x) ? String(Math.round(x * 10) / 10) + " h" : "____");
   const n2 = (x) => (isNum(x) ? x.toFixed(2) : "____");
   const n1 = (x) => (isNum(x) ? x.toFixed(1) : "____");
@@ -83,7 +83,17 @@
     lines.push("Model assumed: " + modelAssumed(s) + " (solution strengths are the model's assumptions, not a choice)");
     const u = s.uf;
     if (u && isNum(u.dailyUfMl)) {
-      lines.push("Predicted daily UF (experimental three-pore model): " + (u.dailyUfMl / 1000).toFixed(2) + " L" + (u.longSource === "published" ? ", assuming 1.5% dextrose exchanges; icodextrin long dwell = published value for 2 L, 9 h/15 h, not adjusted" : u.longSource === "model" && u.dayDwells === 2 ? ", assuming 1.5% dextrose cycles and two 2.5% dextrose day dwells" : u.longSource === "model" ? ", assuming 1.5% dextrose exchanges and a 2.5% dextrose long dwell" : ", assuming 1.5% dextrose cycles"));
+      // 0.4.4 (App Critic re-check): CCPD wording is cycles / day dwell, matching "Model assumed".
+      const apd = s.modality === "apd";
+      const assume =
+        u.longSource === "published"
+          ? apd ? ", assuming 1.5% dextrose cycles; icodextrin day dwell = published value for 2 L, 9 h/15 h, not adjusted" : ", assuming 1.5% dextrose exchanges; icodextrin long dwell = published value for 2 L, 9 h/15 h, not adjusted"
+          : u.longSource === "model" && u.dayDwells === 2
+          ? ", assuming 1.5% dextrose cycles and two 2.5% dextrose day dwells"
+          : u.longSource === "model"
+          ? apd ? ", assuming 1.5% dextrose cycles and a 2.5% dextrose day dwell" : ", assuming 1.5% dextrose exchanges and a 2.5% dextrose long dwell"
+          : ", assuming 1.5% dextrose cycles";
+      lines.push("Predicted daily UF (experimental three-pore model): " + (u.dailyUfMl / 1000).toFixed(2) + " L" + assume);
     }
     if (s.transport) lines.push("PET transport: " + s.transport + (s.basis ? " (typical values)" : ""));
     if (s.basis) lines.push(s.basis);

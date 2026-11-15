@@ -169,3 +169,20 @@ blockquote.gq cite { display: block; margin-top: 4px; font-size: 11.5px; font-st
 .rx-draft { margin: 2px 0 8px; padding: 6px 10px; border-radius: 8px; background: var(--amber-bg); color: var(--amber-ink); font-weight: 800; }
 .rx-disc { font-weight: 650; }
 @media print { .rx-draft { border: 2px solid #000; color: #000 !important; background: #fff !important; } }
+
+/* ── 0.4.4: iPhone SE (375×667) — first option above the fold on step 2 ── */
+.summary-card .sum-line { font-size: 15px; line-height: 1.35; }
+.summary-card .ispd-line { margin-top: 6px; font-size: 12.5px; line-height: 1.35; }
+.summary-card #sum-rkf { margin-top: 6px; font-size: 13px; line-height: 1.35; }
+.summary-card #sum-rkf .link-btn { display: inline; min-height: 0; padding: 12px 0; font-size: inherit; }
+@media (max-height: 760px) {
+  /* brand row hidden on steps 2–4 of short screens (theme toggle stays on step 1) */
+  .on-results .top-row { display: none; }
+  .on-results .stepper.four-step .stepper-item { min-height: 44px; padding: 2px; }
+  .on-results .top { padding-top: 6px; padding-bottom: 4px; }
+  .on-results .summary-card { padding-top: 12px; padding-bottom: 12px; }
+  .on-results .summary-card .sum-line { font-size: 14px; }
+  .on-results .top-card { padding-top: 12px; }
+  .on-results .top-card .card-h { margin-bottom: 6px; }
+  .on-results #step-2 > .card + .card { margin-top: 10px; }
+}

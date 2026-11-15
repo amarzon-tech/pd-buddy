@@ -206,14 +206,32 @@
    *  D/P ≥ 1.0: the Garred model needs D/P < 1. A value > 1.5 is read as a
    *  percent slip and the /100 value is offered ("Did you mean 0.70?").
    * ═══════════════════════════════════════════════════════════════════════ */
+  /**
+   * 0.4.4 (App Critic re-check): height outside the recorded range of adult human height is
+   * impossible and blocked, in cm and in ft + in. Guinness World Records: shortest adult ever
+   * Chandra Bahadur Dangi 54.6 cm (26 Feb 2012); tallest man ever Robert Wadlow 272 cm
+   * (27 Jun 1940). This is an impossible-value block only; amber plausibility ranges are
+   * still Dr D's open question.
+   */
+  const HEIGHT_LIMITS_CM = Object.freeze({ min: 54.6, max: 272 });
   function checkPatient(o) {
     const errors = [];
+    const hl = HEIGHT_LIMITS_CM;
+    const outside = (cm) => isNum(cm) && cm > 0 && (cm < hl.min || cm > hl.max);
     if (isNum(o.age) && o.age < 18) errors.push({ field: "age", msg: "Adults only (18 years or older): the Watson volume equation is for adults." });
     if (o.hunit === "cm") {
       if (isNum(o.cm) && o.cm <= 0) errors.push({ field: "cm", msg: "Height must be more than 0 cm." });
+      else if (outside(o.cm)) errors.push({ field: "cm", msg: "Height " + o.cm + " cm is outside the recorded range of adult height (54.6–272 cm). " + (o.cm > hl.max ? "Check for an extra digit or a value in mm." : "Entering inches? Switch height to ft + in.") });
     } else {
-      if (isNum(o.ft) && (o.ft > 8 || o.ft < 0)) errors.push({ field: "ft", msg: "Feet must be between 0 and 8. Entering centimetres? Switch height to cm." });
-      if (isNum(o.inch) && (o.inch >= 12 || o.inch < 0)) errors.push({ field: "inch", msg: "Inches must be 0 to 11.9." });
+      const ftBad = isNum(o.ft) && (o.ft > 8 || o.ft < 0);
+      const inBad = isNum(o.inch) && (o.inch >= 12 || o.inch < 0);
+      if (ftBad) errors.push({ field: "ft", msg: "Feet must be between 0 and 8. Entering centimetres? Switch height to cm." });
+      if (inBad) errors.push({ field: "inch", msg: "Inches must be 0 to 11.9." });
+      if (!ftBad && !inBad && (isNum(o.ft) || isNum(o.inch))) {
+        const cm = ((isNum(o.ft) ? o.ft : 0) * 12 + (isNum(o.inch) ? o.inch : 0)) * 2.54;
+        if (cm <= 0) errors.push({ field: "ft", msg: "Height must be more than 0." });
+        else if (outside(cm)) errors.push({ field: "ft", msg: "Height " + (Math.round(cm * 10) / 10) + " cm is outside the recorded range of adult height (54.6–272 cm, 1 ft 9.5 in to 8 ft 11.1 in)." });
+      }
     }
     if (isNum(o.weight) && o.weight <= 0) errors.push({ field: "weight", msg: "Weight must be more than 0." });
     return errors;
@@ -499,12 +517,21 @@
    *  Every option with a long dwell also has an Extraneal variant (icodextrin
    *    NOT modeled: identical unless the user enters a long-dwell UF).
    * ═══════════════════════════════════════════════════════════════════════ */
+  // 0.4.4 (Dr D, Nov 15 2026: "Fill can be as small as 1 l"): fills from 1.0 L, in 0.25 L
+  // steps below 2.0 L, for CAPD exchanges and CCPD night fills. Still capped per patient at
+  // 1.5 L/m² BSA + 0.05 L (FILL_CAP). Ids and labels of the 2.0 / 2.5 / 3.0 L options unchanged.
+  const SMALL_FILLS = Object.freeze([1.0, 1.25, 1.5, 1.75]);
+  const CANDIDATE_FILLS = Object.freeze(SMALL_FILLS.concat([2.0, 2.5, 3.0]));
+  /** Volume text: 1.0, 1.25, 1.5, 1.75, 2.0 … (two decimals only when needed). */
+  function fmtL(v) {
+    return Math.abs(v * 10 - Math.round(v * 10)) < 1e-9 ? v.toFixed(1) : v.toFixed(2);
+  }
   const CANDIDATE_OPTIONS = Object.freeze(
     (function () {
       const out = [];
       [3, 4, 5].forEach((n) =>
-        [2.0, 2.5, 3.0].forEach((f) =>
-          out.push(Object.freeze({ id: "capd-" + n + "x" + f.toFixed(1), mod: "capd", label: "CAPD " + n + " × " + f.toFixed(1) + " L", exchanges: n, fillL: f, longDwellH: 8 }))
+        CANDIDATE_FILLS.forEach((f) =>
+          out.push(Object.freeze({ id: "capd-" + n + "x" + fmtL(f), mod: "capd", label: "CAPD " + n + " × " + fmtL(f) + " L", exchanges: n, fillL: f, longDwellH: 8 }))
         )
       );
       // CCPD (0.4.1, approved by Dr D because no 9-h, ≤ 2.5 L option reached Kt/V 1.7 for the
@@ -521,35 +548,37 @@
         { key: "mid2.0", lastFillL: 2.0, dayDwells: 2 },
         { key: "mid2.5", lastFillL: 2.5, dayDwells: 2 },
       ];
-      [9, 10, 11].forEach((h) =>
-        DAYS.forEach((d) =>
-          [4, 5].forEach((n) =>
-            [2.0, 2.5, 3.0].forEach((f) => {
-              const dayH = 24 - h;
-              const dayTxt =
-                d.dayDwells === 0
-                  ? ", dry day"
-                  : d.dayDwells === 1
-                  ? " + " + d.lastFillL.toFixed(1) + " L day dwell"
-                  : " + midday exchange (2 × " + d.lastFillL.toFixed(1) + " L day dwells, " + String(dayH / 2) + " h each)";
-              out.push(
-                Object.freeze({
-                  // 9-h ids unchanged from 0.4.0 (ccpd-5x2.5-day etc.)
-                  id: "ccpd-" + n + "x" + f.toFixed(1) + (h === 9 ? "" : "-" + h + "h") + "-" + d.key,
-                  mod: "ccpd",
-                  label: "CCPD " + n + " × " + f.toFixed(1) + " L, " + h + " h" + dayTxt,
-                  cycles: n,
-                  fillL: f,
-                  therapyH: h,
-                  lastFillL: d.lastFillL,
-                  dayDwells: d.dayDwells,
-                  midday: d.dayDwells === 2,
-                })
-              );
-            })
-          )
-        )
-      );
+      const ccpd = (h, d, n, f) => {
+        const dayH = 24 - h;
+        const dayTxt =
+          d.dayDwells === 0
+            ? ", dry day"
+            : d.dayDwells === 1
+            ? " + " + fmtL(d.lastFillL) + " L day dwell"
+            : " + midday exchange (2 × " + fmtL(d.lastFillL) + " L day dwells, " + String(dayH / 2) + " h each)";
+        return Object.freeze({
+          // 9-h ids unchanged from 0.4.0 (ccpd-5x2.5-day etc.)
+          id: "ccpd-" + n + "x" + fmtL(f) + (h === 9 ? "" : "-" + h + "h") + "-" + d.key,
+          mod: "ccpd",
+          label: "CCPD " + n + " × " + fmtL(f) + " L, " + h + " h" + dayTxt,
+          cycles: n,
+          fillL: f,
+          therapyH: h,
+          lastFillL: d.lastFillL,
+          dayDwells: d.dayDwells,
+          midday: d.dayDwells === 2,
+        });
+      };
+      [9, 10, 11].forEach((h) => DAYS.forEach((d) => [4, 5].forEach((n) => [2.0, 2.5, 3.0].forEach((f) => out.push(ccpd(h, d, n, f))))));
+      // Night fills below 2.0 L (0.4.4) pair with day volumes equal to the night fill
+      // (dry | one day dwell | midday 2 × fill), so a small patient's day dwells also fit
+      // under the cap. Judgment to confirm (CONTENT_REVIEW §26).
+      const SMALL_DAYS = (f) => [
+        { key: "dry", lastFillL: 0, dayDwells: 0 },
+        { key: "day", lastFillL: f, dayDwells: 1 },
+        { key: "mid", lastFillL: f, dayDwells: 2 },
+      ];
+      [9, 10, 11].forEach((h) => SMALL_FILLS.forEach((f) => SMALL_DAYS(f).forEach((d) => [4, 5].forEach((n) => out.push(ccpd(h, d, n, f))))));
       return out;
     })()
   );
@@ -753,6 +782,10 @@
     withinFillCap,
     regimenOptions,
     CANDIDATE_OPTIONS,
+    CANDIDATE_FILLS,
+    HEIGHT_LIMITS_CM,
+    SMALL_FILLS,
+    fmtL,
     burdenKey,
     candidateOptions,
     rankOptions,

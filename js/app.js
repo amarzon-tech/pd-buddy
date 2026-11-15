@@ -178,6 +178,8 @@
     r.options = r.ready
       ? safe(() => F.candidateOptions({ mtacUrea: r.mtacU, mtacCr: r.mtacCr, V: r.V, bsa: r.bsa, ktvRenal: r.ktvR, rkfLDay: r.rkfLDay, longUfDextroseMl: inp.ufDex, longUfIcodextrinMl: inp.ufIco, ufFn: r.cat ? ufFor(r.cat.key) : null }))
       : null;
+    // 0.4.4 (App Critic R1): every candidate above the fill cap → say so plainly.
+    r.noFit = !!(r.options && r.options.length && r.options.every((o) => o.overCap));
     if (r.options) {
       r.rankCapd = F.rankOptions(r.options, { mod: "capd", ktvTarget: r.ktvTarget, crclTarget: CRCL_TARGET });
       r.rankCcpd = F.rankOptions(r.options, { mod: "ccpd", ktvTarget: r.ktvTarget, crclTarget: CRCL_TARGET });
@@ -313,17 +315,17 @@
   function words(o) {
     const p = o.opt;
     const ico = o.longSolution === "icodextrin";
-    if (p.mod === "capd") return p.exchanges + " exchanges a day × " + fmt(p.fillL, 1) + " L, one 8-h overnight dwell" + (ico ? " with icodextrin" : "");
+    if (p.mod === "capd") return p.exchanges + " exchanges a day × " + F.fmtL(p.fillL) + " L, one 8-h overnight dwell" + (ico ? " with icodextrin" : "");
     const th = p.therapyH || 9, dayH = 24 - th;
-    const base = p.cycles + " cycles × " + fmt(p.fillL, 1) + " L over " + th + " h, ";
-    if (p.dayDwells === 2) return base + "last fill " + fmt(p.lastFillL, 1) + " L plus one manual midday exchange (2 × " + fmt(p.lastFillL, 1) + " L day dwells, " + fmt(dayH / 2, 1).replace(/\.0$/, "") + " h each)";
-    return base + (p.lastFillL > 0 ? "plus a " + fmt(p.lastFillL, 1) + " L day dwell (" + dayH + " h)" + (ico ? " with icodextrin" : "") : "dry day");
+    const base = p.cycles + " cycles × " + F.fmtL(p.fillL) + " L over " + th + " h, ";
+    if (p.dayDwells === 2) return base + "last fill " + F.fmtL(p.lastFillL) + " L plus one manual midday exchange (2 × " + F.fmtL(p.lastFillL) + " L day dwells, " + fmt(dayH / 2, 1).replace(/\.0$/, "") + " h each)";
+    return base + (p.lastFillL > 0 ? "plus a " + F.fmtL(p.lastFillL) + " L day dwell (" + dayH + " h)" + (ico ? " with icodextrin" : "") : "dry day");
   }
   function shortName(o) {
     const p = o.opt;
-    if (p.mod === "capd") return "CAPD " + p.exchanges + " × " + fmt(p.fillL, 1) + " L";
+    if (p.mod === "capd") return "CAPD " + p.exchanges + " × " + F.fmtL(p.fillL) + " L";
     const th = p.therapyH && p.therapyH !== 9 ? ", " + p.therapyH + " h" : "";
-    return "CCPD " + p.cycles + " × " + fmt(p.fillL, 1) + " L" + th + (p.dayDwells === 2 ? " + midday exchange (2 × " + fmt(p.lastFillL, 1) + " L)" : p.lastFillL > 0 ? " + day dwell" : ", dry day");
+    return "CCPD " + p.cycles + " × " + F.fmtL(p.fillL) + " L" + th + (p.dayDwells === 2 ? " + midday exchange (2 × " + F.fmtL(p.lastFillL) + " L)" : p.lastFillL > 0 ? " + day dwell" : ", dry day");
   }
   function fullName(o) {
     return shortName(o) + (o.longSolution === "icodextrin" ? " · icodextrin" : "");
@@ -366,12 +368,16 @@
     );
   }
 
+  function noFitText(r) {
+    return "No fill volume fits under this patient's fill cap of " + fmt(F.maxFillL(r.bsa), 2) + " L (1.5 L/m² × BSA " + fmt(r.bsa, 2) + " m², + 0.05 L tolerance). The smallest fill offered is " + F.fmtL(F.CANDIDATE_FILLS[0]) + " L.";
+  }
   function renderTop(listId, noteId, rank, r, pickable) {
     const el = $(listId);
     const note = noteId ? $(noteId) : null;
-    if (!rank || !rank.top.length) {
-      el.innerHTML = '<li class="top-empty">' + (r && r.blocked ? "Fix the inputs flagged on step 1 to see options." : "Enter body size and transport type to see options.") + "</li>";
-      if (note) note.classList.add("hidden");
+    // 0.4.4: the amber note never survives a blocked or empty state (text cleared too).
+    if (note && (!r || r.blocked || !r.ready || !rank || !rank.top.length)) { note.classList.add("hidden"); note.textContent = ""; }
+    if (!r || r.blocked || !rank || !rank.top.length) {
+      el.innerHTML = '<li class="top-empty">' + (r && r.blocked ? "Fix the inputs flagged on step 1 to see options." : r && r.noFit ? esc(noFitText(r)) : "Enter body size and transport type to see options.") + "</li>";
       return;
     }
     const tgtTxt = rank.metric === "ktv" ? "Kt/V " + fmt(rank.target, 1) : "CrCl " + fmt(rank.target, 0);
@@ -400,6 +406,7 @@
     let basis = "";
     if (r.blocked) basis = "Some step 1 inputs are out of range; fix them to see options.";
     else if (!r.ready) basis = "Enter body size and a transport type (or PET numbers) on step 1.";
+    else if (r.noFit) basis = noFitText(r) + " No candidate regimen is shown; individualize the prescription.";
     else if (anyRank && anyRank.metric === "ktv") basis = "Ordered by estimated total weekly Kt/V compared with your reference value of " + fmt(r.ktvTarget, 2).replace(/0$/, "") + " (CrCl shown alongside)." + (r.basis ? " " + r.basis : "");
     else basis = "Ordered by weekly CrCl: Kt/V could not be estimated. Reference " + CRCL_TARGET + " L/week/1.73 m² (historical CAPD figure).";
     // App Critic S5: urine without urea is not counted; say so where the options are.
@@ -407,7 +414,7 @@
     // App Critic N2: a first-time user (nothing entered yet) can try an example patient.
     $("try-wrap").classList.toggle("hidden", !!r.ready || [r.inp.age, r.inp.ft, r.inp.inch, r.inp.cm, r.inp.wIn].some(F.isNum));
     rb.textContent = basis;
-    rb.classList.toggle("warn-note", r.ready && (!!r.typical || (!!anyRank && anyRank.metric === "crcl")));
+    rb.classList.toggle("warn-note", r.ready && (!!r.noFit || !!r.typical || (!!anyRank && anyRank.metric === "crcl")));
 
     renderTop("top-capd", "top-capd-note", r.rankCapd, r);
     renderTop("top-ccpd", "top-ccpd-note", r.rankCcpd, r);
@@ -778,7 +785,7 @@
     }
     const curId = currentId(r);
     const cur = R.options ? R.options.find((o) => o.id === curId) : null;
-    setText("ts-cur", cur ? "Current prescription: " + fullName(cur) + " — model Kt/V " + fmt(cur.ktv, 2) + ", CrCl " + fmt(cur.crcl, 1) + ", predicted UF " + ufText(cur) + " L/day (experimental). " + note : "Complete steps 1–2 (and pick the current prescription on step 3).");
+    setText("ts-cur", cur ? "Current prescription: " + fullName(cur) + " — model Kt/V " + fmt(cur.ktv, 2) + ", CrCl " + fmt(cur.crcl, 1) + ", predicted UF " + ufText(cur) + " L/day (experimental). " + note : (R.noFit ? noFitText(R) : "Complete steps 1–2 (and pick the current prescription on step 3)."));
     const sg = $("ts-sugg");
     if (!cur) { sg.innerHTML = ""; }
     else {
@@ -787,7 +794,7 @@
       sg.innerHTML = list.length
         ? '<div class="ts-list">' + list.map((s) => s.capReached
             ? '<div class="ts-row ts-cap"><div class="ts-h"><b>' + esc(s.label) + "</b>: fill cap reached</div>" +
-              '<div class="ts-n"><span>' + fmt(s.cappedFillL, 1) + " L would exceed 1.5 L/m² BSA (max " + fmt(F.maxFillL(R.bsa), 2) + " L + 0.05 L). Not suggested.</span></div></div>"
+              '<div class="ts-n"><span>' + F.fmtL(s.cappedFillL) + " L would exceed 1.5 L/m² BSA (max " + fmt(F.maxFillL(R.bsa), 2) + " L + 0.05 L). Not suggested.</span></div></div>"
             : '<div class="ts-row"><div class="ts-h"><b>' + esc(s.label) + "</b> → " + esc(fullName(s.row)) + "</div>" +
             '<div class="ts-n"><span>Kt/V ' + fmt(s.row.ktv, 2) + " (" + sign(s.dKtv, 2) + ")</span><span>CrCl " + fmt(s.row.crcl, 1) + " (" + sign(s.dCrcl, 1) + ")</span><span>UF " + ufText(s.row) + " L/d (" + sign(F.isNum(s.dUfMl) ? s.dUfMl / 1000 : null, 2) + ")*</span></div>" +
             (s.meetsKtv === true ? refBadge(true, "ktv", R.ktvTarget) : s.meetsKtv === false ? refBadge(false, "ktv", R.ktvTarget) : "") + "</div>").join("") +
@@ -872,7 +879,8 @@
     options: {
       title: "Options compared and how they are ordered",
       html: `<h4>Candidate set</h4>
-        <p class="eq">CAPD 3, 4 or 5 exchanges × 2.0, 2.5 or 3.0 L, 8-h overnight long dwell<br>
+        <p class="eq">CAPD 3, 4 or 5 exchanges × 1.0, 1.25, 1.5, 1.75, 2.0, 2.5 or 3.0 L, 8-h overnight long dwell<br>
+        CCPD 4 or 5 cycles × 1.0, 1.25, 1.5 or 1.75 L over 9, 10 or 11 h, with a dry day, a day dwell of the same volume, or a midday exchange of 2 × the same volume (Dr D, Nov 15 2026: “Fill can be as small as 1 l”)<br>
         CCPD 4 or 5 cycles × 2.0, 2.5 or 3.0 L over 9, 10 or 11 h, with a dry day, a 2.0 L day dwell (24 h − cycler time), or a manual midday exchange (last fill + one exchange, 2 × 2.0 L or 2 × 2.5 L, the day split equally: 7.5 / 7 / 6.5 h each)<br>
         Each option with one long dwell also with an icodextrin 7.5% long dwell (not the split midday dwells)<br>
         Fill cap: any option with a fill (exchange, night fill, day dwell or midday exchange) above 1.5 L/m² BSA × Mosteller BSA + 0.05 L is left out</p>

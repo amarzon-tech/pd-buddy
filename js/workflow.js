@@ -89,9 +89,13 @@
       if (row.capped) return out.push({ kind, label, row: null, capReached: true, cappedFillL: F.optionMaxFillL(row.capped.opt) });
       if (row.id !== current.id) out.push({ kind, label, row });
     };
+    // Next larger candidate fill (0.4.4: fills step 0.25 L below 2.0 L, then 2.5, 3.0).
+    const FILLS = F.CANDIDATE_FILLS || [2.0, 2.5, 3.0];
+    const nextFill = FILLS.find((f) => f > p.fillL + 1e-9);
+    const fl = (v) => (F.fmtL ? F.fmtL(v) : v.toFixed(1));
     if (p.mod === "capd") {
       push("add-exchange", "Add an exchange (" + (p.exchanges + 1) + " a day)", find((o) => o.mod === "capd" && o.exchanges === p.exchanges + 1 && o.fillL === p.fillL));
-      push("larger-fill", "Larger fill (" + (p.fillL + 0.5).toFixed(1) + " L)", find((o) => o.mod === "capd" && o.exchanges === p.exchanges && Math.abs(o.fillL - (p.fillL + 0.5)) < 1e-9));
+      if (nextFill) push("larger-fill", "Larger fill (" + fl(nextFill) + " L)", find((o) => o.mod === "capd" && o.exchanges === p.exchanges && Math.abs(o.fillL - nextFill) < 1e-9));
       if (!ico) push("icodextrin", "Icodextrin 7.5% for the overnight long dwell", find((o) => o.id === p.id, "icodextrin"));
     } else {
       // Same cycler time, day pattern and volumes unless the change is that step.
@@ -103,13 +107,19 @@
         (keep.time === false || th(o) === th(p)) &&
         (keep.day === false || ((o.dayDwells || 0) === (p.dayDwells || 0) && (o.lastFillL || 0) === (p.lastFillL || 0)));
       push("add-exchange", "Add a cycle (" + (p.cycles + 1) + " cycles)", find((o) => same(o, { cycles: false }) && o.cycles === p.cycles + 1));
-      push("larger-fill", "Larger fill (" + (p.fillL + 0.5).toFixed(1) + " L)", find((o) => same(o, { fill: false }) && Math.abs(o.fillL - (p.fillL + 0.5)) < 1e-9));
+      // Small night fills carry day volumes equal to the fill (0.4.4), so a larger fill moves the
+      // day volume with it; at 2.0 L and above the day pattern is kept as before.
+      if (nextFill) {
+        const wantLast = !(p.lastFillL > 0) ? 0 : nextFill < 2 ? nextFill : p.fillL < 2 ? 2.0 : p.lastFillL;
+        push("larger-fill", "Larger fill (" + fl(nextFill) + " L)", find((o) => same(o, { fill: false, day: false }) && (o.dayDwells || 0) === (p.dayDwells || 0) && Math.abs((o.lastFillL || 0) - wantLast) < 1e-9 && Math.abs(o.fillL - nextFill) < 1e-9));
+      }
       push("longer-time", "Longer cycler time (" + (th(p) + 1) + " h)", find((o) => same(o, { time: false }) && th(o) === th(p) + 1));
-      if (!(p.lastFillL > 0)) push("day-dwell", "Add a 2.0 L day dwell", find((o) => same(o, { day: false }) && o.dayDwells === 1, "dextrose"));
+      const dayVol = p.fillL < 2 ? p.fillL : 2.0; // small night fills: day dwell = night fill (0.4.4)
+      if (!(p.lastFillL > 0)) push("day-dwell", "Add a " + fl(dayVol) + " L day dwell", find((o) => same(o, { day: false }) && o.dayDwells === 1, "dextrose"));
       if (p.lastFillL > 0 && p.dayDwells !== 2 && !ico) push("icodextrin", "Icodextrin 7.5% for the day dwell", find((o) => o.id === p.id, "icodextrin"));
-      if (!(p.lastFillL > 0)) push("day-dwell-ico", "Add a 2.0 L icodextrin 7.5% day dwell", find((o) => same(o, { day: false }) && o.dayDwells === 1, "icodextrin"));
-      if (p.dayDwells !== 2) push("midday", "Add a midday exchange (2 × 2.0 L day dwells)", find((o) => same(o, { day: false }) && o.dayDwells === 2 && o.lastFillL === 2.0, "dextrose"));
-      else if (p.lastFillL < 2.5) push("midday-larger", "Larger midday volumes (2 × 2.5 L)", find((o) => same(o, { day: false }) && o.dayDwells === 2 && o.lastFillL === 2.5, "dextrose"));
+      if (!(p.lastFillL > 0)) push("day-dwell-ico", "Add a " + fl(dayVol) + " L icodextrin 7.5% day dwell", find((o) => same(o, { day: false }) && o.dayDwells === 1, "icodextrin"));
+      if (p.dayDwells !== 2) push("midday", "Add a midday exchange (2 × " + fl(dayVol) + " L day dwells)", find((o) => same(o, { day: false }) && o.dayDwells === 2 && Math.abs(o.lastFillL - dayVol) < 1e-9, "dextrose"));
+      else if (p.fillL >= 2 && p.lastFillL < 2.5) push("midday-larger", "Larger midday volumes (2 × 2.5 L)", find((o) => same(o, { day: false }) && o.dayDwells === 2 && o.lastFillL === 2.5, "dextrose"));
     }
     return out;
   }

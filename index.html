@@ -219,9 +219,7 @@
         <article class="card summary-card" id="sum-card">
           <div class="sum-line" id="sum-line">—</div>
           <p class="note ispd-line" id="ispd-line">ISPD 2020: “There is no specific clearance target that guarantees sufficient dialysis for an individual.” Options are a comparison, not a recommendation.</p>
-          <p class="note flag-text hidden" id="sum-rkf">Ranking assumes no residual kidney function: add urine and serum urea to include it. <button type="button" class="link-btn" id="go-rkf">Add urine and serum urea</button></p>
-          <p class="basis-note" id="rank-basis"></p>
-          <p class="est-tag">Model estimate, not measured</p>
+          <p class="note flag-text hidden" id="sum-rkf">Ranking assumes no residual kidney function: <button type="button" class="link-btn" id="go-rkf">add urine and serum urea to include it.</button></p>
         </article>
 
         <article class="card top-card" id="top-capd-card">
@@ -236,6 +234,13 @@
           <p class="amber-note hidden" id="top-ccpd-note"></p>
           <ol class="top-list" id="top-ccpd"></ol>
           <p class="note cap-note">Fill volumes capped at 1.5 L/m² BSA; individualize to comfort and intraperitoneal pressure (&lt;18 cm H2O).</p>
+        </article>
+
+        <!-- 0.4.4: moved below the option cards so the first option is above the fold on iPhone SE -->
+        <article class="card basis-card" id="basis-card">
+          <div class="card-h"><h2>How these are estimated</h2></div>
+          <p class="basis-note" id="rank-basis"></p>
+          <p class="est-tag">Model estimate, not measured</p>
         </article>
 
         <article class="card" id="uf-card">
