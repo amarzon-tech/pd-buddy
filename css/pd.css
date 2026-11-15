@@ -186,3 +186,9 @@ blockquote.gq cite { display: block; margin-top: 4px; font-size: 11.5px; font-st
   .on-results .top-card .card-h { margin-bottom: 6px; }
   .on-results #step-2 > .card + .card { margin-top: 10px; }
 }
+
+/* ── 0.4.5: negative predicted UF warning (Dr D, Nov 15 2026) ── */
+.neg-uf { display: block; margin-top: 8px; padding: 8px 10px; border-radius: 10px; background: var(--amber-bg); color: var(--amber-ink); border: 1px solid color-mix(in srgb, var(--amber) 35%, transparent); font-size: 13px; font-weight: 700; line-height: 1.35; }
+#ts-cur .neg-uf { margin-top: 6px; }
+.rx-neguf { margin: 6px 0; padding: 6px 10px; border-radius: 8px; background: var(--amber-bg); color: var(--amber-ink); font-weight: 750; }
+@media print { .rx-neguf { border: 2px solid #000; color: #000 !important; background: #fff !important; } }

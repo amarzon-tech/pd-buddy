@@ -362,12 +362,19 @@
       '<span class="top-nums three"><span class="tn' + (rank.metric === "ktv" ? " lead" : "") + '"><b class="' + (rank.metric === "ktv" ? (o.meets ? "v-ok" : "v-warn") : "") + '">' + esc(ktv) + "</b><i>weekly Kt/V</i></span>" +
       '<span class="tn' + (rank.metric === "crcl" ? " lead" : "") + '"><b class="' + (rank.metric === "crcl" ? (o.meets ? "v-ok" : "v-warn") : "") + '">' + fmt(o.crcl, 1) + "</b><i>CrCl L/wk/1.73 m²</i></span>" +
       '<span class="tn uf"><b>' + esc(ufText(o)) + "</b><i>" + esc(ufSub) + ' <em class="exp">experimental</em></i></span></span>' +
+      negUfHtml(o) +
       sibTxt +
       (o.opt && o.opt.mod === "ccpd" && o.opt.dayDwells === 2 ? '<span class="ico-line">No icodextrin variant: the split day dwells are shorter than the labelled 8–16-h long dwell and no icodextrin UF is published for them.</span>' : "") +
       '<span class="top-foot">' + badge + '<span class="est-mini">model estimate, not measured</span></span></span></' + tag + "></li>"
     );
   }
 
+  /** 0.4.5: amber warning when the experimental UF model predicts negative daily UF (no re-ranking). */
+  function negUfHtml(o, tagName) {
+    const t = o && o.uf ? RX.negUfWarning(o.uf.dailyUfMl) : null;
+    const tg = tagName || "span";
+    return t ? "<" + tg + ' class="neg-uf" role="note">⚠ ' + esc(t) + "</" + tg + ">" : "";
+  }
   function noFitText(r) {
     return "No fill volume fits under this patient's fill cap of " + fmt(F.maxFillL(r.bsa), 2) + " L (1.5 L/m² × BSA " + fmt(r.bsa, 2) + " m², + 0.05 L tolerance). The smallest fill offered is " + F.fmtL(F.CANDIDATE_FILLS[0]) + " L.";
   }
@@ -785,7 +792,7 @@
     }
     const curId = currentId(r);
     const cur = R.options ? R.options.find((o) => o.id === curId) : null;
-    setText("ts-cur", cur ? "Current prescription: " + fullName(cur) + " — model Kt/V " + fmt(cur.ktv, 2) + ", CrCl " + fmt(cur.crcl, 1) + ", predicted UF " + ufText(cur) + " L/day (experimental). " + note : (R.noFit ? noFitText(R) : "Complete steps 1–2 (and pick the current prescription on step 3)."));
+    $("ts-cur").innerHTML = esc(cur ? "Current prescription: " + fullName(cur) + " — model Kt/V " + fmt(cur.ktv, 2) + ", CrCl " + fmt(cur.crcl, 1) + ", predicted UF " + ufText(cur) + " L/day (experimental). " + note : (R.noFit ? noFitText(R) : "Complete steps 1–2 (and pick the current prescription on step 3).")) + (cur ? negUfHtml(cur, "span") : "");
     const sg = $("ts-sugg");
     if (!cur) { sg.innerHTML = ""; }
     else {
@@ -797,6 +804,7 @@
               '<div class="ts-n"><span>' + F.fmtL(s.cappedFillL) + " L would exceed 1.5 L/m² BSA (max " + fmt(F.maxFillL(R.bsa), 2) + " L + 0.05 L). Not suggested.</span></div></div>"
             : '<div class="ts-row"><div class="ts-h"><b>' + esc(s.label) + "</b> → " + esc(fullName(s.row)) + "</div>" +
             '<div class="ts-n"><span>Kt/V ' + fmt(s.row.ktv, 2) + " (" + sign(s.dKtv, 2) + ")</span><span>CrCl " + fmt(s.row.crcl, 1) + " (" + sign(s.dCrcl, 1) + ")</span><span>UF " + ufText(s.row) + " L/d (" + sign(F.isNum(s.dUfMl) ? s.dUfMl / 1000 : null, 2) + ")*</span></div>" +
+            negUfHtml(s.row, "div") +
             (s.meetsKtv === true ? refBadge(true, "ktv", R.ktvTarget) : s.meetsKtv === false ? refBadge(false, "ktv", R.ktvTarget) : "") + "</div>").join("") +
           '</div><p class="note">Same model and assumptions as step 2, one change at a time from the current prescription. *UF is the experimental three-pore prediction (icodextrin: published value for 2 L, 9 h/15 h, not adjusted). ' + (problem === "uf" ? "Suggestions for UF are ordered by the experimental UF model. " : "Ordered by the estimated change in clearance. ") + 'Model estimates, not measured; confirm with a 24-h collection.</p>'
         : '<p class="note">No one-step change in the candidate set (CAPD up to 5 × 3.0 L; CCPD up to 5 cycles × 3.0 L, 11 h), within the fill cap.</p>';
@@ -983,6 +991,7 @@
     rx.lines.forEach((line) => {
       const t = line.trim();
       if (!t || t === rx.title) return;
+      if (/^Warning: Predicted daily UF is negative/.test(t)) { bits.push('<div class="rx-neguf" role="note">⚠ ' + esc(t) + "</div>"); return; }
       const i = t.indexOf(":");
       if (i < 0) {
         bits.push('<div class="' + (t === rx.draftLine ? "rx-draft" : t === rx.footer || /^Estimated from typical/.test(t) ? "rx-note" : "rx-section") + '">' + esc(t) + "</div>");

@@ -26,6 +26,18 @@
   const DRAFT_LINE = "DRAFT – model estimate, not an order – verify before use";
   const DISCLAIMER = "Not a medical device. Not cleared or approved by FDA. Estimates do not replace measured adequacy or clinical judgment.";
 
+  /**
+   * 0.4.5 (Dr D, Nov 15 2026: "Show a negative-UF warning on those options"): warning text when
+   * the experimental UF model predicts negative daily UF. "Stronger dextrose" is avoided because
+   * 4.25% is still an open question (S8). Returns null when UF is not negative or unknown.
+   */
+  function negUfWarning(dailyUfMl) {
+    if (!isNum(dailyUfMl) || dailyUfMl >= 0) return null;
+    const l = Math.abs(dailyUfMl) / 1000;
+    const amt = l < 0.005 ? "slightly below 0 L/day" : "about −" + l.toFixed(2) + " L/day";
+    return "Predicted daily UF is negative (" + amt + ", experimental model). Watch fluid balance; consider a higher-tonicity or icodextrin dwell.";
+  }
+
   /** App Critic S8: the solutions the estimate assumed, printed with the sheet. */
   function modelAssumed(s) {
     if (s.modality === "apd") {
@@ -94,6 +106,8 @@
           ? apd ? ", assuming 1.5% dextrose cycles and a 2.5% dextrose day dwell" : ", assuming 1.5% dextrose exchanges and a 2.5% dextrose long dwell"
           : ", assuming 1.5% dextrose cycles";
       lines.push("Predicted daily UF (experimental three-pore model): " + (u.dailyUfMl / 1000).toFixed(2) + " L" + assume);
+      const neg = negUfWarning(u.dailyUfMl);
+      if (neg) lines.push("Warning: " + neg);
     }
     if (s.transport) lines.push("PET transport: " + s.transport + (s.basis ? " (typical values)" : ""));
     if (s.basis) lines.push(s.basis);
@@ -103,7 +117,7 @@
     return { title: TITLE, lines, text: lines.join("\n"), footer, draftLine: DRAFT_LINE };
   }
 
-  const RX = { build, SOLUTIONS, TITLE, DRAFT_LINE, DISCLAIMER, modelAssumed };
+  const RX = { build, SOLUTIONS, TITLE, DRAFT_LINE, DISCLAIMER, modelAssumed, negUfWarning };
   global.PdPrescription = RX;
   if (typeof module !== "undefined" && module.exports) module.exports = RX;
 })(typeof globalThis !== "undefined" ? globalThis : this);

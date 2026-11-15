@@ -9,7 +9,7 @@
   const DRAFT = true;
   const DRAFT_BANNER = "Draft – not for clinical use until reviewed by Dr D";
   const APP_NAME = "PD Buddy";
-  const APP_VERSION = "0.4.4-draft";
+  const APP_VERSION = "0.4.5-draft";
   const SUPPORT_EMAIL = "amardamodar@gmail.com";
   const PUBLISHER = "Wellness Tech LLC";
 
