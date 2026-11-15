@@ -540,7 +540,7 @@ Approved by Dr D after the 0.4.0 example showed no CCPD option reaching Kt/V 1.7
   - Tests: `tests/ccpd.test.js`, `tests/ranking.test.js`.
 
 - [ ] Sign-off: CCPD midday-exchange candidates (last fill + one manual exchange, 2 × 2.0 L and 2 × 2.5 L, day split equally 7.5 / 7 / 6.5 h) and their sources
-- [ ] Sign-off: 3.0 L CCPD night fills (large fills, flagged on cards, still ranked)
+- [ ] Sign-off: 3.0 L CCPD night fills (large fills, flagged on cards, still ranked) — superseded in 0.4.2 by the BSA fill cap (§24)
 - [ ] Sign-off: 10- and 11-h cycler time candidates (in addition to 9 h)
 - [ ] Sign-off: CCPD burden order (midday > day dwell > cycler time > cycles > night fill > day volume); large fill not counted as burden
 - [ ] Sign-off: no Extraneal variant for split midday dwells; published 15-h Extraneal UF reused for 13–14-h day dwells
@@ -548,6 +548,30 @@ Approved by Dr D after the 0.4.0 example showed no CCPD option reaching Kt/V 1.7
 - [ ] Sign-off: new troubleshoot steps (longer cycler time, add midday exchange, larger midday volumes)
 - [ ] Sign-off: prescription summary for midday exchange (day dwell 1, manual midday exchange, day dwell 2)
 - [ ] Sign-off: release 0.4.1-draft, service-worker cache pd-buddy-v5, DRAFT=true, noindex unchanged
+
+## 24. Fill-volume cap 1.5 L/m² BSA (0.4.2-draft)
+
+Dr D's decision; replaces the 0.4.1 "Large fill" flag (§23 3.0 L item is superseded). Every fill — CAPD exchanges, CCPD night fills, the day dwell and both midday-exchange dwells — must be ≤ 1.5 L/m² × BSA (Mosteller, the app's BSA) + 0.05 L. Options with any fill above that are left out of the Top 3, the options table and the troubleshoot suggestions (the step-3 "current prescription" list still shows them, marked "above fill cap", so a patient already on one can be entered). Step 1 shows "Max fill (1.5 L/m²)"; step 2 shows BSA and max fill in the summary line; each Top 3 list carries: "Fill volumes capped at 1.5 L/m² BSA; individualize to comfort and intraperitoneal pressure (<18 cm H2O)."
+
+- **Sources.**
+  - Teitelbaum I. Crafting the prescription for patients starting peritoneal dialysis. *Clin J Am Soc Nephrol.* 2018;13(3):483-485. doi:10.2215/CJN.10770917 (PMC5967680): “Patients are generally able to tolerate intraperitoneal volumes of 1.25–1.5 L/m 2 BSA. As intraperitoneal pressure is lowest when supine, intermediate when erect, and highest when sitting, patients will often tolerate larger volumes when recumbent at night than when upright during the day.” (read from PMC this session)
+  - Auguste BL, Bargman JM. Peritoneal dialysis prescription and adequacy in clinical practice: Core Curriculum 2023. *Am J Kidney Dis.* 2023;81(1):100-109. doi:10.1053/j.ajkd.2022.07.004: “Most patients can tolerate a maximum fill volume of 1,250-1,500 L/m2 or about 2,000-2,500 mL per exchange. In the average adult patient, this will result in intraperitoneal hydrostatic pressures of less than 18 cm of H2O. … an IPP of greater than 18 cm of H2O is usually associated with discomfort.” (“L/m2” is as printed; mL/m² is meant.) Text taken from the AJKD full-text page as returned by a search index; the page itself blocked direct download, so re-check against the article.
+  - ISPD 2020 (Brown EA et al. *Perit Dial Int.* 2020;40:244-253) gives no numeric fill limit (per Dr D; the full text was not re-read this session).
+- **Same Core Curriculum, not applied (for Dr D):** “fill volumes beyond 2,000-2,500 mL are not usually recommended given the increased risk of patient discomfort” and “Patients should not be routinely prescribed >8 hours on cycler therapy”. The app still offers 3.0 L fills (within the BSA cap) and 9–11 h cycler time.
+- **Tolerance 0.05 L.** Allows for rounding of BSA and bag volumes. Effect at the edge: the example patient (BSA 1.988 m² → 2.98 L) keeps 3.0 L fills (3.0 ≤ 3.03); without tolerance they would be excluded. 3.0 L is allowed from BSA 1.967 m²; 2.5 L from 1.634 m²; 2.0 L from 1.30 m².
+- **Example patient re-run** (male 55 y, high-average, 500 mL urine not counted):
+  - 5 ft 10 in, 80 kg (BSA 1.99, max 2.98 L): unchanged from 0.4.1 because of the tolerance. Without it: type-only CAPD 5 × 2.5 L (1.84) only one meeting; CCPD 5 × 2.5 L 11 h + day (1.75).
+  - 6 ft 2 in, 100 kg (V 51.0 L, BSA 2.28, max 3.43 L): no candidate excluded. Type-only CAPD: only 5 × 3.0 L meets (1.79); CCPD Top 3 meet, all with a midday exchange. PET D/P Cr 0.70 / urea 0.75: none reach 1.7 (best CAPD 1.36, CCPD 1.42).
+- Tests: `tests/fillcap.test.js`.
+
+- [ ] Sign-off: fill cap 1.5 L/m² BSA applied to every fill (CAPD exchanges, CCPD night fills, day dwell, both midday dwells); options above it excluded from ranking, table and troubleshoot
+- [ ] Sign-off: 0.05 L tolerance (fill ≤ 1.5 × BSA + 0.05 L); keeps 3.0 L for BSA ≥ 1.967 m² (incl. the example patient at 1.988)
+- [ ] Sign-off: fill-cap sources (Teitelbaum CJASN 2018 1.25–1.5 L/m²; Auguste & Bargman AJKD 2023 IPP < 18 cm H2O; ISPD 2020 no numeric limit) and the note text on the Top 3 lists
+- [ ] Sign-off: Core Curriculum 2023 “fill volumes beyond 2,000-2,500 mL are not usually recommended” and “>8 hours on cycler” not applied (3.0 L fills and 9–11 h still offered)
+- [ ] Sign-off: troubleshoot respects the fill cap (larger fill / larger midday volumes shown as “fill cap reached”, not suggested)
+- [ ] Sign-off: current-prescription list still includes regimens above the cap, marked “above fill cap”
+- [ ] Sign-off: BSA and max fill shown on step 1 and in the step 2 summary
+- [ ] Sign-off: release 0.4.2-draft, service-worker cache pd-buddy-v6, DRAFT=true, noindex unchanged
 
 ---
 

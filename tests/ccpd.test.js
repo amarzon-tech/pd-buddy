@@ -37,7 +37,7 @@ section("Midday-exchange dwells");
 
 section("Large fills and cycler time");
 {
-  isTrue(byId("ccpd-5x3.0-day").largeFill && !byId("ccpd-5x2.5-day").largeFill, "3.0 L flagged, 2.5 L not");
+  eq(F.optionMaxFillL(byId("ccpd-5x3.0-day")), 3.0, "largest fill of 5 × 3.0 L + 2.0 L day = 3.0 L");
   isTrue(C.filter((o) => o.mod === "ccpd").every((o) => o.cycles <= 5), "≤ 5 cycles");
   const k = (h) => F.predictDaily(F.optionDwells(byId("ccpd-5x2.5" + (h === 9 ? "" : "-" + h + "h") + "-day"), 0), 18, 10).ureaLDay;
   isTrue(k(10) > k(9) && k(11) > k(10), "longer cycler time raises clearance (same cycles)");
@@ -67,7 +67,7 @@ section("Example patient — type only (typical HA MTACs, Kt/V)");
   approx(r.top[1].ktv, 1.72, 0.005, "4 × 3.0 L, 11 h + day: Kt/V 1.72");
   approx(r.top[2].ktv, 1.75, 0.005, "5 × 2.5 L, 11 h + day: Kt/V 1.75");
   isTrue(r.top.every((x) => x.meets && !x.opt.midday), "all meet without a midday exchange");
-  const best9 = r.all.filter((x) => x.opt.therapyH === 9 && !x.opt.midday && !x.opt.largeFill);
+  const best9 = r.all.filter((x) => x.opt.therapyH === 9 && !x.opt.midday && x.opt.fillL <= 2.5);
   isTrue(best9.every((x) => !x.meets), "no 9-h, ≤ 2.5 L, no-midday option meets (as in 0.4.0)");
 }
 

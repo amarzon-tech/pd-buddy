@@ -75,9 +75,20 @@
     if (!current || !rows) return [];
     const p = current.opt;
     const ico = current.longSolution === "icodextrin";
-    const find = (pred, sol) => rows.find((r) => pred(r.opt) && (sol === undefined ? r.longSolution === current.longSolution || (!r.longSolution && !current.longSolution) : r.longSolution === sol));
+    const findAny = (pred, sol) => rows.find((r) => pred(r.opt) && (sol === undefined ? r.longSolution === current.longSolution || (!r.longSolution && !current.longSolution) : r.longSolution === sol));
+    // Fill cap (0.4.2): a step whose fill is above 1.5 L/m² BSA is not suggested; it is
+    // reported as "cap reached" instead (row null, capReached true).
+    const find = (pred, sol) => {
+      const r = findAny(pred, sol);
+      if (r && r.overCap) return { capped: r };
+      return r;
+    };
     const out = [];
-    const push = (kind, label, row) => row && row.id !== current.id && out.push({ kind, label, row });
+    const push = (kind, label, row) => {
+      if (!row) return;
+      if (row.capped) return out.push({ kind, label, row: null, capReached: true, cappedFillL: F.optionMaxFillL(row.capped.opt) });
+      if (row.id !== current.id) out.push({ kind, label, row });
+    };
     if (p.mod === "capd") {
       push("add-exchange", "Add an exchange (" + (p.exchanges + 1) + " a day)", find((o) => o.mod === "capd" && o.exchanges === p.exchanges + 1 && o.fillL === p.fillL));
       push("larger-fill", "Larger fill (" + (p.fillL + 0.5).toFixed(1) + " L)", find((o) => o.mod === "capd" && o.exchanges === p.exchanges && Math.abs(o.fillL - (p.fillL + 0.5)) < 1e-9));
@@ -108,7 +119,9 @@
    * clearance → sorted by Kt/V gain; uf → by predicted daily UF gain.
    */
   function troubleshoot(problem, current, rows, ktvTarget) {
-    const n = neighbours(current, rows).map((s) => {
+    const all = neighbours(current, rows);
+    const capped = all.filter((s) => s.capReached);
+    const n = all.filter((s) => !s.capReached).map((s) => {
       const dK = isNum(s.row.ktv) && isNum(current.ktv) ? s.row.ktv - current.ktv : null;
       const dC = isNum(s.row.crcl) && isNum(current.crcl) ? s.row.crcl - current.crcl : null;
       const uf0 = current.uf && isNum(current.uf.dailyUfMl) ? current.uf.dailyUfMl : null;
@@ -117,7 +130,7 @@
       return Object.assign({}, s, { dKtv: dK, dCrcl: dC, dUfMl: dU, meetsKtv: isNum(s.row.ktv) && isNum(ktvTarget) ? s.row.ktv >= ktvTarget - 1e-9 : null });
     });
     const key = problem === "uf" ? "dUfMl" : isNum(current.ktv) ? "dKtv" : "dCrcl";
-    return n.sort((a, b) => (isNum(b[key]) ? b[key] : -1e9) - (isNum(a[key]) ? a[key] : -1e9));
+    return n.sort((a, b) => (isNum(b[key]) ? b[key] : -1e9) - (isNum(a[key]) ? a[key] : -1e9)).concat(capped);
   }
 
   /* ═════ Cited guidance (verbatim) ═════ */

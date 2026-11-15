@@ -27,7 +27,7 @@ section("Candidate set");
   isTrue(ccpd.every((o) => (o.dayDwells === 2) === o.midday && (o.dayDwells === 0) === (o.lastFillL === 0)), "dayDwells consistent with midday / dry day");
   isTrue(ccpd.filter((o) => o.dayDwells === 1).every((o) => o.lastFillL === 2.0), "single day dwell is 2.0 L (as before)");
   eq(ccpd.filter((o) => o.midday).length, 2 * 3 * 3 * 2, "midday variants: 2.0 and 2.5 L day dwells");
-  isTrue(ccpd.every((o) => o.largeFill === (o.fillL >= 3)), "3.0 L night fills flagged largeFill");
+  isTrue(ccpd.every((o) => o.largeFill === undefined), "no largeFill flag (replaced by the 0.4.2 fill cap)");
   eq(new Set(c.map((o) => o.id)).size, c.length, "unique ids");
   ["ccpd-4x2.0-dry", "ccpd-4x2.0-day", "ccpd-5x2.0-day", "ccpd-5x2.5-day", "ccpd-4x2.5-dry"].forEach((id) => isTrue(c.some((o) => o.id === id && o.therapyH === 9), "0.4.0 id kept: " + id));
   {

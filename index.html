@@ -82,7 +82,7 @@
           </div>
           <div class="unit-row"><span class="field-label">Weight in</span>
           <div class="chips big small" id="p-wunit" role="radiogroup" aria-label="Weight unit"><button type="button" class="chip is-on" role="radio" aria-checked="true" data-wunit="kg">kg</button><button type="button" class="chip" role="radio" aria-checked="false" data-wunit="lb">lb</button></div></div>
-          <div class="mini-out" id="p-out"><span>V (Watson) <b id="o-v">—</b></span><span>BSA (Mosteller) <b id="o-bsa">—</b></span></div>
+          <div class="mini-out" id="p-out"><span>V (Watson) <b id="o-v">—</b></span><span>BSA (Mosteller) <b id="o-bsa">—</b></span><span>Max fill (1.5 L/m²) <b id="o-maxfill">—</b></span></div>
           <p class="note" id="p-msg"></p>
         </article>
 
@@ -214,12 +214,14 @@
           <div class="card-h"><h2>Top 3 CAPD</h2><span class="est-chip">model estimate</span></div>
           <p class="amber-note hidden" id="top-capd-note"></p>
           <ol class="top-list" id="top-capd"></ol>
+          <p class="note cap-note">Fill volumes capped at 1.5 L/m² BSA; individualize to comfort and intraperitoneal pressure (&lt;18 cm H2O).</p>
         </article>
 
         <article class="card top-card" id="top-ccpd-card">
           <div class="card-h"><h2>Top 3 CCPD</h2><span class="est-chip">model estimate</span></div>
           <p class="amber-note hidden" id="top-ccpd-note"></p>
           <ol class="top-list" id="top-ccpd"></ol>
+          <p class="note cap-note">Fill volumes capped at 1.5 L/m² BSA; individualize to comfort and intraperitoneal pressure (&lt;18 cm H2O).</p>
         </article>
 
         <article class="card" id="uf-card">
@@ -234,7 +236,7 @@
           <p class="src-note" id="grid-src"></p>
         </article>
 
-        <p class="note rank-rule" id="rank-rule">How options are ranked: options that meet the target come first, least burdensome first (fewer exchanges; for CCPD no midday exchange, no day dwell, shorter cycler time, fewer cycles, then smaller fills). If none meet it, the 3 highest-clearance options are shown. Tap an option for its prescription summary.</p>
+        <p class="note rank-rule" id="rank-rule">How options are ranked: options that meet the target come first, least burdensome first (fewer exchanges; for CCPD no midday exchange, no day dwell, shorter cycler time, fewer cycles, then smaller fills). If none meet it, the 3 highest-clearance options are shown. Options with any fill above 1.5 L/m² BSA (+0.05 L rounding tolerance) are left out. Tap an option for its prescription summary.</p>
 
         <details class="cit all-opts" id="all-opts">
           <summary>See all options</summary>
@@ -242,7 +244,7 @@
             <p class="est-tag">Model estimate, not measured</p>
             <div class="opt-table" id="opt-table"></div>
             <p class="note" id="opt-basis"></p>
-            <p class="note" id="opt-note">CAPD with an 8-h overnight long dwell; CCPD 9, 10 or 11 h on the cycler, with a dry day, a 2.0 L day dwell, or a manual midday exchange (2 day dwells; no Extraneal variant). 3.0 L night fills are flagged as large. Extraneal rows use the same diffusion model: icodextrin’s UF advantage is not modeled, so they match the dextrose rows unless you enter expected long-dwell UF. Short dwells count net UF as 0. <button type="button" class="about-btn inline" data-about="options">About options</button></p>
+            <p class="note" id="opt-note">CAPD with an 8-h overnight long dwell; CCPD 9, 10 or 11 h on the cycler, with a dry day, a 2.0 L day dwell, or a manual midday exchange (2 day dwells; no Extraneal variant). Fills above 1.5 L/m² BSA are left out. Extraneal rows use the same diffusion model: icodextrin’s UF advantage is not modeled, so they match the dextrose rows unless you enter expected long-dwell UF. Short dwells count net UF as 0. <button type="button" class="about-btn inline" data-about="options">About options</button></p>
           </div>
         </details>
 
@@ -400,6 +402,7 @@
           <ol class="top-list" id="upd-capd"></ol>
           <h3 class="sub-h">Top 3 CCPD</h3>
           <ol class="top-list" id="upd-ccpd"></ol>
+          <p class="note cap-note">Fill volumes capped at 1.5 L/m² BSA; individualize to comfort and intraperitoneal pressure (&lt;18 cm H2O).</p>
           <div class="loop-actions">
             <button type="button" class="step-btn primary" id="lab-adopt">Use these labs as the new baseline</button>
             <p class="note">Copies confirmed PET and urine values into step 1, keeps the fitted clearance, clears this form for the next round.</p>

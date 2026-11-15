@@ -229,6 +229,11 @@
 
     setText("o-v", F.isNum(r.V) ? fmt(r.V, 1) + " L" : "—");
     setText("o-bsa", F.isNum(r.bsa) ? fmt(r.bsa, 2) + " m²" : "—");
+    setText("o-maxfill", F.isNum(r.bsa) ? fmt(F.maxFillL(r.bsa), 2) + " L" : "—");
+    const capTxt = F.isNum(r.bsa)
+      ? "Fill volumes capped at 1.5 L/m² BSA (BSA " + fmt(r.bsa, 2) + " m² → max fill " + fmt(F.maxFillL(r.bsa), 2) + " L, + 0.05 L rounding tolerance); individualize to comfort and intraperitoneal pressure (<18 cm H2O)."
+      : "Fill volumes capped at 1.5 L/m² BSA; individualize to comfort and intraperitoneal pressure (<18 cm H2O).";
+    document.querySelectorAll(".cap-note").forEach((e) => (e.textContent = capTxt));
     const conv = [];
     if (F.isNum(r.ht)) conv.push(fmt(r.ht, 1) + " cm");
     if (F.isNum(r.wtKg) && state.wunit === "lb") conv.push(fmt(r.wtKg, 1) + " kg");
@@ -326,7 +331,6 @@
       '<span class="tn uf"><b>' + esc(ufText(o)) + "</b><i>" + esc(ufSub) + ' <em class="exp">experimental</em></i></span></span>' +
       sibTxt +
       (o.opt && o.opt.mod === "ccpd" && o.opt.dayDwells === 2 ? '<span class="ico-line">No Extraneal variant: the split day dwells are shorter than the labelled 8–16-h long dwell and no icodextrin UF is published for them.</span>' : "") +
-      (o.opt && o.opt.mod === "ccpd" && o.opt.largeFill ? '<span class="flag-line">Large fill: 3.0 L night fills are beyond the usual 2–2.5 L cycler volumes; check tolerance (awaiting Dr D’s review).</span>' : "") +
       '<span class="top-foot">' + badge + '<span class="est-mini">model estimate, not measured</span></span></span></' + tag + "></li>"
     );
   }
@@ -356,6 +360,7 @@
     if (F.isNum(r.wtKg)) bits.push(fmt(r.wtKg, 1) + " kg");
     if (F.isNum(r.V)) bits.push("V " + fmt(r.V, 1) + " L");
     if (F.isNum(r.bsa)) bits.push("BSA " + fmt(r.bsa, 2) + " m²");
+    if (F.isNum(r.bsa)) bits.push("max fill " + fmt(F.maxFillL(r.bsa), 2) + " L");
     if (r.cat) bits.push(r.cat.label + (r.typeOnly ? " (typical)" : r.numCat ? " (PET)" : ""));
     bits.push(r.urineMl > 0 ? fmt(r.urineMl, 0) + " mL/day urine" + (r.res ? "" : " (not counted)") : "anuric");
     setText("sum-line", bits.join(" · "));
@@ -415,7 +420,9 @@
     const kt = (v) => (F.isNum(v) ? '<span class="' + (v >= r.ktvTarget - 1e-9 ? "ok-v" : "warn-v") + '">' + fmt(v, 2) + "</span>" : "—");
     const out = ['<div class="op-row head four"><span>Option</span><span>Kt/V</span><span>CrCl</span><span>UF L/d*</span></div>'];
     let grp = "";
+    const hidden = r.options.filter((o) => o.overCap && o.longSolution !== "icodextrin").length;
     r.options.forEach((o) => {
+      if (o.overCap) return;
       if (o.mod !== grp) {
         grp = o.mod;
         out.push('<div class="op-row grp"><span>' + (grp === "capd" ? "CAPD · 8-h overnight long dwell" : "CCPD · 9, 10 or 11 h on cycler") + "</span></div>");
@@ -425,7 +432,7 @@
       out.push('<div class="op-row four' + (ico ? " ico" : "") + '"><span class="ol">' + esc(label) + "</span><span>" + kt(o.ktv) + "</span><span>" + fmt(o.crcl, 1) + "</span><span>" + esc(ufText(o)) + "</span></div>");
     });
     el.innerHTML = out.join("");
-    let b = "Weekly totals (renal included when entered). Kt/V green at or above your target, amber below; CrCl in L/week/1.73 m². *UF: experimental three-pore prediction (Extraneal rows: published long-dwell value).";
+    let b = (hidden ? hidden + " regimen" + (hidden === 1 ? "" : "s") + " with a fill above 1.5 L/m² BSA (max " + fmt(F.maxFillL(r.bsa), 2) + " L + 0.05 L) not shown. " : "") + "Weekly totals (renal included when entered). Kt/V green at or above your target, amber below; CrCl in L/week/1.73 m². *UF: experimental three-pore prediction (Extraneal rows: published long-dwell value).";
     if (r.basis) b = r.basis + " " + b;
     basis.textContent = b;
   }
@@ -473,9 +480,9 @@
     const sel = $("cur-rx");
     if (!r.options) { sel.innerHTML = '<option value="">Complete step 1 first</option>'; return; }
     const id = currentId(r);
-    const sig = r.options.map((o) => o.id).join();
+    const sig = r.options.map((o) => o.id + (o.overCap ? "!" : "")).join();
     if (sel.dataset.sig !== sig) {
-      sel.innerHTML = r.options.map((o) => '<option value="' + esc(o.id) + '">' + esc(fullName(o) + (o.opt.mod === "capd" ? "" : "")) + "</option>").join("");
+      sel.innerHTML = r.options.map((o) => '<option value="' + esc(o.id) + '">' + esc(fullName(o) + (o.overCap ? " (above fill cap)" : "")) + "</option>").join("");
       sel.dataset.sig = sig;
     }
     if (id) sel.value = id;
@@ -686,12 +693,14 @@
       const list = W.troubleshoot(problem === "rkf" ? "clearance" : problem, cur, R.options, R.ktvTarget);
       const sign = (x, d, u) => (F.isNum(x) ? (x >= 0 ? "+" : "−") + fmt(Math.abs(x), d) + (u || "") : "—");
       sg.innerHTML = list.length
-        ? '<div class="ts-list">' + list.map((s) =>
-            '<div class="ts-row"><div class="ts-h"><b>' + esc(s.label) + "</b> → " + esc(fullName(s.row)) + "</div>" +
+        ? '<div class="ts-list">' + list.map((s) => s.capReached
+            ? '<div class="ts-row ts-cap"><div class="ts-h"><b>' + esc(s.label) + "</b>: fill cap reached</div>" +
+              '<div class="ts-n"><span>' + fmt(s.cappedFillL, 1) + " L would exceed 1.5 L/m² BSA (max " + fmt(F.maxFillL(R.bsa), 2) + " L + 0.05 L). Not suggested.</span></div></div>"
+            : '<div class="ts-row"><div class="ts-h"><b>' + esc(s.label) + "</b> → " + esc(fullName(s.row)) + "</div>" +
             '<div class="ts-n"><span>Kt/V ' + fmt(s.row.ktv, 2) + " (" + sign(s.dKtv, 2) + ")</span><span>CrCl " + fmt(s.row.crcl, 1) + " (" + sign(s.dCrcl, 1) + ")</span><span>UF " + ufText(s.row) + " L/d (" + sign(F.isNum(s.dUfMl) ? s.dUfMl / 1000 : null, 2) + ")*</span></div>" +
             (s.meetsKtv === true ? '<span class="badge-ok">Meets Kt/V target</span>' : s.meetsKtv === false ? '<span class="badge-warn">Below Kt/V target</span>' : "") + "</div>").join("") +
           '</div><p class="note">Same model and assumptions as step 2, one change at a time from the current prescription. *UF is the experimental three-pore prediction (Extraneal: published long-dwell value). Model estimates, not measured; confirm with a 24-h collection.</p>'
-        : '<p class="note">No one-step change in the candidate set (CAPD up to 5 × 3.0 L; CCPD up to 5 × 2.5 L).</p>';
+        : '<p class="note">No one-step change in the candidate set (CAPD up to 5 × 3.0 L; CCPD up to 5 cycles × 3.0 L, 11 h), within the fill cap.</p>';
     }
     $("ts-guide").innerHTML = W.GUIDANCE[problem].map((g) => '<blockquote class="gq"><p>“' + esc(g.text) + '”</p><cite>' + esc(g.src) + "</cite></blockquote>").join("");
   }
@@ -770,10 +779,13 @@
       html: `<h4>Candidate set</h4>
         <p class="eq">CAPD 3, 4 or 5 exchanges × 2.0, 2.5 or 3.0 L, 8-h overnight long dwell<br>
         CCPD 4 or 5 cycles × 2.0, 2.5 or 3.0 L over 9, 10 or 11 h, with a dry day, a 2.0 L day dwell (24 h − cycler time), or a manual midday exchange (last fill + one exchange, 2 × 2.0 L or 2 × 2.5 L, the day split equally: 7.5 / 7 / 6.5 h each)<br>
-        Each option with one long dwell also with an Extraneal long dwell (not the split midday dwells)</p>
+        Each option with one long dwell also with an Extraneal long dwell (not the split midday dwells)<br>
+        Fill cap: any option with a fill (exchange, night fill, day dwell or midday exchange) above 1.5 L/m² BSA × Mosteller BSA + 0.05 L is left out</p>
+        <h4>Fill cap (1.5 L/m² BSA)</h4>
+        <p>Teitelbaum I. Crafting the prescription for patients starting peritoneal dialysis. <em>Clin J Am Soc Nephrol.</em> 2018;13(3):483-485 (PMC5967680): “Patients are generally able to tolerate intraperitoneal volumes of 1.25–1.5 L/m2 BSA.” Auguste BL, Bargman JM. Peritoneal dialysis prescription and adequacy in clinical practice: Core Curriculum 2023. <em>Am J Kidney Dis.</em> 2023;81(1):100-109: “an IPP of greater than 18 cm of H2O is usually associated with discomfort.” ISPD 2020 (Brown EA et al.) gives no numeric fill limit. The 0.05 L tolerance allows for rounding (e.g. BSA 1.99 m² → 2.99 L, so 3.0 L is allowed). Individualize to comfort and intraperitoneal pressure.</p>
         <h4>Ranking</h4>
         <p>Metric: total weekly Kt/V (peritoneal + renal) when a D/P urea is available; otherwise weekly CrCl (L/week/1.73 m²). Target: Kt/V ≥ 1.7 by default (KDOQI 2006 minimum), or CrCl ≥ 60 (historical CANUSA-based CAPD figure, also used for CCPD here).</p>
-        <p>Options meeting the target come first, least burdensome first. CAPD: fewer exchanges, then smaller fills. CCPD: no midday exchange before a midday exchange, then dry day before a day dwell, then shorter cycler time (9 &lt; 10 &lt; 11 h), then fewer cycles, then smaller night fills, then smaller day dwells. If fewer than 3 meet it, the rest are the highest-clearance options below target. The dextrose and Extraneal versions of a regimen count once (dextrose unless only Extraneal meets the target).</p>
+        <p>Options meeting the target come first, least burdensome first. CAPD: fewer exchanges, then smaller fills. CCPD (within the fill cap): no midday exchange before a midday exchange, then dry day before a day dwell, then shorter cycler time (9 &lt; 10 &lt; 11 h), then fewer cycles, then smaller night fills, then smaller day dwells. If fewer than 3 meet it, the rest are the highest-clearance options below target. The dextrose and Extraneal versions of a regimen count once (dextrose unless only Extraneal meets the target).</p>
         <h4>Sources</h4>
         <p>Handbook of Dialysis, 4th ed. (Daugirdas, Blake, Ing 2006), as reproduced in ISPD teaching slides: “4 x 2L ... is the typical prescription. 4 x 2.5L in larger patients with small RRF or anuric patients who weigh &gt;75 kg. 3 x 2L in smaller patients or in patients with good RRF.” CCPD: “3 to 5 cycles per 9 hour cycling session”, “Cycler dwell volumes - 2 to 2.5 L”, “Can start with NIPD if patient has good residual volume.” ADEMEX (Paniagua R et al. <em>J Am Soc Nephrol.</em> 2002;13:1307-1320) control arm: “four daily exchanges with 2 L”. Core Curriculum 2023 (<em>Am J Kidney Dis</em>): no more than 5 exchanges per night on the cycler. 3.0 L fills and 5 CAPD exchanges go beyond these quotes and are awaiting Dr D’s review. CCPD midday exchange: PD Adequest-modelled APD prescriptions with “2x2L” day dwells (last fill plus one daytime exchange; Akonur A et al. <em>Perit Dial Int.</em> 2016;36:188-195, Figs 4–5) and the “midday exchange” option in Akonur A et al. <em>Perit Dial Int.</em> 2013 (Table 3). 10- and 11-h cycler times, 3.0 L cycler fills and the equal day split are judgments awaiting Dr D’s review.</p>
         <h4>Extraneal (icodextrin 7.5%)</h4>

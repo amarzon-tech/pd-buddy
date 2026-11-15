@@ -64,9 +64,14 @@ const assets = (sw.match(/"\.\/[^"]*"/g) || []).map((s) => s.slice(3, -1)).filte
 assets.forEach((a) => isTrue(fs.existsSync(path.join(root, a)), "service-worker asset exists: " + a));
 ["css/pd.css", "js/app.js", "js/formulas.js", "js/prescription.js", "js/config.js"].forEach((a) => isTrue(assets.includes(a), "service worker caches " + a));
 isTrue(/const CACHE = "pd-buddy-v\d+"/.test(sw), "versioned cache name");
-isTrue(/const CACHE = "pd-buddy-v5";/.test(sw), "cache bumped to pd-buddy-v5 for 0.4.1 (stronger CCPD candidates)");
+isTrue(/const CACHE = "pd-buddy-v6";/.test(sw), "cache bumped to pd-buddy-v6 for 0.4.2 (fill cap)");
 ["js/threepore.js", "js/rxgrid.js", "js/workflow.js", "js/labparse.js", "js/ocr.js"].forEach((a) => isTrue(assets.includes(a), "service worker caches " + a));
-isTrue(cfg.APP_VERSION === "0.4.1-draft", "version 0.4.1-draft");
+isTrue(cfg.APP_VERSION === "0.4.2-draft", "version 0.4.2-draft");
+["fill cap 1.5 L/m² BSA", "0.05 L tolerance", "fill-cap sources", "troubleshoot respects the fill cap", "release 0.4.2-draft"].forEach((k) =>
+  isTrue(new RegExp("^- \\[ \\] Sign-off: " + k.replace(/[.()]/g, "\\$&"), "m").test(read("CONTENT_REVIEW.md")), "unticked 0.4.2 review item: " + k));
+isTrue((html.match(/class="note cap-note">Fill volumes capped at 1\.5 L\/m² BSA; individualize to comfort and intraperitoneal pressure \(&lt;18 cm H2O\)\.<\/p>/g) || []).length === 3, "cap note under CAPD, CCPD and updated CCPD Top 3");
+isTrue(/id="o-maxfill"/.test(html), "step 1 shows max fill");
+isTrue(!/Large fill:/.test(read("js/app.js")), "large-fill warning replaced by the cap");
 ["midday-exchange candidates", "3.0 L CCPD night fills", "10- and 11-h cycler time", "CCPD burden order", "no Extraneal variant for split midday dwells", "release 0.4.1-draft"].forEach((k) =>
   isTrue(new RegExp("^- \\[ \\] Sign-off: (CCPD )?" + k.replace(/[.()]/g, "\\$&"), "m").test(read("CONTENT_REVIEW.md")), "unticked 0.4.1 review item: " + k));
 isTrue(/midday exchange/.test(html), "index mentions the CCPD midday exchange");

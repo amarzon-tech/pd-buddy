@@ -476,8 +476,8 @@
       //   midday exchange: last fill + one manual exchange, 2 × 2.0 L or 2 × 2.5 L,
       //   the day split equally (9 h → 2 × 7.5 h; 10 h → 2 × 7 h; 11 h → 2 × 6.5 h).
       // Midday split: Akonur 2016 Figs 4-5 APD rows "…+2x2L" (last fill plus one daytime
-      // exchange) and Akonur 2013 Table 3 "midday exch" column. 3.0 L night fills are large
-      // fills (flagged: largeFill). Judgment to confirm (CONTENT_REVIEW §23).
+      // exchange) and Akonur 2013 Table 3 "midday exch" column. Fills above 1.5 L/m² BSA are
+      // excluded per patient (FILL_CAP, 0.4.2). Judgment to confirm (CONTENT_REVIEW §23-24).
       const DAYS = [
         { key: "dry", lastFillL: 0, dayDwells: 0 },
         { key: "day", lastFillL: 2.0, dayDwells: 1 },
@@ -507,7 +507,6 @@
                   lastFillL: d.lastFillL,
                   dayDwells: d.dayDwells,
                   midday: d.dayDwells === 2,
-                  largeFill: f >= 3.0,
                 })
               );
             })
@@ -537,6 +536,33 @@
     return 0;
   }
 
+  /* ═══════════════════════════════════════════════════════════════════════
+   * Fill-volume cap (0.4.2, Dr D's decision): every fill — CAPD exchanges, CCPD
+   * night fills, day dwells, midday exchanges — at most 1.5 L/m² BSA (Mosteller),
+   * with a 0.05 L tolerance for rounding (fill ≤ 1.5 × BSA + 0.05 L).
+   *  Teitelbaum I. Crafting the prescription for patients starting peritoneal dialysis.
+   *    Clin J Am Soc Nephrol. 2018;13(3):483-485 (PMC5967680): "Patients are generally
+   *    able to tolerate intraperitoneal volumes of 1.25–1.5 L/m2 BSA."
+   *  Auguste BL, Bargman JM. Core Curriculum 2023. Am J Kidney Dis. 2023;81(1):100-109:
+   *    "an IPP of greater than 18 cm of H2O is usually associated with discomfort."
+   *  ISPD 2020 (Brown EA et al.) gives no numeric fill limit.
+   * ═══════════════════════════════════════════════════════════════════════ */
+  const FILL_CAP = Object.freeze({ lPerM2: 1.5, toleranceL: 0.05 });
+  /** Largest allowed fill (L) for a BSA, before tolerance. */
+  function maxFillL(bsa) {
+    return isNum(bsa) && bsa > 0 ? FILL_CAP.lPerM2 * bsa : null;
+  }
+  /** Largest single fill in an option (night fill, exchange, day dwell or midday exchange). */
+  function optionMaxFillL(opt) {
+    return Math.max(opt.fillL || 0, opt.longFillL || 0, opt.lastFillL || 0);
+  }
+  /** true when every fill is within 1.5 × BSA + 0.05 L (or BSA unknown). */
+  function withinFillCap(opt, bsa) {
+    const m = maxFillL(bsa);
+    if (!isNum(m)) return true;
+    return optionMaxFillL(opt) <= m + FILL_CAP.toleranceL + 1e-9;
+  }
+
   /** Same estimate as regimenOptions, over any option list (default: CANDIDATE_OPTIONS). */
   function candidateOptions(o, list) {
     const opts = list || CANDIDATE_OPTIONS;
@@ -558,7 +584,7 @@
       // are shorter than the labelled 8–16-h long dwell and have no published icodextrin UF.
       const hasLong = opt.mod === "capd" || (opt.lastFillL > 0 && opt.dayDwells !== 2);
       const hasDay = opt.mod === "ccpd" && opt.lastFillL > 0;
-      const base = { baseId: opt.id, mod: opt.mod, label: opt.label, opt, burden: burdenKey(opt) };
+      const base = { baseId: opt.id, mod: opt.mod, label: opt.label, opt, burden: burdenKey(opt), overCap: o.fillCap === false ? false : !withinFillCap(opt, o.bsa) };
       // Predicted UF (optional): o.ufFn(opt, longSolution) → { dailyUfMl, ... } from js/threepore.js.
       // Kt/V deliberately does NOT use the predicted UF (it stays the Garred estimate with
       // short-dwell UF 0 and the long-dwell UF the user enters), so an experimental UF
@@ -586,7 +612,8 @@
     const ktvTarget = isNum(o.ktvTarget) ? o.ktvTarget : TARGETS.KTV_HISTORICAL_MIN;
     const crclTarget = isNum(o.crclTarget) ? o.crclTarget : TARGETS.CRCL_HISTORICAL_CAPD;
     const n = isNum(o.n) ? o.n : 3;
-    const list = (rows || []).filter((r) => !o.mod || r.mod === o.mod);
+    // Options above the fill cap (overCap) are never ranked.
+    const list = (rows || []).filter((r) => (!o.mod || r.mod === o.mod) && !r.overCap);
     if (!list.length) return { metric: null, target: null, top: [], meetCount: 0, anyMeet: false, all: [] };
     const metric = list.every((r) => isNum(r.ktv)) ? "ktv" : list.every((r) => isNum(r.crcl)) ? "crcl" : null;
     if (!metric) return { metric: null, target: null, top: [], meetCount: 0, anyMeet: false, all: [] };
@@ -680,6 +707,10 @@
     lbToKg,
     REGIMEN_OPTIONS,
     optionDwells,
+    FILL_CAP,
+    maxFillL,
+    optionMaxFillL,
+    withinFillCap,
     regimenOptions,
     CANDIDATE_OPTIONS,
     burdenKey,
