@@ -704,7 +704,14 @@ Dr D, Nov 15 2026, 2:01 PM ET, relayed by App Critic: fix the Step 3 empty-list 
 - [ ] Sign-off: step 3 list rebuilt after a blocked D/P is corrected — approved by Dr D Nov 15 2026, full sign-off pending
 - [ ] Sign-off: release 0.4.9-draft, service-worker cache pd-buddy-v13, DRAFT=true, noindex unchanged — approved by Dr D Nov 15 2026, full sign-off pending
 
-## 32. iOS app wrapper (branch `ios-wrap` only; not on main)
+## 32. Contact email (cache pd-buddy-v14)
+
+Dr D, Nov 15 2026, 3:37 PM ET (relayed): contact email akd.nephrology@gmail.com. It replaces the earlier placeholder address in the About contact line, privacy.html, support.html, `SUPPORT_EMAIL` and the README. No clinical change; version stays 0.4.9-draft.
+
+- [ ] Sign-off: contact email akd.nephrology@gmail.com — decided by Dr D Nov 15 2026, full sign-off pending
+- [ ] Sign-off: service-worker cache pd-buddy-v14, DRAFT=true, noindex unchanged — full sign-off pending
+
+## 33. iOS app wrapper (branch `ios-wrap` only; not on main)
 
 Dr D, Nov 15 2026, 2:38 PM ET, in his own words: “Build PD Buddy as an iOS app”. Capacitor wrap like CRRT Rx: bundled offline web app, bundle ID `com.drd.pdbuddy`, 1.0 (1), team RZRMT6494V, home-screen name “PD Buddy”. No clinical, formula or wording change; the DRAFT banner stays as on the web build.
 - New user-facing text, the iOS camera permission prompt: “PD Buddy uses the camera only when you tap Scan lab report, to photograph a lab report. The photo is read on this device and is never saved or sent.”
@@ -713,9 +720,12 @@ Dr D, Nov 15 2026, 2:38 PM ET, in his own words: “Build PD Buddy as an iOS app
 - Tests: `tests/ios.test.js`.
 
 - [ ] Sign-off: camera permission wording — proposal, needs Dr D's OK
-- [ ] Sign-off: app icon (existing web icon) — proposal, needs Dr D's OK
-- [ ] Sign-off: App Store name, contact email (amardamodar@gmail.com is a placeholder), price — open
-- [ ] Sign-off: TestFlight only until content sign-off (DRAFT banner in the app) — open
+- Dr D, Nov 15 2026, 3:37 PM ET (relayed): contact email akd.nephrology@gmail.com; keep the existing icon; price Free; TestFlight only until he signs off. He did not answer the App Store name, so “PD Buddy” is used, with “PD Buddy: Dialysis Rx”, “PD Buddy – Peritoneal Rx” and “PD Buddy for Nephrology” as fallbacks.
+- [ ] Sign-off: app icon (existing web icon) — decided by Dr D Nov 15 2026 (keep), full sign-off pending
+- [ ] Sign-off: contact email akd.nephrology@gmail.com (listing, privacy and support pages, in-app) — decided by Dr D Nov 15 2026, full sign-off pending
+- [ ] Sign-off: price Free — decided by Dr D Nov 15 2026, full sign-off pending
+- [ ] Sign-off: TestFlight only until content sign-off (DRAFT banner stays in the app) — decided by Dr D Nov 15 2026, full sign-off pending
+- [ ] Sign-off: App Store name “PD Buddy” (fallbacks above) — not answered by Dr D; used provisionally, needs his OK
 
 ---
 

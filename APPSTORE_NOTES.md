@@ -2,7 +2,7 @@
 
 Marketing version **1.0**, build **1**. Bundle ID `com.drd.pdbuddy`. Signing team `RZRMT6494V` (automatic signing, baked into the project, same team as CRRT Rx). Home-screen name **PD Buddy**. Deployment target iOS 15, iPhone and iPad, all orientations.
 
-**Content is not signed off.** The DRAFT banner (“Draft – not for clinical use until reviewed by Dr D”) and `DRAFT=true` are kept exactly as on the web build. Do not merge this branch to `main`, and do not submit for App Store review until Dr D signs off. Until then use TestFlight only: Apple rejects apps that present themselves as drafts or betas (Guideline 2.2).
+**Content is not signed off.** The DRAFT banner (“Draft – not for clinical use until reviewed by Dr D”) and `DRAFT=true` are kept exactly as on the web build. Do not merge this branch to `main`, and do not submit for App Store review until Dr D signs off. Until then TestFlight only (Dr D's decision, Nov 15 2026): Apple rejects apps that present themselves as drafts or betas (Guideline 2.2).
 
 ## Build on the Mac (Xcode 16 or later)
 
@@ -29,6 +29,9 @@ The box cannot run Xcode. On the box, the plist, privacy manifest, asset catalog
 `privacy.html` and `support.html` are already live on main (they predate this branch, and this branch does not change them):
 - Privacy: https://amarzon-tech.github.io/pd-buddy/privacy.html
 - Support: https://amarzon-tech.github.io/pd-buddy/support.html
-- Contact: amardamodar@gmail.com (**placeholder; the contact email is undecided**)
+- Contact: akd.nephrology@gmail.com (decided by Dr D, Nov 15 2026)
 
-Both pages carry the DRAFT banner. Update them before App Store submission.
+Both pages carry the DRAFT banner.
+
+## Dr D's decisions (Nov 15 2026)
+Free. Keep the existing icon. TestFlight only until he signs off. App Store name: “PD Buddy” provisionally (fallbacks in LISTING.md).

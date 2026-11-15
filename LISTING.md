@@ -1,20 +1,20 @@
 # PD Buddy: App Store Connect listing (DRAFT; content not signed off)
 
-Bundle ID `com.drd.pdbuddy`. Version **1.0**, build **1**. Team RZRMT6494V (Dr D's individual Apple Developer account, same team as CRRT Rx). Category: **Medical**. Price: **to decide** (CRRT Rx is Free).
+Bundle ID `com.drd.pdbuddy`. Version **1.0**, build **1**. Team RZRMT6494V (Dr D's individual Apple Developer account, same team as CRRT Rx). Category: **Medical**. Price: **Free** (decided by Dr D, Nov 15 2026).
 
-> Not ready to submit for App Store review. The app shows a “Draft – not for clinical use until reviewed by Dr D” banner and the content is not signed off, so Apple would likely reject it as a beta (Guideline 2.2). Use TestFlight until sign-off, then update this listing.
+> **TestFlight only until Dr D signs off** (his decision, Nov 15 2026). Do not submit for App Store review yet: the app shows a “Draft – not for clinical use until reviewed by Dr D” banner and Apple would likely reject it as a beta (Guideline 2.2). Update this listing at sign-off.
 
-**Contact (placeholder, FLAG):** amardamodar@gmail.com. The support/contact email is undecided.
-- Privacy Policy URL: https://amarzon-tech.github.io/pd-buddy/privacy.html (live; carries the DRAFT banner and the placeholder email)
+**Contact:** akd.nephrology@gmail.com (decided by Dr D, Nov 15 2026).
+- Privacy Policy URL: https://amarzon-tech.github.io/pd-buddy/privacy.html (live, shows akd.nephrology@gmail.com; carries the DRAFT banner)
 - Support URL: https://amarzon-tech.github.io/pd-buddy/support.html (same)
 
 ---
 
-## Name (30 characters max) — Dr D to choose
-1. **PD Buddy** (8). Check availability in App Store Connect first; it may be taken.
-2. **PD Buddy: Dialysis Rx** (21)
-3. **PD Buddy – Peritoneal Rx** (24)
-4. **PD Buddy for Nephrology** (23)
+## Name (30 characters max)
+**PD Buddy** (8). Dr D did not pick a name, so this is used provisionally; check availability in App Store Connect. Fallbacks, in order, if it is taken:
+1. **PD Buddy: Dialysis Rx** (21)
+2. **PD Buddy – Peritoneal Rx** (24)
+3. **PD Buddy for Nephrology** (23)
 
 The home-screen name stays “PD Buddy” whatever the store name is.
 
@@ -70,13 +70,17 @@ Demo path (no account): Step 1, male, age 55, 170 cm, 70 kg. Step 2, pick transp
 
 Guideline 1.4.1: educational tool, not a device and not a treatment. On-screen statement: “Not a medical device. Not cleared or approved by FDA. Estimates do not replace measured adequacy or clinical judgment.”
 Guideline 4.2: runs offline from bundled files, a four-step workflow with live calculation, on-device OCR, and Copy / Print.
-Export compliance: ITSAppUsesNonExemptEncryption = false. Contact: amardamodar@gmail.com (placeholder).
+Export compliance: ITSAppUsesNonExemptEncryption = false. Contact: akd.nephrology@gmail.com.
 
 Trademark note: do not use “PD Adequest” or “Extraneal” in the listing (Baxter trademarks; the app names them only in its trademark notice).
 
-## Open questions for Dr D
-1. App Store name (above). Is “PD Buddy” free in App Store Connect?
-2. Support/contact email (amardamodar@gmail.com is a placeholder).
-3. Icon: the existing PD Buddy web icon (blue, serif “PD”, open loop) is used. OK?
-4. Price: Free, like CRRT Rx?
-5. TestFlight only until content sign-off (DRAFT banner stays in the app)?
+## Dr D's decisions (Nov 15 2026, 3:37 PM ET, relayed)
+- Contact email: **akd.nephrology@gmail.com**
+- Icon: **keep the existing PD Buddy icon**
+- Price: **Free**
+- Distribution: **TestFlight only until he signs off**
+- App Store name: not answered; **PD Buddy** used, fallbacks listed under Name.
+
+## Still open
+1. App Store name confirmation (and availability of “PD Buddy”).
+2. Content sign-off (then remove the DRAFT banner on his instruction and submit for review).
