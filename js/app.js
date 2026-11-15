@@ -50,7 +50,7 @@
 
 
   /* chip groups (in-memory state only) */
-  const state = { sex: "male", wunit: "kg", hunit: "ftin", labUnits: {}, ptype: null, pick: null, cur: null, calib: null, problem: "clearance", parseWarnings: [] };
+  const state = { sex: "male", wunit: "kg", hunit: "ftin", labUnits: {}, ptype: null, pick: null, cur: null, curExplicit: false, selSig: null, calib: null, problem: "clearance", parseWarnings: [] };
   function bindChips(groupId, key) {
     const g = $(groupId);
     g.addEventListener("click", (e) => {
@@ -235,7 +235,16 @@
     const wp = document.querySelector("#p-wt-wrap .unit-pill");
     if (wp) wp.textContent = state.wunit;
     const inp = readInputs();
-    const r = compute(inp);
+    let r = compute(inp);
+    // 0.4.6 (N-M1): never carry a stale or above-cap selection across an input change.
+    const sig = selectionSig(r);
+    if (r.options && sig !== state.selSig && (state.pick || state.cur)) {
+      const v = W.revalidate({ pick: state.pick, cur: state.cur, curExplicit: state.curExplicit, sig: state.selSig }, r.options, sig);
+      const changed = v.pick !== state.pick || v.cur !== state.cur;
+      state.pick = v.pick; state.cur = v.cur; state.curExplicit = v.curExplicit;
+      if (changed) r = compute(inp);
+    }
+    if (r.options) state.selSig = sig;
 
     $("p-cm-wrap").classList.toggle("hidden", state.hunit !== "cm");
     $("p-ft-wrap").classList.toggle("hidden", state.hunit === "cm");
@@ -362,18 +371,32 @@
       '<span class="top-nums three"><span class="tn' + (rank.metric === "ktv" ? " lead" : "") + '"><b class="' + (rank.metric === "ktv" ? (o.meets ? "v-ok" : "v-warn") : "") + '">' + esc(ktv) + "</b><i>weekly Kt/V</i></span>" +
       '<span class="tn' + (rank.metric === "crcl" ? " lead" : "") + '"><b class="' + (rank.metric === "crcl" ? (o.meets ? "v-ok" : "v-warn") : "") + '">' + fmt(o.crcl, 1) + "</b><i>CrCl L/wk/1.73 m²</i></span>" +
       '<span class="tn uf"><b>' + esc(ufText(o)) + "</b><i>" + esc(ufSub) + ' <em class="exp">experimental</em></i></span></span>' +
-      negUfHtml(o) +
+      negUfHtml(o, "span", "neg-uf-full") + negUfShortHtml(o) +
       sibTxt +
       (o.opt && o.opt.mod === "ccpd" && o.opt.dayDwells === 2 ? '<span class="ico-line">No icodextrin variant: the split day dwells are shorter than the labelled 8–16-h long dwell and no icodextrin UF is published for them.</span>' : "") +
-      '<span class="top-foot">' + badge + '<span class="est-mini">model estimate, not measured</span></span></span></' + tag + "></li>"
+      '<span class="top-foot">' + badge + '<span class="est-mini">model estimate, not measured</span></span></span></' + tag + ">" + negUfCompact(o) + "</li>"
     );
   }
 
   /** 0.4.5: amber warning when the experimental UF model predicts negative daily UF (no re-ranking). */
-  function negUfHtml(o, tagName) {
+  function negUfHtml(o, tagName, extra) {
     const t = o && o.uf ? RX.negUfWarning(o.uf.dailyUfMl) : null;
     const tg = tagName || "span";
-    return t ? "<" + tg + ' class="neg-uf" role="note">⚠ ' + esc(t) + "</" + tg + ">" : "";
+    return t ? "<" + tg + ' class="neg-uf' + (extra ? " " + extra : "") + '" role="note">⚠ ' + esc(t) + "</" + tg + ">" : "";
+  }
+  /**
+   * 0.4.6 (Dr D via App Critic, Nov 15 2026: a shorter warning is OK on small phones): compact
+   * step 2 card warning for small screens, with a disclosure that shows the full wording. It sits
+   * outside the card's pick button (no nested controls); CSS shows it only on small screens.
+   */
+  function negUfShortHtml(o) {
+    const t = o && o.uf ? RX.negUfShort(o.uf.dailyUfMl) : null;
+    return t ? '<span class="neg-uf neg-uf-short" role="note">⚠ ' + esc(t) + "</span>" : "";
+  }
+  function negUfCompact(o) {
+    const full = o && o.uf ? RX.negUfWarning(o.uf.dailyUfMl) : null;
+    if (!full) return "";
+    return '<details class="neg-uf-more"><summary>Full UF warning</summary><span class="neg-uf">⚠ ' + esc(full) + "</span></details>";
   }
   function noFitText(r) {
     return "No fill volume fits under this patient's fill cap of " + fmt(F.maxFillL(r.bsa), 2) + " L (1.5 L/m² × BSA " + fmt(r.bsa, 2) + " m², + 0.05 L tolerance). The smallest fill offered is " + F.fmtL(F.CANDIDATE_FILLS[0]) + " L.";
@@ -487,9 +510,15 @@
     basis.textContent = b;
   }
 
+  /** Inputs that decide which rows exist and which are over the cap (body size, transport, labs). */
+  function selectionSig(r) {
+    if (!r.options) return "blocked";
+    return r.options.map((o) => o.id + (o.overCap ? "!" : "")).join(",");
+  }
   function pickedRow(r) {
     if (!r.options) return null;
-    return r.options.find((o) => o.id === state.pick) || (r.rankCapd && r.rankCapd.top[0]) || null;
+    const p = r.options.find((o) => o.id === state.pick && !o.overCap);
+    return p || (r.rankCapd && r.rankCapd.top[0]) || null;
   }
 
   function renderRx(r) {
@@ -504,7 +533,7 @@
       estimate: est,
       uf: o && o.uf ? o.uf : null,
       transport: r.cat ? r.cat.label : null,
-      basis: r.basis || null,
+      basis: r.noFit ? noFitText(r) : (r.basis || null),
     });
     renderSheet($("rx-sheet"), rx);
   }
@@ -514,6 +543,7 @@
     if (!b) return;
     state.pick = b.getAttribute("data-pick");
     state.cur = state.pick;
+    state.curExplicit = false;
     recalc();
     const card = $("rx-card");
     if (card && card.scrollIntoView) card.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -522,7 +552,7 @@
   /* ── Step 3: current prescription, labs, adequacy, updated choices ── */
   function currentId(r) {
     if (!r.options) return null;
-    if (state.cur && r.options.some((o) => o.id === state.cur)) return state.cur;
+    if (state.cur && r.options.some((o) => o.id === state.cur && (!o.overCap || state.curExplicit))) return state.cur;
     const p = pickedRow(r);
     return p ? p.id : null;
   }
@@ -544,10 +574,11 @@
       sel.innerHTML = groups.map((G) => '<optgroup label="' + esc(G.g) + '">' + G.items.map((o) => '<option value="' + esc(o.id) + '">' + esc(fullName(o) + (o.overCap ? " (above fill cap)" : "")) + "</option>").join("") + "</optgroup>").join("");
       sel.dataset.sig = sig;
     }
-    if (id) sel.value = id;
+    sel.value = id || ""; // 0.4.6: no stale or above-cap entry shown as selected
   }
   $("cur-rx").addEventListener("change", (e) => {
     state.cur = e.target.value;
+    state.curExplicit = true;
     recalc();
   });
 
@@ -792,7 +823,7 @@
     }
     const curId = currentId(r);
     const cur = R.options ? R.options.find((o) => o.id === curId) : null;
-    $("ts-cur").innerHTML = esc(cur ? "Current prescription: " + fullName(cur) + " — model Kt/V " + fmt(cur.ktv, 2) + ", CrCl " + fmt(cur.crcl, 1) + ", predicted UF " + ufText(cur) + " L/day (experimental). " + note : (R.noFit ? noFitText(R) : "Complete steps 1–2 (and pick the current prescription on step 3).")) + (cur ? negUfHtml(cur, "span") : "");
+    $("ts-cur").innerHTML = esc(cur ? "Current prescription: " + fullName(cur) + " — model Kt/V " + fmt(cur.ktv, 2) + ", CrCl " + fmt(cur.crcl, 1) + ", predicted UF " + ufText(cur) + " L/day (experimental). " + (cur.overCap ? "Above the fill cap for this patient (max " + fmt(F.maxFillL(R.bsa), 2) + " L + 0.05 L); shown because it was chosen as the current prescription. " : "") + note : (R.noFit ? noFitText(R) : "Complete steps 1–2 (and pick the current prescription on step 3).")) + (cur ? negUfHtml(cur, "span") : "");
     const sg = $("ts-sugg");
     if (!cur) { sg.innerHTML = ""; }
     else {

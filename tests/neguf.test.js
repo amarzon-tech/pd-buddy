@@ -54,10 +54,10 @@ section("Any option with negative UF, any patient");
 
 section("Card, step 4 and summary");
 {
-  isTrue(/negUfHtml\(o\) \+\s*sibTxt/.test(app), "option card shows the warning");
+  isTrue(/negUfHtml\(o, "span", "neg-uf-full"\) \+ negUfShortHtml\(o\) \+\s*sibTxt/.test(app), "option card shows the warning (full; compact on small screens since 0.4.6)");
   isTrue(/negUfHtml\(cur, "span"\)/.test(app), "step 4 current prescription shows the warning");
   isTrue(/negUfHtml\(s\.row, "div"\)/.test(app), "step 4 suggestions show the warning");
-  isTrue(/class="neg-uf" role="note"/.test(app) && /\.neg-uf \{[^}]*var\(--amber-bg\)/.test(read("css/pd.css")), "amber styling");
+  isTrue(/class="neg-uf' \+ \(extra/.test(app) && /\.neg-uf \{[^}]*var\(--amber-bg\)/.test(read("css/pd.css")), "amber styling");
   isTrue(/rx-neguf/.test(app) && /\.rx-neguf/.test(read("css/pd.css")), "summary sheet renders the warning");
   const s = RX.build({ modality: "capd", capd: { exchanges: 4, fillL: 1.75, longDwellH: 8 }, uf: { dailyUfMl: -390, longSource: "model" } });
   const i = s.lines.findIndex((l) => /^Predicted daily UF/.test(l));
@@ -71,7 +71,7 @@ section("Card, step 4 and summary");
 section("Review");
 {
   const rv = read("CONTENT_REVIEW.md");
-  isTrue(/^- \[ \] Sign-off: negative predicted UF warning .*approved by Dr D Nov 15 2026, full sign-off pending$/m.test(rv), "unticked review item for the warning");
+  isTrue(/^- \[ \] Sign-off: negative predicted UF warning .*approved by Dr D Nov 15 2026; wording approved by Dr D on a voice call with App Critic, Nov 15 2026 7:01 AM ET \(relayed\); full sign-off pending$/m.test(rv), "unticked review item for the warning");
   isTrue(/Day volume equal to the night fill: \*\*decided by Dr D Nov 15 2026\*\* \(“Day volume equal to the night fill is fine”\), full sign-off pending/.test(rv), "day-volume item marked decided by Dr D");
   isTrue(!/- \[x\]/i.test(rv), "nothing ticked");
 }

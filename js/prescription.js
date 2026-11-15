@@ -38,6 +38,13 @@
     return "Predicted daily UF is negative (" + amt + ", experimental model). Watch fluid balance; consider a higher-tonicity or icodextrin dwell.";
   }
 
+  /** 0.4.6: compact form for step 2 cards on small screens only (full wording elsewhere). */
+  function negUfShort(dailyUfMl) {
+    if (!isNum(dailyUfMl) || dailyUfMl >= 0) return null;
+    const l = Math.abs(dailyUfMl) / 1000;
+    return "Negative UF predicted (" + (l < 0.005 ? "slightly below 0 L/day" : "about −" + l.toFixed(2) + " L/day") + ", experimental)";
+  }
+
   /** App Critic S8: the solutions the estimate assumed, printed with the sheet. */
   function modelAssumed(s) {
     if (s.modality === "apd") {
@@ -117,7 +124,7 @@
     return { title: TITLE, lines, text: lines.join("\n"), footer, draftLine: DRAFT_LINE };
   }
 
-  const RX = { build, SOLUTIONS, TITLE, DRAFT_LINE, DISCLAIMER, modelAssumed, negUfWarning };
+  const RX = { build, SOLUTIONS, TITLE, DRAFT_LINE, DISCLAIMER, modelAssumed, negUfWarning, negUfShort };
   global.PdPrescription = RX;
   if (typeof module !== "undefined" && module.exports) module.exports = RX;
 })(typeof globalThis !== "undefined" ? globalThis : this);

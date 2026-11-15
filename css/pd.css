@@ -192,3 +192,33 @@ blockquote.gq cite { display: block; margin-top: 4px; font-size: 11.5px; font-st
 #ts-cur .neg-uf { margin-top: 6px; }
 .rx-neguf { margin: 6px 0; padding: 6px 10px; border-radius: 8px; background: var(--amber-bg); color: var(--amber-ink); font-weight: 750; }
 @media print { .rx-neguf { border: 2px solid #000; color: #000 !important; background: #fff !important; } }
+
+/* ── 0.4.6: one-page print on Letter and A4 (App Critic re-check, approved by Dr D Nov 15 2026) ── */
+@page { margin: 12mm; }
+@media print {
+  html, body { min-height: 0 !important; height: auto !important; }
+  body { font-size: 11px; }
+  main, #panel-pd, #panel-pd .col-main, #step-2 { margin: 0 !important; padding: 0 !important; min-height: 0 !important; }
+  .draft-banner { padding: 3px 8px !important; font-size: 11px !important; }
+  #step-2 #rx-card { break-inside: auto !important; margin: 4px 0 0 !important; padding: 0 !important; border: 0 !important; box-shadow: none !important; }
+  #rx-card .rx-card-h { margin: 0 0 2px !important; }
+  #rx-card .rx-card-h h2, #rx-card .rx-card-h .card-t { font-size: 12px !important; }
+  #rx-card p, #rx-card .rx-sub { margin: 0 0 3px !important; font-size: 11px !important; line-height: 1.3 !important; }
+  #rx-sheet { padding: 6px 10px !important; margin: 0 !important; border-radius: 6px !important; }
+  #rx-sheet .rx-rows .rx-row, .rx-rows.machine .rx-row { grid-template-columns: 1fr 2.2fr !important; gap: 6px !important; padding: 2.5px 0 !important; min-height: 0 !important; font-size: 12px !important; line-height: 1.3 !important; break-inside: avoid; }
+  .rx-rows.machine .rx-row .rv { font-size: 12px !important; }
+  #rx-sheet .rx-draft, #rx-sheet .rx-neguf { margin: 3px 0 !important; padding: 3px 8px !important; font-size: 12px !important; line-height: 1.3 !important; break-inside: avoid; }
+  #rx-sheet > div:not(.rx-row):not(.rx-rows) { font-size: 11px; line-height: 1.3; margin: 2px 0; }
+  #rx-sheet .rx-disc { font-size: 11px !important; margin-top: 4px !important; }
+}
+
+/* ── 0.4.6: compact negative-UF warning on small screens (Dr D via App Critic, Nov 15 2026) ── */
+.neg-uf-short, .neg-uf-more { display: none; }
+.neg-uf-more summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; padding: 0 10px; color: var(--amber-ink); font-size: 13px; font-weight: 700; text-decoration: underline; }
+.neg-uf-more .neg-uf { margin-top: 0; }
+@media (max-height: 760px), (max-width: 400px) {
+  .neg-uf-full { display: none; }
+  .neg-uf-short { display: block; padding: 6px 10px; }
+  .neg-uf-more { display: block; margin-top: 2px; }
+}
+@media print { .neg-uf-short, .neg-uf-more { display: none !important; } }

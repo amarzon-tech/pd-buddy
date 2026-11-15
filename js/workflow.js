@@ -169,7 +169,31 @@
     ],
   });
 
-  const W = { measuredAdequacy, measuredPeritonealKt, diffTop, neighbours, troubleshoot, GUIDANCE, BROWN, MORELLE };
+  /**
+   * 0.4.6 (App Critic N-M1, approved by Dr D Nov 15 2026): re-validate the picked option and the
+   * current prescription against freshly computed rows. A selection is kept only if its id is still
+   * among the rows and it is not above the fill cap; otherwise it is cleared (null), so callers fall
+   * back to the #1 option or the no-fit message. When rows are null (inputs blocked) nothing is kept.
+   * `explicitCur` lets step 3 keep an above-cap current prescription the user chose for these inputs.
+   */
+  function validSelection(id, rows, allowOverCap) {
+    if (!id || !rows) return null;
+    const o = rows.find((x) => x.id === id);
+    if (!o) return null;
+    if (o.overCap && !allowOverCap) return null;
+    return id;
+  }
+  function revalidate(sel, rows, inputsSig) {
+    const same = sel.sig === inputsSig;
+    return {
+      pick: validSelection(sel.pick, rows, false),
+      cur: validSelection(sel.cur, rows, same && !!sel.curExplicit),
+      curExplicit: same && !!sel.curExplicit && !!validSelection(sel.cur, rows, true),
+      sig: inputsSig,
+    };
+  }
+
+  const W = { validSelection, revalidate, measuredAdequacy, measuredPeritonealKt, diffTop, neighbours, troubleshoot, GUIDANCE, BROWN, MORELLE };
   global.PdWorkflow = W;
   if (typeof module !== "undefined" && module.exports) module.exports = W;
 })(typeof globalThis !== "undefined" ? globalThis : this);
