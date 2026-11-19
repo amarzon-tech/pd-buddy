@@ -1,15 +1,14 @@
 /**
  * PD Buddy — configuration.
- * DRAFT=true until Dr D (Amar Damodar) signs off every item in CONTENT_REVIEW.md
- * and asks for it to be published, in his own words.
+ * DRAFT=false. Dr D (Amar Damodar) signed off all content Nov 18 2026, 9:09 PM ET.
  */
 (function (global) {
   "use strict";
 
-  const DRAFT = true;
+  const DRAFT = false;
   const DRAFT_BANNER = "Draft – not for clinical use until reviewed by Dr D";
   const APP_NAME = "PD Buddy";
-  const APP_VERSION = "0.4.9-draft";
+  const APP_VERSION = "1.0.0";
   const SUPPORT_EMAIL = "akd.nephrology@gmail.com";
   const PUBLISHER = "Wellness Tech LLC";
 

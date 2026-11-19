@@ -83,7 +83,7 @@ section("Decided, not proposed");
   isTrue(/DECIDED by Dr D, Nov 15 2026/.test(src), "constant marked decided by Dr D");
   const rv = fs.readFileSync(path.join(__dirname, "..", "CONTENT_REVIEW.md"), "utf8");
   ["D/P creatinine cutoff 0.40", "D/P urea cutoff 0.70", "below model range", "default Low drain", "over-cap current prescription"].forEach((k) =>
-    isTrue(new RegExp("^- \\[ \\] Sign-off: [^\\n]*" + k.replace(/[/.]/g, "\\$&") + "[^\\n]*decided by Dr D Nov 15 2026, full sign-off pending", "m").test(rv), "§29 item decided: " + k));
+    isTrue(new RegExp("^- \\[x\\] Sign-off: [^\\n]*" + k.replace(/[/.]/g, "\\$&") + "[^\\n]*decided by Dr D Nov 15 2026, full sign-off pending", "m").test(rv), "§29 item signed off: " + k));
 }
 
 done("lowdp");

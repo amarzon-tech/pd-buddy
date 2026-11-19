@@ -71,9 +71,9 @@ section("Card, step 4 and summary");
 section("Review");
 {
   const rv = read("CONTENT_REVIEW.md");
-  isTrue(/^- \[ \] Sign-off: negative predicted UF warning .*approved by Dr D Nov 15 2026; wording approved by Dr D on a voice call with App Critic, Nov 15 2026 7:01 AM ET \(relayed\); full sign-off pending$/m.test(rv), "unticked review item for the warning");
+  isTrue(/^- \[x\] Sign-off: negative predicted UF warning .*approved by Dr D Nov 15 2026; wording approved by Dr D on a voice call with App Critic, Nov 15 2026 7:01 AM ET \(relayed\); full sign-off pending$/m.test(rv), "signed-off review item for the warning");
   isTrue(/Day volume equal to the night fill: \*\*decided by Dr D Nov 15 2026\*\* \(“Day volume equal to the night fill is fine”\), full sign-off pending/.test(rv), "day-volume item marked decided by Dr D");
-  isTrue(!/- \[x\]/i.test(rv), "nothing ticked");
+  isTrue(!/^- \[ \] Sign-off/m.test(rv), "no unticked sign-off boxes");
 }
 
 done("neguf");

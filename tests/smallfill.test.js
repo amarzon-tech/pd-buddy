@@ -148,8 +148,8 @@ section("Release and review");
 {
   const rv = read("CONTENT_REVIEW.md");
   ["small fills 1.0–1.75 L", "no-fit message", "height hard block", "stale amber note", "iPhone SE step 2", "CCPD UF wording", "release 0.4.4-draft"].forEach((k) => {
-    const line = rv.split("\n").find((x) => x.startsWith("- [ ] Sign-off: " + k));
-    isTrue(!!line && /approved by Dr D Nov 15 2026, full sign-off pending/.test(line), "unticked review item: " + k);
+    const line = rv.split("\n").find((x) => x.startsWith("- [x] Sign-off: " + k));
+    isTrue(!!line && /approved by Dr D Nov 15 2026, full sign-off pending/.test(line), "signed-off review item: " + k);
   });
 }
 

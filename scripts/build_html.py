@@ -35,9 +35,8 @@ html = f'''<!DOCTYPE html>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="PD Buddy">
-  <meta name="description" content="Draft educational PD prescribing tool for nephrologists: PET transport, CAPD and CCPD options, weekly Kt/V and creatinine clearance. Offline, no login, no data collection. Not for clinical use until reviewed by Dr D.">
-  <meta name="robots" content="noindex, nofollow">
-  <title>PD Buddy — Draft</title>
+  <meta name="description" content="Educational PD prescribing tool for nephrologists: PET transport, CAPD and CCPD options, weekly Kt/V and creatinine clearance. Offline, no login, no data collection.">
+  <title>PD Buddy</title>
   <link rel="manifest" href="./manifest.json">
   <link rel="icon" type="image/png" href="./icons/favicon.png">
   <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
@@ -46,8 +45,6 @@ html = f'''<!DOCTYPE html>
   <link rel="stylesheet" href="./css/pd.css">
 </head>
 <body>
-  <div class="draft-banner" id="draft-banner" role="status">Draft – not for clinical use until reviewed by Dr D</div>
-
   <header class="top">
     <div class="top-row">
       <div>
@@ -238,7 +235,7 @@ html = f'''<!DOCTYPE html>
 
         <article class="card rx-card" id="rx-card">
           <div class="card-h rx-card-h">
-            <h2>Prescription <span class="draft-tag" id="rx-draft-tag">Draft</span></h2>
+            <h2>Prescription</h2>
             <div class="rx-actions no-print">
               <button type="button" class="rx-btn" id="rx-copy">Copy</button>
               <button type="button" class="rx-btn" id="rx-print">Print</button>
@@ -275,7 +272,7 @@ html = f'''<!DOCTYPE html>
       Every formula and source is in the About sheets and in
       <a href="./CONTENT_REVIEW.md">CONTENT_REVIEW.md</a>.
       <a href="./privacy.html">Privacy</a> · <a href="./support.html">Support</a>.
-      Draft. For nephrologists. Educational use only; not a substitute for clinical judgment or your unit protocol.
+      For nephrologists. Educational use only; not a substitute for clinical judgment or your unit protocol.
     </p>
   </footer>
 

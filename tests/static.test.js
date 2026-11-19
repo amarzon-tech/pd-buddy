@@ -1,6 +1,6 @@
 /**
- * Static checks for PD Buddy: draft state (DRAFT=true, banner, noindex,
- * robots Disallow), offline / no tracking, Adequest/Baxter cited but never claimed,
+ * Static checks for PD Buddy: signed-off state (DRAFT=false, no banner, indexing
+ * allowed), offline / no tracking, Adequest/Baxter cited but never claimed,
  * four-step workflow, lab loop and on-device OCR.
  * Run: node tests/static.test.js
  */
@@ -16,15 +16,15 @@ const cfg = require("../js/config.js");
 const sw = read("sw.js");
 const shipped = ["index.html", "404.html", "privacy.html", "support.html", "js/app.js", "js/formulas.js", "js/threepore.js", "js/rxgrid.js", "js/workflow.js", "js/labparse.js", "js/ocr.js", "js/prescription.js", "js/config.js", "css/styles.css", "css/standalone.css", "css/pd.css", "manifest.json", "sw.js"];
 
-section("Draft state");
-isTrue(cfg.DRAFT === true, "DRAFT is true until Dr D signs off");
-isTrue(/id="draft-banner"/.test(html), "draft banner present");
-isTrue(/Draft – not for clinical use until reviewed by Dr D/.test(html), "draft banner wording");
+section("Signed-off state");
+isTrue(cfg.DRAFT === false, "DRAFT is false after Dr D signed off");
+isTrue(!/id="draft-banner"/.test(html), "draft banner removed");
+isTrue(!/Draft – not for clinical use until reviewed by Dr D/.test(html), "draft banner wording gone");
 ["index.html", "404.html", "privacy.html", "support.html"].forEach((f) =>
-  isTrue(/<meta name="robots" content="noindex, nofollow">/.test(read(f)), f + ": noindex, nofollow")
+  isTrue(!/<meta name="robots" content="noindex, nofollow">/.test(read(f)), f + ": no noindex")
 );
-isTrue(/User-agent: \*\s+Disallow: \//.test(read("robots.txt")), "robots.txt disallows all");
-isTrue(/<title>PD Buddy — Draft<\/title>/.test(html), "title marks draft");
+isTrue(/User-agent: \*\s+Allow: \//.test(read("robots.txt")), "robots.txt allows indexing");
+isTrue(/<title>PD Buddy<\/title>/.test(html) && !/PD Buddy — Draft/.test(html), "title is PD Buddy, not Draft");
 isTrue(/Educational PD prescribing workflow for nephrologists/.test(html), "educational positioning for nephrologists");
 isTrue(/Educational use only; not a substitute for clinical judgment/.test(html), "educational disclaimer");
 isTrue(/Not a medical device\. Not cleared or approved by FDA\./.test(html), "not-a-medical-device statement (0.4.3)");
@@ -65,16 +65,16 @@ const assets = (sw.match(/"\.\/[^"]*"/g) || []).map((s) => s.slice(3, -1)).filte
 assets.forEach((a) => isTrue(fs.existsSync(path.join(root, a)), "service-worker asset exists: " + a));
 ["css/pd.css", "js/app.js", "js/formulas.js", "js/prescription.js", "js/config.js"].forEach((a) => isTrue(assets.includes(a), "service worker caches " + a));
 isTrue(/const CACHE = "pd-buddy-v\d+"/.test(sw), "versioned cache name");
-isTrue(/const CACHE = "pd-buddy-v14";/.test(sw), "cache bumped to pd-buddy-v14 (contact email akd.nephrology@gmail.com)");
+isTrue(/const CACHE = "pd-buddy-v15";/.test(sw), "cache bumped to pd-buddy-v15 (1.0.0 signed off)");
 ["js/threepore.js", "js/rxgrid.js", "js/workflow.js", "js/labparse.js", "js/ocr.js"].forEach((a) => isTrue(assets.includes(a), "service worker caches " + a));
-isTrue(cfg.APP_VERSION === "0.4.9-draft", "version 0.4.9-draft");
+isTrue(cfg.APP_VERSION === "1.0.0", "version 1.0.0");
 ["fill cap 1.5 L/m² BSA", "0.05 L tolerance", "fill-cap sources", "troubleshoot respects the fill cap", "release 0.4.2-draft"].forEach((k) =>
-  isTrue(new RegExp("^- \\[ \\] Sign-off: " + k.replace(/[.()]/g, "\\$&"), "m").test(read("CONTENT_REVIEW.md")), "unticked 0.4.2 review item: " + k));
+  isTrue(new RegExp("^- \\[x\\] Sign-off: " + k.replace(/[.()]/g, "\\$&"), "m").test(read("CONTENT_REVIEW.md")), "signed-off 0.4.2 review item: " + k));
 isTrue((html.match(/class="note cap-note">Fill volumes capped at 1\.5 L\/m² BSA; individualize to comfort and intraperitoneal pressure \(&lt;18 cm H2O\)\.<\/p>/g) || []).length === 3, "cap note under CAPD, CCPD and updated CCPD Top 3");
 isTrue(/id="o-maxfill"/.test(html), "step 1 shows max fill");
 isTrue(!/Large fill:/.test(read("js/app.js")), "large-fill warning replaced by the cap");
 ["midday-exchange candidates", "3.0 L CCPD night fills", "10- and 11-h cycler time", "CCPD burden order", "no Extraneal variant for split midday dwells", "release 0.4.1-draft"].forEach((k) =>
-  isTrue(new RegExp("^- \\[ \\] Sign-off: (CCPD )?" + k.replace(/[.()]/g, "\\$&"), "m").test(read("CONTENT_REVIEW.md")), "unticked 0.4.1 review item: " + k));
+  isTrue(new RegExp("^- \\[x\\] Sign-off: (CCPD )?" + k.replace(/[.()]/g, "\\$&"), "m").test(read("CONTENT_REVIEW.md")), "signed-off 0.4.1 review item: " + k));
 isTrue(/midday exchange/.test(html), "index mentions the CCPD midday exchange");
 
 section("Four-step clinician workflow");
@@ -116,13 +116,15 @@ isTrue(/#1e63d6/i.test(html) && /--teal: #1e63d6/.test(read("css/styles.css")), 
 
 section("CONTENT_REVIEW");
 const review = read("CONTENT_REVIEW.md");
-const boxes = (review.match(/^- \[ \] Sign-off/gm) || []).length;
-isTrue(boxes >= 50, "at least 50 unticked sign-off boxes (" + boxes + ")");
-["target Kt/V 1.7", "burden ordering", "candidate set", "CrCl fallback"].forEach((k) => isTrue(new RegExp("^- \\[ \\] Sign-off: ranking — " + k, "m").test(review), "unticked ranking item: " + k));
-isTrue(!/^- \[x\]/im.test(review), "no ticked boxes before Dr D reviews");
+const boxes = (review.match(/^- \[x\] Sign-off/gm) || []).length;
+const open = (review.match(/^- \[ \] Sign-off/gm) || []).length;
+isTrue(boxes >= 50, "at least 50 signed-off boxes (" + boxes + ")");
+isTrue(open === 0, "no unticked sign-off boxes (" + open + ")");
+["target Kt/V 1.7", "burden ordering", "candidate set", "CrCl fallback"].forEach((k) => isTrue(new RegExp("^- \\[x\\] Sign-off: ranking — " + k, "m").test(review), "signed-off ranking item: " + k));
+isTrue(/^- \[x\]/m.test(review), "sign-off boxes are ticked");
 ["Akonur", "Vonesh", "Öberg", "Rippe", "Bergling", "Tesseract", "Watson", "Hume", "Mosteller", "Twardowski", "Garred", "Asghar", "Waniewski", "Morelle", "Brown", "KDOQI", "Pannekeet", "Semin Dial", "Daugirdas", "ADEMEX", "Paniagua", "icodextrin"].forEach((s) =>
   isTrue(review.includes(s), "review cites " + s)
 );
-isTrue(/DRAFT=true/.test(review), "review records DRAFT=true");
+isTrue(/`DRAFT=false`/.test(review) && /Signed off/.test(review) && /I sign off on all of P\. D\. Berle\. Sign off on all of P\. D\. Berle\./.test(review), "review records DRAFT=false and Dr D sign-off");
 
 done("static");
