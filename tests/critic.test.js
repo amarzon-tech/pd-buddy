@@ -163,12 +163,12 @@ section("CONTENT_REVIEW");
 {
   const dec = /Decided by Dr D, Nov 14 2026:\*\* keep the 0\.05 L fill tolerance, 3\.0 L fills \(within the 1\.5 L\/m² BSA cap\) and 9–11 h cycler time despite the AJKD Core Curriculum 2023 limits/;
   ["0.05 L tolerance", "Core Curriculum 2023", "10- and 11-h cycler time"].forEach((k) => {
-    const line = review.split("\n").find((l) => l.startsWith("- [ ] Sign-off: " + k));
-    isTrue(!!line && dec.test(line) && /full sign-off pending/.test(line), "decision recorded, still unticked: " + k);
+    const line = review.split("\n").find((l) => l.startsWith("- [x] Sign-off: " + k));
+    isTrue(!!line && dec.test(line), "decision recorded and signed off: " + k);
   });
-  isTrue(!/- \[x\]/i.test(review), "nothing ticked");
+  isTrue(!/^- \[ \] Sign-off/m.test(review), "no unticked sign-off boxes");
   ["M1 neutral wording", "M2 hard blocks", "M3 D/P blocks", "M4 OCR parser", "M5 summary title", "M6 not-a-medical-device", "M7 naming", "S1 BSA", "S2 icodextrin", "S3 step 4", "S4 CCPD CrCl", "S5 residual", "S6 current prescription", "S7 accessibility", "S8 model solution", "N1 Akonur", "N2 first-run", "N3 model documentation", "release 0.4.3-draft"].forEach((k) =>
-    isTrue(review.includes("- [ ] Sign-off: " + k), "unticked 0.4.3 item: " + k));
+    isTrue(review.includes("- [x] Sign-off: " + k), "signed-off 0.4.3 item: " + k));
 }
 
 done("critic");

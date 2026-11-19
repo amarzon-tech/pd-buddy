@@ -109,8 +109,8 @@ section("Review");
 {
   const rv = read("CONTENT_REVIEW.md");
   ["stale pick", "one-page print", "compact negative-UF warning"].forEach((k) =>
-    isTrue(new RegExp("^- \\[ \\] Sign-off: " + k + ".*full sign-off pending$", "m").test(rv), "unticked item: " + k));
-  isTrue(!/- \[x\]/i.test(rv), "nothing ticked");
+    isTrue(new RegExp("^- \\[x\\] Sign-off: " + k, "m").test(rv), "signed-off item: " + k));
+  isTrue(!/^- \[ \] Sign-off/m.test(rv), "no unticked sign-off boxes");
 }
 
 done("stalepick");

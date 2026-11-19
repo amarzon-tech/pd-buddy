@@ -1,7 +1,7 @@
 {
-  "name": "PD Buddy (Draft)",
+  "name": "PD Buddy",
   "short_name": "PD Buddy",
-  "description": "Draft educational PD prescribing tool for nephrologists. PET transport, weekly Kt/V and CrCl. Offline, no login, no data collection. Not for clinical use until reviewed by Dr D.",
+  "description": "Educational PD prescribing tool for nephrologists. PET transport, weekly Kt/V and CrCl. Offline, no login, no data collection.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
