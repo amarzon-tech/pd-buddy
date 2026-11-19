@@ -1,6 +1,6 @@
 /**
  * iOS wrapper (branch ios-wrap): project settings, plists, privacy manifest, and the bundled
- * web app matching the sources (DRAFT kept). Run: node tests/ios.test.js
+ * web app matching the sources (signed off, DRAFT=false). Run: node tests/ios.test.js
  */
 "use strict";
 const fs = require("fs");
@@ -44,11 +44,12 @@ const icon = fs.readFileSync(R("ios/App/App/Assets.xcassets/AppIcon.appiconset/A
 eq(icon.readUInt32BE(16) + "x" + icon.readUInt32BE(20), "1024x1024", "app icon 1024×1024");
 eq(icon[25], 2, "app icon PNG colour type RGB (no alpha)");
 
-section("Bundled web app = sources, DRAFT kept");
+section("Bundled web app = sources, signed off");
 const files = ["index.html", "privacy.html", "support.html", "manifest.json", "sw.js", "js/app.js", "js/config.js", "js/formulas.js", "js/prescription.js", "js/threepore.js", "js/workflow.js", "js/labparse.js", "js/ocr.js", "js/rxgrid.js", "css/pd.css", "vendor/tesseract/tesseract.min.js", "vendor/tesseract/worker.min.js", "vendor/tesseract/lang/eng.traineddata.gz"];
 for (const f of files) isTrue(ex("ios/App/App/public/" + f) && fs.readFileSync(R(f)).equals(fs.readFileSync(R("ios/App/App/public/" + f))), "bundled " + f + " matches the source");
-isTrue(/DRAFT\s*=\s*true/.test(read("ios/App/App/public/js/config.js")), "DRAFT=true in the app");
-isTrue(/id="draft-banner"[^>]*>Draft – not for clinical use until reviewed by Dr D</.test(read("ios/App/App/public/index.html")), "DRAFT banner text in the app");
+isTrue(/DRAFT\s*=\s*false/.test(read("ios/App/App/public/js/config.js")), "DRAFT=false in the app");
+isTrue(/APP_VERSION = "1\.0\.0"/.test(read("ios/App/App/public/js/config.js")), "version 1.0.0 in the app");
+isTrue(!/id="draft-banner"/.test(read("ios/App/App/public/index.html")) && !/Draft – not for clinical use until reviewed by Dr D/.test(read("ios/App/App/public/index.html")), "no draft banner in the app");
 isTrue(/isNativePlatform\(\);\s*if \(!native\) navigator\.serviceWorker\.register/.test(read("index.html")), "no service worker inside the native WebView");
 isTrue(!/https?:\/\/(?!www\.w3\.org|doi\.org)[^"' ]+\.(js|css)["']/.test(read("index.html")), "no remote scripts or styles");
 done("ios");

@@ -49,7 +49,7 @@ section("Review");
   const rv = read("CONTENT_REVIEW.md");
   isTrue(/^- \[x\] Sign-off: low-transporter warning wording .*wording approved by Dr D Nov 15 2026, full sign-off pending$/m.test(rv), "wording item signed off");
   isTrue(/^- \[x\] Sign-off: placement, including the iPhone SE placement above the first option .*wording approved by Dr D Nov 15 2026, full sign-off pending$/m.test(rv), "SE placement item signed off");
-  isTrue(!/^- \[ \] Sign-off/m.test(rv), "no unticked sign-off boxes");
+  isTrue((rv.match(/^- \[ \] Sign-off/gm) || []).length === 2, "two iOS listing items still open");
 }
 
 done("lowwarn");

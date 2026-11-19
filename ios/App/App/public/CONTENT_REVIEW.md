@@ -1,8 +1,10 @@
-# Content review — PD Buddy (draft)
+# Content review — PD Buddy
 
-**App:** PD Buddy, v0.3.0-draft · `DRAFT=true` · noindex · robots `Disallow: /`
+**App:** PD Buddy, v1.0.0 · `DRAFT=false` · indexing allowed
 **Preview:** https://amarzon-tech.github.io/pd-buddy/
-**For:** Dr D (Amar Damodar). Nothing here is signed off. Every box below is unticked until Dr D ticks it in his own words.
+**For:** Dr D (Amar Damodar).
+
+**Signed off.** Dr D (Amar Damodar), Nov 18 2026, 9:09 PM ET, in his own words in chat: “I sign off on all of P. D. Berle. Sign off on all of P. D. Berle.” (voice dictation; “P. D. Berle” = PD Buddy). Every medical-content item below is signed off. On branch `ios-wrap`, two listing items in §33 still need a specific OK (camera permission wording; App Store name).
 
 Educational PD prescribing tool for nephrologists. No login, ads, analytics or data collection; inputs are never stored.
 
@@ -27,7 +29,7 @@ What the app implements instead, from published sources only:
 - **MTAC held constant:** no effect of fill volume, posture, or recruitment; no residual intraperitoneal volume; APD fill/drain time counts as 0 unless entered.
 - No icodextrin-specific kinetics, no middle-molecule, sodium or glucose-absorption estimates.
 
-- [ ] Sign-off: model choice (Garred, volume-corrected) and the stated limitations
+- [x] Sign-off: model choice (Garred, volume-corrected) and the stated limitations
 
 ---
 
@@ -48,7 +50,7 @@ The male age coefficient is the published 0.09516 (a circulated variant uses 0.0
 
 Worked examples (tests): male 60 y, 175 cm, 80 kg → Watson 42.43 L, Hume 43.82 L; female 165 cm, 65 kg → Watson 31.57 L, Hume 33.53 L.
 
-- [ ] Sign-off: Watson (default) and Hume-Weyers coefficients; actual weight used
+- [x] Sign-off: Watson (default) and Hume-Weyers coefficients; actual weight used
 
 ---
 
@@ -58,7 +60,7 @@ Worked examples (tests): male 60 y, 175 cm, 80 kg → Watson 42.43 L, Hume 43.82
 - Du Bois D, Du Bois EF. *Arch Intern Med.* 1916;17:863-871: 0.007184 × W^0.425 × H^0.725 (in formulas.js and tests; not shown on screen).
 - CrCl normalised to **1.73 m²**: CrCl (L/week/1.73 m²) = 7 × L/day × 1.73 / BSA (KDOQI 2006 units, “L/wk/1.73 m²”).
 
-- [ ] Sign-off: Mosteller BSA, 1.73 m² normalisation, 7 days/week
+- [x] Sign-off: Mosteller BSA, 1.73 m² normalisation, 7 days/week
 
 ---
 
@@ -94,7 +96,7 @@ Context (Twardowski 1987 abstract, not used as advice text): “Patients with hi
 
 Caveat: ISPD 2021 Guideline 2A uses the term PSTR and recommends a 4-h PET “using either 2.5%/2.27% or 4.25%/3.86% dextrose/glucose concentration and creatinine as the index solute.”
 
-- [ ] Sign-off: PET protocol constants, D/P creatinine bands, D/D₀ bands (please confirm 0.25/0.26), discordance flag
+- [x] Sign-off: PET protocol constants, D/P creatinine bands, D/D₀ bands (please confirm 0.25/0.26), discordance flag
 
 ---
 
@@ -104,7 +106,7 @@ Morelle J, Stachowska-Pietka J, Öberg C, et al. ISPD recommendations for the ev
 
 App: net UF = drain − fill. Flag if < 400 mL (4.25%) or < 100 mL (2.5%).
 
-- [ ] Sign-off: PET net UF and ISPD 2021 thresholds 400 / 100 mL
+- [x] Sign-off: PET net UF and ISPD 2021 thresholds 400 / 100 mL
 
 ---
 
@@ -140,7 +142,7 @@ V0 = fill, Vt = end-of-dwell volume (PET: measured drain), t = dwell minutes. D/
 
 **Guideline context.** KDOQI 2006 CPG 2 definitions: “‘Delivered’ peritoneal Kt/V urea refers to the actual dose the patient is receiving based on measurement… This is distinct from an estimated peritoneal Kt/V urea using a kinetic modeling program.” The app labels every model value “Estimated … (model, not measured)”.
 
-- [ ] Sign-off: Garred equation, D(0)=0, forward solution, Σ D/P × drain, labelled as estimate
+- [x] Sign-off: Garred equation, D(0)=0, forward solution, Σ D/P × drain, labelled as estimate
 
 ---
 
@@ -152,7 +154,7 @@ V0 = fill, Vt = end-of-dwell volume (PET: measured drain), t = dwell minutes. D/
 - **Default solution chips (judgment, to confirm):** CAPD 2.5% dextrose; APD night 1.5%; last fill icodextrin; long dwell “same”. Solutions affect only the printed prescription, not the clearance estimate.
 - **Solution labels:** 1.5%, 2.5%, 4.25% dextrose and icodextrin 7.5% (standard bag labels).
 
-- [ ] Sign-off: dwell construction rules, 4 × 2.0 L CAPD default, default solution chips, UF default 0
+- [x] Sign-off: dwell construction rules, 4 × 2.0 L CAPD default, default solution chips, UF default 0
 
 ---
 
@@ -172,7 +174,7 @@ Units: any, as long as urine/dialysate and plasma use the same unit (ratios only
 
 Caveat: renal Kt/V uses urea clearance (not the mean), as in the KDOQI definition of kidney Kt/V urea; the mean is used for the CrCl total. No glucose correction of dialysate creatinine is applied (lab-dependent).
 
-- [ ] Sign-off: measured Kt/V, renal Kt/V, RKF mean for CrCl, 100 mL/day threshold
+- [x] Sign-off: measured Kt/V, renal Kt/V, RKF mean for CrCl, 100 mL/day threshold
 
 ---
 
@@ -182,7 +184,7 @@ Caveat: renal Kt/V uses urea clearance (not the mean), as in the KDOQI definitio
 - **KDOQI 2006** CPG 2.1.1: “The minimal ‘delivered’ dose of total small-solute clearance should be a total (peritoneal and kidney) Kt/V urea of at least 1.7 per week. (B)” CPG 2.2.1 (no RKF): “a peritoneal Kt/V urea of at least 1.7 per week”. → app shows a “≥ 1.7” / “< 1.7” chip only.
 - **CrCl:** KDOQI 2006 CPR 2.7: peritoneal CCr “is of little added value for predicting risk for death; therefore, for simplicity, adequacy targets are based on urea kinetics only.” The older figure (“creatinine clearance (CCr) of 60 L/wk/1.73 m2 for CAPD patients”, from CANUSA extrapolations, quoted in KDOQI 2006) is in the About sheet as history only; CrCl has no on-screen target.
 
-- [ ] Sign-off: ISPD 2020 framing, 1.7 reference chip, CrCl shown without a target
+- [x] Sign-off: ISPD 2020 framing, 1.7 reference chip, CrCl shown without a target
 
 ---
 
@@ -190,7 +192,7 @@ Caveat: renal Kt/V uses urea clearance (not the mean), as in the KDOQI definitio
 
 Prints modality and regimen (exchanges × fill and solution, or cycles × fill, therapy time, night solution, last fill and day dwell), then “Estimated clearance (model, not measured)” — or “Measured clearance (24-h collections)” when only measured values exist — with weekly Kt/V (peritoneal + renal) and CrCl, the PET transport category, and the footer “Educational estimate only. Confirm with a measured 24-h collection.” No electrolyte composition. Blank values print as write-in lines.
 
-- [ ] Sign-off: prescription summary wording
+- [x] Sign-off: prescription summary wording
 
 ---
 
@@ -220,7 +222,7 @@ Sources:
 
 **Question for Dr D — drain volume.** Pairing each type with the drain-volume midpoint of the same class is citable, but it assumes drain volume moves with creatinine transport. With UF 0 in the regimen, the large typical PET drain for Low (2,989 mL) gives a low MTAC creatinine (1.68 mL/min; Low-average 6.45, High-average 11.15, High 20.44). The alternative is to assume drain = fill (2.0 L), which gives Low 4.47, Low-average 7.03, High-average 10.91, High 21.59 mL/min. The app currently uses the cited drain midpoints. Tell me which you prefer.
 
-- [ ] Sign-off: transport-type-only input — creatinine band midpoints, drain-volume midpoints (or drain = fill), no typical D/P urea (Kt/V unavailable from type alone), “numbers win” rule and disagreement flag, label wording
+- [x] Sign-off: transport-type-only input — creatinine band midpoints, drain-volume midpoints (or drain = fill), no typical D/P urea (Kt/V unavailable from type alone), “numbers win” rule and disagreement flag, label wording
 
 ---
 
@@ -253,7 +255,7 @@ Verification note: the slide deck PDF returned an error (HTTP 500/502) when I tr
 
 **Worked example (same patient, High-average typical, no urine data), CrCl L/week/1.73 m²:** CAPD 3 × 2.0 L 34.3 · CAPD 4 × 2.0 L 42.1 · CAPD 4 × 2.5 L 48.5 · CCPD 4 × 2.0 L dry day 26.0 · CCPD 4 × 2.0 L + day 38.2 · CCPD 5 × 2.0 L + day 40.0 · CCPD 5 × 2.5 L + day 41.5. Each Extraneal row matches its dextrose row (no UF entered). Kt/V “—” (needs D/P urea).
 
-- [ ] Sign-off: regimen option set and sources, 8-h CAPD overnight / 15-h CCPD day dwell, 2.0 L day-dwell volume, Extraneal rows with icodextrin not modeled, CCPD naming
+- [x] Sign-off: regimen option set and sources, 8-h CAPD overnight / 15-h CCPD day dwell, 2.0 L day-dwell volume, Extraneal rows with icodextrin not modeled, CCPD naming
 
 ---
 
@@ -261,7 +263,7 @@ Verification note: the slide deck PDF returned an error (HTTP 500/502) when I tr
 
 Height is entered as feet + inches and converted internally: cm = (ft × 12 + in) × 2.54 (exact by definition of the international inch). Weight can be entered in kg (default) or lb: kg = lb × 0.45359237 (exact by definition of the international pound). Watson, Hume-Weyers and Mosteller still use cm and kg. Example: 5 ft 9 in = 175.26 cm.
 
-- [ ] Sign-off: ft/in height entry, optional lb weight entry, conversions
+- [x] Sign-off: ft/in height entry, optional lb weight entry, conversions
 
 ---
 
@@ -310,11 +312,11 @@ The burden order is a judgment, not a published rule. For example, it puts CAPD 
 - Type only (ranked by CrCl, none reach 60): CAPD 5 × 3.0 L 58.4 · 5 × 2.5 L 53.5 · 4 × 3.0 L 53.3. CCPD 5 × 2.5 L + day 41.2 · 4 × 2.5 L + day 39.7 · 5 × 2.0 L + day 39.7.
 - D/P creatinine 0.70, D/P urea 0.75, drain typical 2,226 mL (ranked by Kt/V, none reach 1.7): CAPD 5 × 3.0 L 1.60 / 55.4 · 5 × 2.5 L 1.47 / 51.1 · 4 × 3.0 L 1.46 / 51.0. CCPD 5 × 2.5 L + day 1.13 / 39.1 · 4 × 2.5 L + day 1.09 / 37.8 · 5 × 2.0 L + day 1.09 / 37.8.
 
-- [ ] Sign-off: ranking — target Kt/V 1.7 (default, editable), total = peritoneal + renal, informational framing
-- [ ] Sign-off: ranking — burden ordering (CAPD exchanges then fill; CCPD dry day, then cycles, then fill), meeting-target first, fill with highest-clearance below target, Extraneal counted once
-- [ ] Sign-off: ranking — candidate set (CAPD 3–5 × 2.0/2.5/3.0 L with 8-h overnight; CCPD 4–5 × 2.0/2.5 L, 9 h, dry or 2.0 L 15-h day dwell; Extraneal variants), including the new 3.0 L and 5-exchange CAPD options
-- [ ] Sign-off: ranking — CrCl fallback when there is no D/P urea (60 L/week/1.73 m² for CAPD and CCPD, stated plainly on screen)
-- [ ] Sign-off: minimal input screen — removed inputs (D/D₀, PET solution and UF screen, Hume-Weyers, measured dialysate, custom regimen), typical drain when D/P numbers lack a drain volume, urine volume not counted without urine/serum values
+- [x] Sign-off: ranking — target Kt/V 1.7 (default, editable), total = peritoneal + renal, informational framing
+- [x] Sign-off: ranking — burden ordering (CAPD exchanges then fill; CCPD dry day, then cycles, then fill), meeting-target first, fill with highest-clearance below target, Extraneal counted once
+- [x] Sign-off: ranking — candidate set (CAPD 3–5 × 2.0/2.5/3.0 L with 8-h overnight; CCPD 4–5 × 2.0/2.5 L, 9 h, dry or 2.0 L 15-h day dwell; Extraneal variants), including the new 3.0 L and 5-exchange CAPD options
+- [x] Sign-off: ranking — CrCl fallback when there is no D/P urea (60 L/week/1.73 m² for CAPD and CCPD, stated plainly on screen)
+- [x] Sign-off: minimal input screen — removed inputs (D/D₀, PET solution and UF screen, Hume-Weyers, measured dialysate, custom regimen), typical drain when D/P numbers lack a drain volume, urine volume not counted without urine/serum values
 
 ---
 
@@ -324,7 +326,7 @@ Dr D approved three uses of published Adequest data. He then asked for a “usef
 
 Sections 10, 11 and 13 above describe 0.3 behaviour. Where they say Kt/V is unavailable from type alone, that icodextrin is not modeled, or that UF is not predicted, §15–16 supersede them.
 
-- [ ] Sign-off: citing Adequest-derived published parameters and the Baxter/Akonur grid in a free educational tool (wording “published Adequest-derived parameters”, never “Adequest”)
+- [x] Sign-off: citing Adequest-derived published parameters and the Baxter/Akonur grid in a free educational tool (wording “published Adequest-derived parameters”, never “Adequest”)
 
 ## 15. Option 1: Kt/V from transport type alone (published typical MTACs)
 
@@ -337,12 +339,12 @@ When the patient’s own 4-h D/P urea is not entered, the Garred estimate uses t
 - Ranking now uses the Kt/V target whenever an urea MTAC exists, which includes type-only. The CrCl fallback remains only if Kt/V cannot be estimated.
 - Plausibility check (tests/workflow.test.js): the 4-h D/P urea implied by the HA urea MTAC with the typical HA drain is about 0.92.
 
-- [ ] Sign-off: urea MTACs 27.71 / 23.14 / 18.40 / 15.92 mL/min (Akonur 2016 Table 1) used in the Garred model when D/P urea is missing
-- [ ] Sign-off: creatinine MTACs 19.15 / 11.92 / 8.60 mL/min (Akonur 2013 Table 1) used when D/P creatinine is missing; Low keeps the band-midpoint method
-- [ ] Sign-off: D/P creatinine without D/P urea → published urea MTAC of that category
-- [ ] Sign-off: label wording “typical-patient estimate from published Adequest-derived parameters, not measured”
-- [ ] Sign-off: rank by Kt/V target for type-only input (replaces the 0.3 CrCl ranking for type-only)
-- [ ] Sign-off: TARGET-cohort typical patients (BSA 1.84–1.87 m², TBW 40.6–42.3 L) applied to any body size through V and BSA only
+- [x] Sign-off: urea MTACs 27.71 / 23.14 / 18.40 / 15.92 mL/min (Akonur 2016 Table 1) used in the Garred model when D/P urea is missing
+- [x] Sign-off: creatinine MTACs 19.15 / 11.92 / 8.60 mL/min (Akonur 2013 Table 1) used when D/P creatinine is missing; Low keeps the band-midpoint method
+- [x] Sign-off: D/P creatinine without D/P urea → published urea MTAC of that category
+- [x] Sign-off: label wording “typical-patient estimate from published Adequest-derived parameters, not measured”
+- [x] Sign-off: rank by Kt/V target for type-only input (replaces the 0.3 CrCl ranking for type-only)
+- [x] Sign-off: TARGET-cohort typical patients (BSA 1.84–1.87 m², TBW 40.6–42.3 L) applied to any body size through V and BSA only
 
 ## 16. Option 2: open three-pore model for UF (experimental)
 
@@ -392,18 +394,18 @@ Simplifications:
 - The day is simulated twice and the second day is reported.
 - Extraneal long-dwell UF is not simulated. It is the published Akonur 2016 Table 3 value (2 L icodextrin): CAPD 9-h H 388 · HA 386 · LA 382 · L 389 mL; APD 15-h H 465 · HA 488 · LA 501 · L 524 mL. The app’s CAPD long dwell is 8 h, not 9.
 
-- [ ] Sign-off: three-pore equations and sources (Öberg & Rippe 2017; Bergling 2023; Rippe 1991; Vonesh 1999 A7)
-- [ ] Sign-off: pore fractions 0.90 / 0.08 / 0.02 and σ glucose 0.028 / 0.001 / 1, σ albumin 0.95 / 0.085 / 1 (Rippe & Davies 2011)
-- [ ] Sign-off: Δπ 22 mmHg, ΔP 8 mmHg (choice within “about 8 or 9”), RT 19.3, Na 132/137 mmol/L, φ 0.93, plasma urea 20 / glucose 6.5 mmol/L
-- [ ] Sign-off: per-type LpS, A0/Δx and glucose MTAC from Akonur 2016 Table 1
-- [ ] Sign-off: PD Adequest defaults used: fluid absorption 0.6 mL/min and residual volume 10% of fill (review item requested by Dr D)
-- [ ] Sign-off: glucose 75.49 / 126.0 / 214.25 mmol/L for 1.36 / 2.27 / 3.86%
-- [ ] Sign-off: simplifications (σ small solutes 0, constant plasma, instant fill/drain, ΔP constant)
-- [ ] Sign-off: validation vs Akonur 2016 Tables 3–5 (RMSE 111 mL, max 245 mL) and the ±100 mL rule → UF shown as experimental
-- [ ] Sign-off: UF assumptions on the cards (1.5% exchanges/cycles, 2.5% long dwell, steady-state second day)
-- [ ] Sign-off: Extraneal UF = published Akonur 2016 Table 3 values (not simulated), shown for 8-h CAPD although published for 9 h
-- [ ] Sign-off: predicted UF never changes Kt/V or ranking; Kt/V keeps short-dwell UF 0 plus any entered long-dwell UF
-- [ ] Sign-off: “Measured long-dwell UF” inputs now described as measured values used in the Kt/V drain volume
+- [x] Sign-off: three-pore equations and sources (Öberg & Rippe 2017; Bergling 2023; Rippe 1991; Vonesh 1999 A7)
+- [x] Sign-off: pore fractions 0.90 / 0.08 / 0.02 and σ glucose 0.028 / 0.001 / 1, σ albumin 0.95 / 0.085 / 1 (Rippe & Davies 2011)
+- [x] Sign-off: Δπ 22 mmHg, ΔP 8 mmHg (choice within “about 8 or 9”), RT 19.3, Na 132/137 mmol/L, φ 0.93, plasma urea 20 / glucose 6.5 mmol/L
+- [x] Sign-off: per-type LpS, A0/Δx and glucose MTAC from Akonur 2016 Table 1
+- [x] Sign-off: PD Adequest defaults used: fluid absorption 0.6 mL/min and residual volume 10% of fill (review item requested by Dr D)
+- [x] Sign-off: glucose 75.49 / 126.0 / 214.25 mmol/L for 1.36 / 2.27 / 3.86%
+- [x] Sign-off: simplifications (σ small solutes 0, constant plasma, instant fill/drain, ΔP constant)
+- [x] Sign-off: validation vs Akonur 2016 Tables 3–5 (RMSE 111 mL, max 245 mL) and the ±100 mL rule → UF shown as experimental
+- [x] Sign-off: UF assumptions on the cards (1.5% exchanges/cycles, 2.5% long dwell, steady-state second day)
+- [x] Sign-off: Extraneal UF = published Akonur 2016 Table 3 values (not simulated), shown for 8-h CAPD although published for 9 h
+- [x] Sign-off: predicted UF never changes Kt/V or ranking; Kt/V keeps short-dwell UF 0 plus any entered long-dwell UF
+- [x] Sign-off: “Measured long-dwell UF” inputs now described as measured values used in the Kt/V drain volume
 
 ## 17. Option 3: published prescription grid (Akonur 2016 Figs 4–5 = Baxter Quick Reference Guide pp. 10–11)
 
@@ -427,10 +429,10 @@ Shown on step 2 next to the Top 3, for the patient’s transport type × Watson 
   8. RKF ≥ 2, V3, HA, APD row 2: no colour for the 5 × 2.5 L night in the guide; 2.5% in the paper.
   9. RKF ≥ 2, V3, High, APD row 3: day 2.5 L icodextrin in the paper; 2 L icodextrin in the guide.
 
-- [ ] Sign-off: show the published grid alongside the Top 3 (as published, not computed), with source and assumptions
-- [ ] Sign-off: band rules (Watson V for V1/V2/V3; renal urea clearance mL/min for RKF band; anuric → < 2; unknown → assumed < 2 with label)
-- [ ] Sign-off: transcription of all 24 cells (js/rxgrid.js)
-- [ ] Sign-off: the 9 unverified rows and the choice to show the paper’s reading with a warning
+- [x] Sign-off: show the published grid alongside the Top 3 (as published, not computed), with source and assumptions
+- [x] Sign-off: band rules (Watson V for V1/V2/V3; renal urea clearance mL/min for RKF band; anuric → < 2; unknown → assumed < 2 with label)
+- [x] Sign-off: transcription of all 24 cells (js/rxgrid.js)
+- [x] Sign-off: the 9 unverified rows and the choice to show the paper’s reading with a warning
 
 ## 18. Four-step clinician workflow (Dr D: “I need useful pd workflow for nephrologist prescribing pd”)
 
@@ -445,11 +447,11 @@ Shown on step 2 next to the Top 3, for the patient’s transport type × Watson 
 
    Cited guidance is quoted below the changes.
 
-- [ ] Sign-off: four-step structure and step names (Patient · Start Rx · Adequacy · Troubleshoot)
-- [ ] Sign-off: current prescription defaults to the picked option and can be chosen from the candidate list
-- [ ] Sign-off: troubleshooting change set (add exchange/cycle, +0.5 L fill, Extraneal long dwell, CCPD day dwell; bounded by the candidate set) and ordering (Kt/V gain for clearance; UF gain for UF)
-- [ ] Sign-off: declining RKF tool (new urine output and renal Kt/V re-run all options; 0 = anuric)
-- [ ] Sign-off: measured daily UF = 24-h drain − nominal instilled volume, shown next to predicted UF
+- [x] Sign-off: four-step structure and step names (Patient · Start Rx · Adequacy · Troubleshoot)
+- [x] Sign-off: current prescription defaults to the picked option and can be chosen from the candidate list
+- [x] Sign-off: troubleshooting change set (add exchange/cycle, +0.5 L fill, Extraneal long dwell, CCPD day dwell; bounded by the candidate set) and ordering (Kt/V gain for clearance; UF gain for UF)
+- [x] Sign-off: declining RKF tool (new urine output and renal Kt/V re-run all options; 0 = anuric)
+- [x] Sign-off: measured daily UF = 24-h drain − nominal instilled volume, shown next to predicted UF
 
 ## 19. Lab loop (Dr D: “they scan information labs and things when available and new prescription choices are given”)
 
@@ -468,11 +470,11 @@ Shown on step 2 next to the Top 3, for the patient’s transport type × Watson 
 - Screen shows the updated Top 3 CAPD and CCPD, the current prescription’s Kt/V before → after, and which options are new or dropped versus the previous Top 3.
 - “Use these labs as the new baseline” copies confirmed PET and urine values into step 1, keeps the fitted MTAC, and clears the form for the next round (the loop).
 
-- [ ] Sign-off: lab fields accepted in step 3 and the measured-adequacy formulas
-- [ ] Sign-off: fitting the model MTAC to a measured 24-h clearance on the current prescription (assumes the prescription was done as written)
-- [ ] Sign-off: reported total Kt/V → peritoneal = total − renal for fitting
-- [ ] Sign-off: precedence — fitted clearance > PET > typical; a new PET clears an older fit
-- [ ] Sign-off: diff display (new / dropped options, current Rx Kt/V before → after) and the adopt-as-baseline loop
+- [x] Sign-off: lab fields accepted in step 3 and the measured-adequacy formulas
+- [x] Sign-off: fitting the model MTAC to a measured 24-h clearance on the current prescription (assumes the prescription was done as written)
+- [x] Sign-off: reported total Kt/V → peritoneal = total − renal for fitting
+- [x] Sign-off: precedence — fitted clearance > PET > typical; a new PET clears an older fit
+- [x] Sign-off: diff display (new / dropped options, current Rx Kt/V before → after) and the adopt-as-baseline loop
 
 ## 20. Scan lab report (on-device OCR)
 
@@ -488,11 +490,11 @@ Shown on step 2 next to the Top 3, for the patient’s transport type × Watson 
 - **Confirmation.** Every scanned value is filled in **UNCONFIRMED** (yellow highlight and label) and is not used until the clinician taps Confirm or types over it.
 - **Tests.** `tests/labparse.test.js` covers sample lab text. `tests/fixtures/sample-lab-report.png` is a synthetic report; OCR read 11 of 11 values correctly in headless Chrome.
 
-- [ ] Sign-off: bundling Tesseract.js / tesseract.js-core / tessdata_fast (Apache-2.0) and the ~10 MB lazy download
-- [ ] Sign-off: OCR privacy (on device, no upload, no IndexedDB, background offline cache of the engine only)
-- [ ] Sign-off: recognised labels and the clean-up rules; units must match (no unit conversion is done)
-- [ ] Sign-off: every scanned value unconfirmed until confirmed; typing over a value confirms it
-- [ ] Sign-off: background caching of the OCR engine by the service worker (app code only, no patient data)
+- [x] Sign-off: bundling Tesseract.js / tesseract.js-core / tessdata_fast (Apache-2.0) and the ~10 MB lazy download
+- [x] Sign-off: OCR privacy (on device, no upload, no IndexedDB, background offline cache of the engine only)
+- [x] Sign-off: recognised labels and the clean-up rules; units must match (no unit conversion is done)
+- [x] Sign-off: every scanned value unconfirmed until confirmed; typing over a value confirms it
+- [x] Sign-off: background caching of the OCR engine by the service worker (app code only, no patient data)
 
 ## 21. Guidance statements (verbatim, each shown in step 4)
 
@@ -502,26 +504,26 @@ Sources:
 
 The quotes were checked against the full-text PDFs.
 
-- [ ] Sign-off: G-C1 (Brown 2020 §3.4b) “There is no specific clearance target that guarantees sufficient dialysis for an individual. Increasing small solute clearance to a Kt/V > 1.7 may improve uraemia-related symptoms, if present, but there is only low certainty evidence…”
-- [ ] Sign-off: G-C2 (Brown 2020 §3.4d) “If symptoms, nutrition and volume are all controlled, no PD prescription change is needed for the sole purpose of reaching an arbitrary clearance target (practice point).”
-- [ ] Sign-off: G-C3 (Brown 2020 Table 2) “Patients who remain symptomatic despite a Kt/Vurea > 1.7 should have other dialysis and non-dialysis-related factors considered as possible contributing factors. A trial of increasing dialysis dose may be indicated (practice point).”
-- [ ] Sign-off: G-C4 (Brown 2020 §3.4a) “Small solute clearance should be routinely measured using Kt/Vurea or creatinine clearance … while recognizing the limitations of accuracy of these measurements in individuals (practice point).”
-- [ ] Sign-off: G-U1 (Morelle 2021 Guideline 3) insufficient UF thresholds (< 400 mL 3.86% / < 100 mL 2.27% PET, or daily UF insufficient) and other causes (mechanical problems, leaks, increased absorption)
-- [ ] Sign-off: G-U2 (Morelle 2021 Guideline 2b) “The resulting lower net UF can be avoided by shortening glucose-based exchanges, using a polyglucose solution (icodextrin), and/or prescribing higher glucose concentrations. (GRADE 1A) …”
-- [ ] Sign-off: G-U3 (Brown 2020, solutions A) “Once-daily icodextrin should be considered as an alternative to hypertonic glucose solutions for long dwells … (GRADE 1B).”
-- [ ] Sign-off: G-U4 (Morelle 2021 table, fast PSTR) “If long dwells required use icodextrin (daytime for APD, overnight for CAPD). Shorten glucose-based overnight dwells (e.g. 90–180 min) when using APD coupled with icodextrin during the day long dwell.”
-- [ ] Sign-off: G-U5 (Morelle 2021 text) CAPD bag overfill “might – unless subtracted – lead to a significant overestimate in actual UF of 400–800 mL per day.”
-- [ ] Sign-off: G-R1 (Brown 2020 §4) “Residual kidney function should be determined for all individuals doing PD and management should focus on preserving this function (practice point).”
-- [ ] Sign-off: G-R2 (Brown 2020 §3.4c) “…start on a low dose prescription that may be increased incrementally as residual kidney function declines or as clinically indicated.”
-- [ ] Sign-off: G-R3 (Brown 2020 Table 2, RKF 3) “Caution should be taken to avoid volume depletion and hypotension based on low certainty evidence that this may adversely affect RKF (practice point).”
-- [ ] Sign-off: G-R4 (Brown 2020, solutions B) “Use of neutral pH, low GDP PD solutions improves preservation of residual kidney function and urine output (GRADE 1A).”
-- [ ] Sign-off: G-R5 (Brown 2020 §3.2a) euvolaemia “so that both fluid removal from peritoneal ultrafiltration and urine output are considered and residual kidney function is not compromised (practice point).”
+- [x] Sign-off: G-C1 (Brown 2020 §3.4b) “There is no specific clearance target that guarantees sufficient dialysis for an individual. Increasing small solute clearance to a Kt/V > 1.7 may improve uraemia-related symptoms, if present, but there is only low certainty evidence…”
+- [x] Sign-off: G-C2 (Brown 2020 §3.4d) “If symptoms, nutrition and volume are all controlled, no PD prescription change is needed for the sole purpose of reaching an arbitrary clearance target (practice point).”
+- [x] Sign-off: G-C3 (Brown 2020 Table 2) “Patients who remain symptomatic despite a Kt/Vurea > 1.7 should have other dialysis and non-dialysis-related factors considered as possible contributing factors. A trial of increasing dialysis dose may be indicated (practice point).”
+- [x] Sign-off: G-C4 (Brown 2020 §3.4a) “Small solute clearance should be routinely measured using Kt/Vurea or creatinine clearance … while recognizing the limitations of accuracy of these measurements in individuals (practice point).”
+- [x] Sign-off: G-U1 (Morelle 2021 Guideline 3) insufficient UF thresholds (< 400 mL 3.86% / < 100 mL 2.27% PET, or daily UF insufficient) and other causes (mechanical problems, leaks, increased absorption)
+- [x] Sign-off: G-U2 (Morelle 2021 Guideline 2b) “The resulting lower net UF can be avoided by shortening glucose-based exchanges, using a polyglucose solution (icodextrin), and/or prescribing higher glucose concentrations. (GRADE 1A) …”
+- [x] Sign-off: G-U3 (Brown 2020, solutions A) “Once-daily icodextrin should be considered as an alternative to hypertonic glucose solutions for long dwells … (GRADE 1B).”
+- [x] Sign-off: G-U4 (Morelle 2021 table, fast PSTR) “If long dwells required use icodextrin (daytime for APD, overnight for CAPD). Shorten glucose-based overnight dwells (e.g. 90–180 min) when using APD coupled with icodextrin during the day long dwell.”
+- [x] Sign-off: G-U5 (Morelle 2021 text) CAPD bag overfill “might – unless subtracted – lead to a significant overestimate in actual UF of 400–800 mL per day.”
+- [x] Sign-off: G-R1 (Brown 2020 §4) “Residual kidney function should be determined for all individuals doing PD and management should focus on preserving this function (practice point).”
+- [x] Sign-off: G-R2 (Brown 2020 §3.4c) “…start on a low dose prescription that may be increased incrementally as residual kidney function declines or as clinically indicated.”
+- [x] Sign-off: G-R3 (Brown 2020 Table 2, RKF 3) “Caution should be taken to avoid volume depletion and hypotension based on low certainty evidence that this may adversely affect RKF (practice point).”
+- [x] Sign-off: G-R4 (Brown 2020, solutions B) “Use of neutral pH, low GDP PD solutions improves preservation of residual kidney function and urine output (GRADE 1A).”
+- [x] Sign-off: G-R5 (Brown 2020 §3.2a) euvolaemia “so that both fluid removal from peritoneal ultrafiltration and urine output are considered and residual kidney function is not compromised (practice point).”
 
 ## 22. Release housekeeping (0.4.0-draft)
 
-- [ ] Sign-off: version 0.4.0-draft, service-worker cache pd-buddy-v4 (+ pd-buddy-ocr-v1), DRAFT=true, noindex unchanged
-- [ ] Sign-off: About sheets updated (PET, model, options) and new sheets (UF, grid, labs, scanning); limits list updated
-- [ ] Sign-off: prescription summary adds the predicted daily UF line (labelled experimental, with its glucose assumptions)
+- [x] Sign-off: version 0.4.0-draft, service-worker cache pd-buddy-v4 (+ pd-buddy-ocr-v1), DRAFT=true, noindex unchanged
+- [x] Sign-off: About sheets updated (PET, model, options) and new sheets (UF, grid, labs, scanning); limits list updated
+- [x] Sign-off: prescription summary adds the predicted daily UF line (labelled experimental, with its glucose assumptions)
 
 
 ## 23. Stronger CCPD candidates (0.4.1-draft)
@@ -539,15 +541,15 @@ Approved by Dr D after the 0.4.0 example showed no CCPD option reaching Kt/V 1.7
   - PET D/P Cr 0.70, D/P urea 0.75: none reach 1.7; best 5 × 3.0 L 11 h + midday 2 × 2.5 L (1.67, 57.2, 0.92), 5 × 2.5 L 11 h + midday 2 × 2.5 L (1.63, 55.9, 0.81), 5 × 3.0 L 10 h + midday 2 × 2.5 L (1.62, 55.5, 0.86).
   - Tests: `tests/ccpd.test.js`, `tests/ranking.test.js`.
 
-- [ ] Sign-off: CCPD midday-exchange candidates (last fill + one manual exchange, 2 × 2.0 L and 2 × 2.5 L, day split equally 7.5 / 7 / 6.5 h) and their sources
-- [ ] Sign-off: 3.0 L CCPD night fills (large fills, flagged on cards, still ranked) — superseded in 0.4.2 by the BSA fill cap (§24)
-- [ ] Sign-off: 10- and 11-h cycler time candidates (in addition to 9 h) — **Decided by Dr D, Nov 14 2026:** keep the 0.05 L fill tolerance, 3.0 L fills (within the 1.5 L/m² BSA cap) and 9–11 h cycler time despite the AJKD Core Curriculum 2023 limits, because adequacy targets are hard to reach with those restrictions. This records the decision only; full sign-off pending.
-- [ ] Sign-off: CCPD burden order (midday > day dwell > cycler time > cycles > night fill > day volume); large fill not counted as burden
-- [ ] Sign-off: no Extraneal variant for split midday dwells; published 15-h Extraneal UF reused for 13–14-h day dwells
-- [ ] Sign-off: midday UF modelled with two 2.5% dextrose day dwells; entered long-dwell UF applied to the midday dwell only (Kt/V)
-- [ ] Sign-off: new troubleshoot steps (longer cycler time, add midday exchange, larger midday volumes)
-- [ ] Sign-off: prescription summary for midday exchange (day dwell 1, manual midday exchange, day dwell 2)
-- [ ] Sign-off: release 0.4.1-draft, service-worker cache pd-buddy-v5, DRAFT=true, noindex unchanged
+- [x] Sign-off: CCPD midday-exchange candidates (last fill + one manual exchange, 2 × 2.0 L and 2 × 2.5 L, day split equally 7.5 / 7 / 6.5 h) and their sources
+- [x] Sign-off: 3.0 L CCPD night fills (large fills, flagged on cards, still ranked) — superseded in 0.4.2 by the BSA fill cap (§24)
+- [x] Sign-off: 10- and 11-h cycler time candidates (in addition to 9 h) — **Decided by Dr D, Nov 14 2026:** keep the 0.05 L fill tolerance, 3.0 L fills (within the 1.5 L/m² BSA cap) and 9–11 h cycler time despite the AJKD Core Curriculum 2023 limits, because adequacy targets are hard to reach with those restrictions. This records the decision only; full sign-off pending.
+- [x] Sign-off: CCPD burden order (midday > day dwell > cycler time > cycles > night fill > day volume); large fill not counted as burden
+- [x] Sign-off: no Extraneal variant for split midday dwells; published 15-h Extraneal UF reused for 13–14-h day dwells
+- [x] Sign-off: midday UF modelled with two 2.5% dextrose day dwells; entered long-dwell UF applied to the midday dwell only (Kt/V)
+- [x] Sign-off: new troubleshoot steps (longer cycler time, add midday exchange, larger midday volumes)
+- [x] Sign-off: prescription summary for midday exchange (day dwell 1, manual midday exchange, day dwell 2)
+- [x] Sign-off: release 0.4.1-draft, service-worker cache pd-buddy-v5, DRAFT=true, noindex unchanged
 
 ## 24. Fill-volume cap 1.5 L/m² BSA (0.4.2-draft)
 
@@ -564,14 +566,14 @@ Dr D's decision; replaces the 0.4.1 "Large fill" flag (§23 3.0 L item is supers
   - 6 ft 2 in, 100 kg (V 51.0 L, BSA 2.28, max 3.43 L): no candidate excluded. Type-only CAPD: only 5 × 3.0 L meets (1.79); CCPD Top 3 meet, all with a midday exchange. PET D/P Cr 0.70 / urea 0.75: none reach 1.7 (best CAPD 1.36, CCPD 1.42).
 - Tests: `tests/fillcap.test.js`.
 
-- [ ] Sign-off: fill cap 1.5 L/m² BSA applied to every fill (CAPD exchanges, CCPD night fills, day dwell, both midday dwells); options above it excluded from ranking, table and troubleshoot
-- [ ] Sign-off: 0.05 L tolerance (fill ≤ 1.5 × BSA + 0.05 L); keeps 3.0 L for BSA ≥ 1.967 m² (incl. the example patient at 1.988) — **Decided by Dr D, Nov 14 2026:** keep the 0.05 L fill tolerance, 3.0 L fills (within the 1.5 L/m² BSA cap) and 9–11 h cycler time despite the AJKD Core Curriculum 2023 limits, because adequacy targets are hard to reach with those restrictions. This records the decision only; full sign-off pending.
-- [ ] Sign-off: fill-cap sources (Teitelbaum CJASN 2018 1.25–1.5 L/m²; Auguste & Bargman AJKD 2023 IPP < 18 cm H2O; ISPD 2020 no numeric limit) and the note text on the Top 3 lists
-- [ ] Sign-off: Core Curriculum 2023 “fill volumes beyond 2,000-2,500 mL are not usually recommended” and “>8 hours on cycler” not applied (3.0 L fills and 9–11 h still offered) — **Decided by Dr D, Nov 14 2026:** keep the 0.05 L fill tolerance, 3.0 L fills (within the 1.5 L/m² BSA cap) and 9–11 h cycler time despite the AJKD Core Curriculum 2023 limits, because adequacy targets are hard to reach with those restrictions. This records the decision only; full sign-off pending.
-- [ ] Sign-off: troubleshoot respects the fill cap (larger fill / larger midday volumes shown as “fill cap reached”, not suggested)
-- [ ] Sign-off: current-prescription list still includes regimens above the cap, marked “above fill cap”
-- [ ] Sign-off: BSA and max fill shown on step 1 and in the step 2 summary
-- [ ] Sign-off: release 0.4.2-draft, service-worker cache pd-buddy-v6, DRAFT=true, noindex unchanged
+- [x] Sign-off: fill cap 1.5 L/m² BSA applied to every fill (CAPD exchanges, CCPD night fills, day dwell, both midday dwells); options above it excluded from ranking, table and troubleshoot
+- [x] Sign-off: 0.05 L tolerance (fill ≤ 1.5 × BSA + 0.05 L); keeps 3.0 L for BSA ≥ 1.967 m² (incl. the example patient at 1.988) — **Decided by Dr D, Nov 14 2026:** keep the 0.05 L fill tolerance, 3.0 L fills (within the 1.5 L/m² BSA cap) and 9–11 h cycler time despite the AJKD Core Curriculum 2023 limits, because adequacy targets are hard to reach with those restrictions. This records the decision only; full sign-off pending.
+- [x] Sign-off: fill-cap sources (Teitelbaum CJASN 2018 1.25–1.5 L/m²; Auguste & Bargman AJKD 2023 IPP < 18 cm H2O; ISPD 2020 no numeric limit) and the note text on the Top 3 lists
+- [x] Sign-off: Core Curriculum 2023 “fill volumes beyond 2,000-2,500 mL are not usually recommended” and “>8 hours on cycler” not applied (3.0 L fills and 9–11 h still offered) — **Decided by Dr D, Nov 14 2026:** keep the 0.05 L fill tolerance, 3.0 L fills (within the 1.5 L/m² BSA cap) and 9–11 h cycler time despite the AJKD Core Curriculum 2023 limits, because adequacy targets are hard to reach with those restrictions. This records the decision only; full sign-off pending.
+- [x] Sign-off: troubleshoot respects the fill cap (larger fill / larger midday volumes shown as “fill cap reached”, not suggested)
+- [x] Sign-off: current-prescription list still includes regimens above the cap, marked “above fill cap”
+- [x] Sign-off: BSA and max fill shown on step 1 and in the step 2 summary
+- [x] Sign-off: release 0.4.2-draft, service-worker cache pd-buddy-v6, DRAFT=true, noindex unchanged
 
 ## 25. App Critic review fixes (0.4.3-draft)
 
@@ -597,25 +599,25 @@ Dr D approved all 18 items of the App Critic review (`pd-buddy-review/REPORT.md`
 - **N3 Model documentation.** About "How the regimen estimate works": short-dwell UF 0 underestimates, CCPD fill/drain time 0 overestimates; check against Akonur 2013 (PDI 33:646-654) standard APD, assumed as 5 × 2 L over 10 h plus a 2 L 14-h day dwell with the typical TBW 40.6 / 41.3 / 42.3 L: this model 1.74 / 1.61 / 1.44 vs a published average of about 1.67 (about 4% lower; the reviewer's run gave about −5%). Step 3 shows "Renal Kt/V assumed 0" when a reported total Kt/V is entered without a 24-h urine **[Dr D: the regimen assumed for the Akonur 2013 check]**.
 - Tests: `tests/critic.test.js` (new), `tests/labparse.test.js`, `tests/prescription.test.js`, `tests/static.test.js`.
 
-- [ ] Sign-off: M1 neutral wording (options to consider, reference-value badges, ISPD 2020 line, Reference Kt/V card); ordering by the reference value kept
-- [ ] Sign-off: M2 hard blocks (age < 18, ft > 8, inches ≥ 12, height/weight ≤ 0) and the cm height option; plausibility ranges still to be set
-- [ ] Sign-off: M3 D/P blocks (≤ 0, > 1.5 with "Did you mean", ≥ 1.1, 1.0–1.1 not fittable)
-- [ ] Sign-off: M4 OCR parser rules, unit choice and blocked Confirm on unit conflict, source line under each value
-- [ ] Sign-off: M5 summary title, DRAFT line, blank Patient / Date / Prescriber, print of the step 2 card with the draft banner
-- [ ] Sign-off: M6 not-a-medical-device statement (footer, summary card, copied text, privacy, support); regulatory opinion pending
-- [ ] Sign-off: M7 naming (icodextrin 7.5%, grid heading, trademark notice, grid cited from PDI figures only, type-only label wording)
-- [ ] Sign-off: S1 BSA 1.7–2.0 m² warning for typical values (warn, not block)
-- [ ] Sign-off: S2 icodextrin UF labelled "published value for 2 L, 9 h/15 h; not adjusted to this regimen"
-- [ ] Sign-off: S3 step 4 UF suggestions ordered by the experimental UF model (stated)
-- [ ] Sign-off: S4 CCPD CrCl reference (60 vs 45) and Low creatinine method
-- [ ] Sign-off: S5 residual-function assumption note and link on step 2
-- [ ] Sign-off: S6 current prescription as closest match with groups; free regimen fields not added
-- [ ] Sign-off: S7 accessibility changes (contrast, 12 px, 44 px, labels, main landmark)
-- [ ] Sign-off: S8 model solution assumption printed; 4.25% in UF troubleshooting
-- [ ] Sign-off: N1 Akonur 2016 citations disambiguated
-- [ ] Sign-off: N2 first-run changes (no card numbers, nothing-saved note, Try an example patient)
-- [ ] Sign-off: N3 model documentation (UF 0 / fill-drain 0, Akonur 2013 check, renal Kt/V assumed 0)
-- [ ] Sign-off: release 0.4.3-draft, service-worker cache pd-buddy-v7, DRAFT=true, noindex unchanged
+- [x] Sign-off: M1 neutral wording (options to consider, reference-value badges, ISPD 2020 line, Reference Kt/V card); ordering by the reference value kept
+- [x] Sign-off: M2 hard blocks (age < 18, ft > 8, inches ≥ 12, height/weight ≤ 0) and the cm height option; plausibility ranges still to be set
+- [x] Sign-off: M3 D/P blocks (≤ 0, > 1.5 with "Did you mean", ≥ 1.1, 1.0–1.1 not fittable)
+- [x] Sign-off: M4 OCR parser rules, unit choice and blocked Confirm on unit conflict, source line under each value
+- [x] Sign-off: M5 summary title, DRAFT line, blank Patient / Date / Prescriber, print of the step 2 card with the draft banner
+- [x] Sign-off: M6 not-a-medical-device statement (footer, summary card, copied text, privacy, support); regulatory opinion pending
+- [x] Sign-off: M7 naming (icodextrin 7.5%, grid heading, trademark notice, grid cited from PDI figures only, type-only label wording)
+- [x] Sign-off: S1 BSA 1.7–2.0 m² warning for typical values (warn, not block)
+- [x] Sign-off: S2 icodextrin UF labelled "published value for 2 L, 9 h/15 h; not adjusted to this regimen"
+- [x] Sign-off: S3 step 4 UF suggestions ordered by the experimental UF model (stated)
+- [x] Sign-off: S4 CCPD CrCl reference (60 vs 45) and Low creatinine method
+- [x] Sign-off: S5 residual-function assumption note and link on step 2
+- [x] Sign-off: S6 current prescription as closest match with groups; free regimen fields not added
+- [x] Sign-off: S7 accessibility changes (contrast, 12 px, 44 px, labels, main landmark)
+- [x] Sign-off: S8 model solution assumption printed; 4.25% in UF troubleshooting
+- [x] Sign-off: N1 Akonur 2016 citations disambiguated
+- [x] Sign-off: N2 first-run changes (no card numbers, nothing-saved note, Try an example patient)
+- [x] Sign-off: N3 model documentation (UF 0 / fill-drain 0, Akonur 2013 check, renal Kt/V assumed 0)
+- [x] Sign-off: release 0.4.3-draft, service-worker cache pd-buddy-v7, DRAFT=true, noindex unchanged
 
 ## 26. Small fills and App Critic re-check fixes (0.4.4-draft)
 
@@ -634,21 +636,21 @@ Dr D, Nov 15 2026, 6:33 AM ET, in his own words: “Fill can be as small as 1 l 
 - **CCPD UF wording.** The CCPD copy/print UF line now reads “assuming 1.5% dextrose cycles and a 2.5% dextrose day dwell” (icodextrin: “icodextrin day dwell = published value…”), matching “Model assumed”. CAPD unchanged.
 - Tests: `tests/smallfill.test.js` (new), `tests/ranking.test.js`, `tests/static.test.js`, `tests/critic.test.js`.
 
-- [ ] Sign-off: small fills 1.0–1.75 L (CAPD and CCPD, still capped at 1.5 L/m² BSA + 0.05 L; small CCPD night fills paired with equal day volumes) — approved by Dr D Nov 15 2026, full sign-off pending. Day volume equal to the night fill: **decided by Dr D Nov 15 2026** (“Day volume equal to the night fill is fine”), full sign-off pending
-- [ ] Sign-off: no-fit message when every candidate is above the fill cap — approved by Dr D Nov 15 2026, full sign-off pending
-- [ ] Sign-off: height hard block outside 54.6–272 cm (cm and ft + in) — approved by Dr D Nov 15 2026, full sign-off pending
-- [ ] Sign-off: stale amber note hidden and emptied when inputs are blocked — approved by Dr D Nov 15 2026, full sign-off pending
-- [ ] Sign-off: iPhone SE step 2 layout (basis card below the options, compact header on short screens) — approved by Dr D Nov 15 2026, full sign-off pending
-- [ ] Sign-off: CCPD UF wording “cycles / day dwell” in the copied and printed summary — approved by Dr D Nov 15 2026, full sign-off pending
-- [ ] Sign-off: release 0.4.4-draft, service-worker cache pd-buddy-v8, DRAFT=true, noindex unchanged — approved by Dr D Nov 15 2026, full sign-off pending
+- [x] Sign-off: small fills 1.0–1.75 L (CAPD and CCPD, still capped at 1.5 L/m² BSA + 0.05 L; small CCPD night fills paired with equal day volumes) — approved by Dr D Nov 15 2026, full sign-off pending. Day volume equal to the night fill: **decided by Dr D Nov 15 2026** (“Day volume equal to the night fill is fine”), full sign-off pending
+- [x] Sign-off: no-fit message when every candidate is above the fill cap — approved by Dr D Nov 15 2026, full sign-off pending
+- [x] Sign-off: height hard block outside 54.6–272 cm (cm and ft + in) — approved by Dr D Nov 15 2026, full sign-off pending
+- [x] Sign-off: stale amber note hidden and emptied when inputs are blocked — approved by Dr D Nov 15 2026, full sign-off pending
+- [x] Sign-off: iPhone SE step 2 layout (basis card below the options, compact header on short screens) — approved by Dr D Nov 15 2026, full sign-off pending
+- [x] Sign-off: CCPD UF wording “cycles / day dwell” in the copied and printed summary — approved by Dr D Nov 15 2026, full sign-off pending
+- [x] Sign-off: release 0.4.4-draft, service-worker cache pd-buddy-v8, DRAFT=true, noindex unchanged — approved by Dr D Nov 15 2026, full sign-off pending
 
 ## 27. Negative predicted UF warning (0.4.5-draft)
 
 Dr D, Nov 15 2026, 6:45 AM ET, in his own words: “Show a negative-UF warning on those options”. On any option where the experimental three-pore UF model predicts negative daily UF (the small CAPD options, and any other option, CAPD or CCPD, dextrose or icodextrin row), an amber warning reads: “Predicted daily UF is negative (about −X L/day, experimental model). Watch fluid balance; consider a higher-tonicity or icodextrin dwell.” “Higher-tonicity” is used instead of “stronger dextrose” because offering 4.25% is still an open question (S8). Shown on the step 2 option cards, in step 4 (current prescription and each suggestion) and in the copied and printed summary (“Warning: …”). The options are not demoted, hidden or re-ranked (Kt/V ranking unchanged; UF never changes the step 2 order). Example: 150 cm / 40 kg male, high-average, typical values: CAPD 4 × 1.75 L (about −0.39 L/day), 5 × 1.25 L (−0.48), 5 × 1.5 L (−0.34) carry the warning; the CCPD options (+0.12 to +0.20 L/day) do not.
 - Tests: `tests/neguf.test.js`.
 
-- [ ] Sign-off: negative predicted UF warning (cards, step 4, copied/printed summary; wording; no re-ranking) — approved by Dr D Nov 15 2026; wording approved by Dr D on a voice call with App Critic, Nov 15 2026 7:01 AM ET (relayed); full sign-off pending
-- [ ] Sign-off: release 0.4.5-draft, service-worker cache pd-buddy-v9, DRAFT=true, noindex unchanged — approved by Dr D Nov 15 2026, full sign-off pending
+- [x] Sign-off: negative predicted UF warning (cards, step 4, copied/printed summary; wording; no re-ranking) — approved by Dr D Nov 15 2026; wording approved by Dr D on a voice call with App Critic, Nov 15 2026 7:01 AM ET (relayed); full sign-off pending
+- [x] Sign-off: release 0.4.5-draft, service-worker cache pd-buddy-v9, DRAFT=true, noindex unchanged — approved by Dr D Nov 15 2026, full sign-off pending
 
 ## 28. Stale pick, one-page print, compact warning on small phones (0.4.6-draft)
 
@@ -659,10 +661,10 @@ Dr D, Nov 15 2026, 7:01 AM ET, relayed by App Critic, in his own words: “Send 
 - **Compact negative-UF warning (small screens only).** At up to 760 px tall or 400 px wide, the step 2 option-card warning reads “Negative UF predicted (about −X L/day, experimental)”, amber, with a “Full UF warning” disclosure under the card that shows the full approved wording. Larger screens keep the full wording on the cards; step 4 and Copy/Print always use the full wording. iPhone SE 375×667, 150/40: the first option's name, numbers and compact warning end at y = 566, above the step bar (y = 596). The icodextrin line, the badge and the disclosure are below the fold, as the badge already was in 0.4.4.
 - Tests: `tests/stalepick.test.js`.
 
-- [ ] Sign-off: stale pick re-validated on input change (Rx card, Copy/Print, step 4; no-fit message) — approved by Dr D Nov 15 2026, full sign-off pending
-- [ ] Sign-off: one-page print on Letter and A4 (draft banner, DRAFT line, not-a-medical-device statement, negative-UF warning kept) — approved by Dr D Nov 15 2026, full sign-off pending
-- [ ] Sign-off: compact negative-UF warning on small screens with a full-wording disclosure (full wording on large screens, step 4 and print) — approved by Dr D via App Critic, Nov 15 2026, full sign-off pending
-- [ ] Sign-off: release 0.4.6-draft, service-worker cache pd-buddy-v10, DRAFT=true, noindex unchanged — approved by Dr D Nov 15 2026, full sign-off pending
+- [x] Sign-off: stale pick re-validated on input change (Rx card, Copy/Print, step 4; no-fit message) — approved by Dr D Nov 15 2026, full sign-off pending
+- [x] Sign-off: one-page print on Letter and A4 (draft banner, DRAFT line, not-a-medical-device statement, negative-UF warning kept) — approved by Dr D Nov 15 2026, full sign-off pending
+- [x] Sign-off: compact negative-UF warning on small screens with a full-wording disclosure (full wording on large screens, step 4 and print) — approved by Dr D via App Critic, Nov 15 2026, full sign-off pending
+- [x] Sign-off: release 0.4.6-draft, service-worker cache pd-buddy-v10, DRAFT=true, noindex unchanged — approved by Dr D Nov 15 2026, full sign-off pending
 
 ## 29. Below-model-range block for very low PET D/P (0.4.7-draft)
 
@@ -672,12 +674,12 @@ App Critic N-M2 (re-check of c5ab8b9). Dr D, Nov 15 2026, 7:16 AM ET, relayed by
 - Not in this release: the low-transporter warning (new clinical wording, needs Dr D's OK; drafted on local branch `low-warning`) and the model fix (proposal in `research/MODEL_FIX_PROPOSAL.md`, not implemented).
 - Tests: `tests/lowdp.test.js`.
 
-- [ ] Sign-off: D/P creatinine cutoff 0.40 — decided by Dr D Nov 15 2026, full sign-off pending
-- [ ] Sign-off: D/P urea cutoff 0.70 (no published adult floor; mean − 3 SD is an inference) — decided by Dr D Nov 15 2026, full sign-off pending
-- [ ] Sign-off: “below model range” message wording (as written) and where it shows — decided by Dr D Nov 15 2026, full sign-off pending
-- [ ] Sign-off: default Low drain kept at 2,988.5 mL (Twardowski Low band midpoint) — decided by Dr D Nov 15 2026, full sign-off pending
-- [ ] Sign-off: flagged over-cap current prescription chosen on purpose in step 3 is kept after small input changes (App Critic 1d; no change) — decided by Dr D Nov 15 2026, full sign-off pending
-- [ ] Sign-off: release 0.4.7-draft, service-worker cache pd-buddy-v11, DRAFT=true, noindex unchanged — approved by Dr D Nov 15 2026, full sign-off pending
+- [x] Sign-off: D/P creatinine cutoff 0.40 — decided by Dr D Nov 15 2026, full sign-off pending
+- [x] Sign-off: D/P urea cutoff 0.70 (no published adult floor; mean − 3 SD is an inference) — decided by Dr D Nov 15 2026, full sign-off pending
+- [x] Sign-off: “below model range” message wording (as written) and where it shows — decided by Dr D Nov 15 2026, full sign-off pending
+- [x] Sign-off: default Low drain kept at 2,988.5 mL (Twardowski Low band midpoint) — decided by Dr D Nov 15 2026, full sign-off pending
+- [x] Sign-off: flagged over-cap current prescription chosen on purpose in step 3 is kept after small input changes (App Critic 1d; no change) — decided by Dr D Nov 15 2026, full sign-off pending
+- [x] Sign-off: release 0.4.7-draft, service-worker cache pd-buddy-v11, DRAFT=true, noindex unchanged — approved by Dr D Nov 15 2026, full sign-off pending
 
 ## 30. Low-transporter CrCl warning (0.4.8-draft)
 
@@ -689,10 +691,10 @@ Dr D, Nov 15 2026, 7:26 AM ET, relayed by App Critic: “Add a warning now, and 
 - iPhone SE (375×667), 170 cm/70 kg Low: with the compact warning the first CAPD option's numbers end at y = 674, below the step bar (y = 596); without it they end at 592. Dr D chose to keep the warning above the first option.
 - Tests: `tests/lowwarn.test.js`.
 
-- [ ] Sign-off: low-transporter warning wording (full and compact) — wording approved by Dr D Nov 15 2026, full sign-off pending
-- [ ] Sign-off: trigger (Low by type or PET D/P Cr < 0.50; not when fitted) — decided by Dr D Nov 15 2026 (2:01 PM ET, relayed by App Critic: stays as shipped), full sign-off pending
-- [ ] Sign-off: placement, including the iPhone SE placement above the first option — wording approved by Dr D Nov 15 2026, full sign-off pending
-- [ ] Sign-off: release 0.4.8-draft, service-worker cache pd-buddy-v12, DRAFT=true, noindex unchanged — approved by Dr D Nov 15 2026, full sign-off pending
+- [x] Sign-off: low-transporter warning wording (full and compact) — wording approved by Dr D Nov 15 2026, full sign-off pending
+- [x] Sign-off: trigger (Low by type or PET D/P Cr < 0.50; not when fitted) — decided by Dr D Nov 15 2026 (2:01 PM ET, relayed by App Critic: stays as shipped), full sign-off pending
+- [x] Sign-off: placement, including the iPhone SE placement above the first option — wording approved by Dr D Nov 15 2026, full sign-off pending
+- [x] Sign-off: release 0.4.8-draft, service-worker cache pd-buddy-v12, DRAFT=true, noindex unchanged — approved by Dr D Nov 15 2026, full sign-off pending
 
 ## 31. Step 3 current-prescription list after a corrected D/P (0.4.9-draft)
 
@@ -701,19 +703,21 @@ Dr D, Nov 15 2026, 2:01 PM ET, relayed by App Critic: fix the Step 3 empty-list 
 - Fix: the placeholder path clears the signature, so the list is rebuilt. No clinical, formula or wording change.
 - Tests: `tests/steplist.test.js`.
 
-- [ ] Sign-off: step 3 list rebuilt after a blocked D/P is corrected — approved by Dr D Nov 15 2026, full sign-off pending
-- [ ] Sign-off: release 0.4.9-draft, service-worker cache pd-buddy-v13, DRAFT=true, noindex unchanged — approved by Dr D Nov 15 2026, full sign-off pending
+- [x] Sign-off: step 3 list rebuilt after a blocked D/P is corrected — approved by Dr D Nov 15 2026, full sign-off pending
+- [x] Sign-off: release 0.4.9-draft, service-worker cache pd-buddy-v13, DRAFT=true, noindex unchanged — approved by Dr D Nov 15 2026, full sign-off pending
 
 ## 32. Contact email (cache pd-buddy-v14)
 
 Dr D, Nov 15 2026, 3:37 PM ET (relayed): contact email akd.nephrology@gmail.com. It replaces the earlier placeholder address in the About contact line, privacy.html, support.html, `SUPPORT_EMAIL` and the README. No clinical change; version stays 0.4.9-draft.
 
-- [ ] Sign-off: contact email akd.nephrology@gmail.com — decided by Dr D Nov 15 2026, full sign-off pending
-- [ ] Sign-off: service-worker cache pd-buddy-v14, DRAFT=true, noindex unchanged — full sign-off pending
+- [x] Sign-off: contact email akd.nephrology@gmail.com — decided by Dr D Nov 15 2026, full sign-off pending
+- [x] Sign-off: service-worker cache pd-buddy-v14, DRAFT=true, noindex unchanged — full sign-off pending
 
 ## 33. iOS app wrapper (branch `ios-wrap` only; not on main)
 
-Dr D, Nov 15 2026, 2:38 PM ET, in his own words: “Build PD Buddy as an iOS app”. Capacitor wrap like CRRT Rx: bundled offline web app, bundle ID `com.drd.pdbuddy`, 1.0 (1), team RZRMT6494V, home-screen name “PD Buddy”. No clinical, formula or wording change; the DRAFT banner stays as on the web build.
+Dr D, Nov 15 2026, 2:38 PM ET, in his own words: “Build PD Buddy as an iOS app”. Capacitor wrap like CRRT Rx: bundled offline web app, bundle ID `com.drd.pdbuddy`, 1.0 (1), team RZRMT6494V, home-screen name “PD Buddy”. No clinical, formula or wording change. At wrap time the DRAFT banner matched the web build.
+
+Nov 18 2026, 9:09 PM ET: Dr D signed off all medical content (see Status). This branch now bundles the signed-off web app, v1.0.0, `DRAFT=false`, no draft banner, cache pd-buddy-v15, matching main. Marketing version stays 1.0 (1). No TestFlight or App Store upload in this update.
 - New user-facing text, the iOS camera permission prompt: “PD Buddy uses the camera only when you tap Scan lab report, to photograph a lab report. The photo is read on this device and is never saved or sent.”
 - Privacy manifest: no tracking, no data collected. App Privacy answer: Data Not Collected.
 - Icon: existing PD Buddy branding at 1024 px. Listing draft: `LISTING.md`. Build notes: `APPSTORE_NOTES.md`.
@@ -721,14 +725,18 @@ Dr D, Nov 15 2026, 2:38 PM ET, in his own words: “Build PD Buddy as an iOS app
 
 - [ ] Sign-off: camera permission wording — proposal, needs Dr D's OK
 - Dr D, Nov 15 2026, 3:37 PM ET (relayed): contact email akd.nephrology@gmail.com; keep the existing icon; price Free; TestFlight only until he signs off. He did not answer the App Store name, so “PD Buddy” is used, with “PD Buddy: Dialysis Rx”, “PD Buddy – Peritoneal Rx” and “PD Buddy for Nephrology” as fallbacks.
-- [ ] Sign-off: app icon (existing web icon) — decided by Dr D Nov 15 2026 (keep), full sign-off pending
-- [ ] Sign-off: contact email akd.nephrology@gmail.com (listing, privacy and support pages, in-app) — decided by Dr D Nov 15 2026, full sign-off pending
-- [ ] Sign-off: price Free — decided by Dr D Nov 15 2026, full sign-off pending
-- [ ] Sign-off: TestFlight only until content sign-off (DRAFT banner stays in the app) — decided by Dr D Nov 15 2026, full sign-off pending
+- [x] Sign-off: app icon (existing web icon) — decided by Dr D Nov 15 2026 (keep); included in the Nov 18 2026 9:09 PM ET sign-off
+- [x] Sign-off: contact email akd.nephrology@gmail.com (listing, privacy and support pages, in-app) — decided by Dr D Nov 15 2026; included in the Nov 18 2026 9:09 PM ET sign-off
+- [x] Sign-off: price Free — decided by Dr D Nov 15 2026; included in the Nov 18 2026 9:09 PM ET sign-off
+- [x] Sign-off: TestFlight only until content sign-off — decided by Dr D Nov 15 2026; content signed off Nov 18 2026 9:09 PM ET and the draft banner has been removed from the bundled app. No TestFlight or App Store upload in this update.
 - [ ] Sign-off: App Store name “PD Buddy” (fallbacks above) — not answered by Dr D; used provisionally, needs his OK
 
 ---
 
 ## Status
 
-`DRAFT=true`. Not signed off. Draft banner, noindex and robots `Disallow: /` stay until Dr D signs off and asks, in his own words, to publish.
+**Signed off.** Dr D (Amar Damodar), Nov 18 2026, 9:09 PM ET, in his own words in chat: “I sign off on all of P. D. Berle. Sign off on all of P. D. Berle.” (voice dictation; “P. D. Berle” = PD Buddy).
+
+`DRAFT=false`. Version 1.0.0. Service-worker cache `pd-buddy-v15`. Draft banner, noindex and robots `Disallow: /` have been removed; indexing is allowed.
+
+On branch `ios-wrap`, the wrap bundles this signed-off web app at marketing version 1.0 (1). Two listing items in §33 still need a specific OK: camera permission wording, and the App Store name “PD Buddy” (used provisionally). No TestFlight or App Store upload in this update.

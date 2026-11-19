@@ -1,7 +1,7 @@
 {
   "name": "pd-buddy",
   "version": "1.0.0",
-  "description": "Draft educational peritoneal dialysis prescribing tool for nephrologists",
+  "description": "Educational peritoneal dialysis prescribing tool for nephrologists",
   "scripts": {
     "ios:sync": "rm -rf www && mkdir -p www && cp -R index.html privacy.html support.html manifest.json sw.js CONTENT_REVIEW.md css js icons vendor www/ && npx cap sync ios",
     "ios:open": "npx cap open ios"

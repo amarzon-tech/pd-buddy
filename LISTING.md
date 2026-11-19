@@ -1,11 +1,11 @@
-# PD Buddy: App Store Connect listing (DRAFT; content not signed off)
+# PD Buddy: App Store Connect listing
 
 Bundle ID `com.drd.pdbuddy`. Version **1.0**, build **1**. Team RZRMT6494V (Dr D's individual Apple Developer account, same team as CRRT Rx). Category: **Medical**. Price: **Free** (decided by Dr D, Nov 15 2026).
 
-> **TestFlight only until Dr D signs off** (his decision, Nov 15 2026). Do not submit for App Store review yet: the app shows a “Draft – not for clinical use until reviewed by Dr D” banner and Apple would likely reject it as a beta (Guideline 2.2). Update this listing at sign-off.
+> Medical content signed off by Dr D, Nov 18 2026, 9:09 PM ET. The draft banner has been removed from the bundled app (v1.0.0, `DRAFT=false`). Version **1.0**, build **1**. App Store name “PD Buddy” is still provisional (needs his OK). This update does not upload to TestFlight or the App Store.
 
 **Contact:** akd.nephrology@gmail.com (decided by Dr D, Nov 15 2026).
-- Privacy Policy URL: https://amarzon-tech.github.io/pd-buddy/privacy.html (live, shows akd.nephrology@gmail.com; carries the DRAFT banner)
+- Privacy Policy URL: https://amarzon-tech.github.io/pd-buddy/privacy.html (live, shows akd.nephrology@gmail.com; no draft banner)
 - Support URL: https://amarzon-tech.github.io/pd-buddy/support.html (same)
 
 ---
@@ -63,7 +63,7 @@ First release. Educational peritoneal dialysis prescribing tool for nephrologist
 ## Copyright
 2026 Wellness Tech LLC
 
-## Review notes (App Review Information), draft
+## Review notes (App Review Information)
 PD Buddy is a fully offline educational calculator for nephrologists. It is a Capacitor iOS app that bundles its HTML, CSS and JavaScript (including the Tesseract.js OCR engine and English language data) in the app binary. It does not load a remote website, needs no network connection, and has no login, ads or analytics. The camera is used only for the on-device lab-report scan.
 
 Demo path (no account): Step 1, male, age 55, 170 cm, 70 kg. Step 2, pick transport type High-average. CAPD and CCPD options appear, ranked, with model Kt/V, CrCl and experimental UF. Pick an option to see the prescription summary (Copy / Print).

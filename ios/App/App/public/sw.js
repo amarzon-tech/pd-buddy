@@ -1,5 +1,5 @@
 /* Offline cache for PD Buddy. No network after first load. */
-const CACHE = "pd-buddy-v14";
+const CACHE = "pd-buddy-v15";
 // On-device OCR engine (~10 MB). Cached in the background after install so "Scan lab
 // report" also works offline; it is app code only — no patient data is ever cached.
 const OCR_CACHE = "pd-buddy-ocr-v1";

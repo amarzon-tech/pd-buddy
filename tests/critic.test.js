@@ -166,7 +166,7 @@ section("CONTENT_REVIEW");
     const line = review.split("\n").find((l) => l.startsWith("- [x] Sign-off: " + k));
     isTrue(!!line && dec.test(line), "decision recorded and signed off: " + k);
   });
-  isTrue(!/^- \[ \] Sign-off/m.test(review), "no unticked sign-off boxes");
+  isTrue((review.match(/^- \[ \] Sign-off/gm) || []).length === 2, "two iOS listing items still open");
   ["M1 neutral wording", "M2 hard blocks", "M3 D/P blocks", "M4 OCR parser", "M5 summary title", "M6 not-a-medical-device", "M7 naming", "S1 BSA", "S2 icodextrin", "S3 step 4", "S4 CCPD CrCl", "S5 residual", "S6 current prescription", "S7 accessibility", "S8 model solution", "N1 Akonur", "N2 first-run", "N3 model documentation", "release 0.4.3-draft"].forEach((k) =>
     isTrue(review.includes("- [x] Sign-off: " + k), "signed-off 0.4.3 item: " + k));
 }

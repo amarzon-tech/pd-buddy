@@ -4,7 +4,7 @@
 **Preview:** https://amarzon-tech.github.io/pd-buddy/
 **For:** Dr D (Amar Damodar).
 
-**Signed off.** Dr D (Amar Damodar), Nov 18 2026, 9:09 PM ET, in his own words in chat: “I sign off on all of P. D. Berle. Sign off on all of P. D. Berle.” (voice dictation; “P. D. Berle” = PD Buddy). Every item below is signed off.
+**Signed off.** Dr D (Amar Damodar), Nov 18 2026, 9:09 PM ET, in his own words in chat: “I sign off on all of P. D. Berle. Sign off on all of P. D. Berle.” (voice dictation; “P. D. Berle” = PD Buddy). Every medical-content item below is signed off. On branch `ios-wrap`, two listing items in §33 still need a specific OK (camera permission wording; App Store name).
 
 Educational PD prescribing tool for nephrologists. No login, ads, analytics or data collection; inputs are never stored.
 
@@ -715,7 +715,9 @@ Dr D, Nov 15 2026, 3:37 PM ET (relayed): contact email akd.nephrology@gmail.com.
 
 ## 33. iOS app wrapper (branch `ios-wrap` only; not on main)
 
-Dr D, Nov 15 2026, 2:38 PM ET, in his own words: “Build PD Buddy as an iOS app”. Capacitor wrap like CRRT Rx: bundled offline web app, bundle ID `com.drd.pdbuddy`, 1.0 (1), team RZRMT6494V, home-screen name “PD Buddy”. No clinical, formula or wording change; the DRAFT banner stays as on the web build.
+Dr D, Nov 15 2026, 2:38 PM ET, in his own words: “Build PD Buddy as an iOS app”. Capacitor wrap like CRRT Rx: bundled offline web app, bundle ID `com.drd.pdbuddy`, 1.0 (1), team RZRMT6494V, home-screen name “PD Buddy”. No clinical, formula or wording change. At wrap time the DRAFT banner matched the web build.
+
+Nov 18 2026, 9:09 PM ET: Dr D signed off all medical content (see Status). This branch now bundles the signed-off web app, v1.0.0, `DRAFT=false`, no draft banner, cache pd-buddy-v15, matching main. Marketing version stays 1.0 (1). No TestFlight or App Store upload in this update.
 - New user-facing text, the iOS camera permission prompt: “PD Buddy uses the camera only when you tap Scan lab report, to photograph a lab report. The photo is read on this device and is never saved or sent.”
 - Privacy manifest: no tracking, no data collected. App Privacy answer: Data Not Collected.
 - Icon: existing PD Buddy branding at 1024 px. Listing draft: `LISTING.md`. Build notes: `APPSTORE_NOTES.md`.
@@ -723,10 +725,10 @@ Dr D, Nov 15 2026, 2:38 PM ET, in his own words: “Build PD Buddy as an iOS app
 
 - [ ] Sign-off: camera permission wording — proposal, needs Dr D's OK
 - Dr D, Nov 15 2026, 3:37 PM ET (relayed): contact email akd.nephrology@gmail.com; keep the existing icon; price Free; TestFlight only until he signs off. He did not answer the App Store name, so “PD Buddy” is used, with “PD Buddy: Dialysis Rx”, “PD Buddy – Peritoneal Rx” and “PD Buddy for Nephrology” as fallbacks.
-- [ ] Sign-off: app icon (existing web icon) — decided by Dr D Nov 15 2026 (keep), full sign-off pending
-- [ ] Sign-off: contact email akd.nephrology@gmail.com (listing, privacy and support pages, in-app) — decided by Dr D Nov 15 2026, full sign-off pending
-- [ ] Sign-off: price Free — decided by Dr D Nov 15 2026, full sign-off pending
-- [ ] Sign-off: TestFlight only until content sign-off (DRAFT banner stays in the app) — decided by Dr D Nov 15 2026, full sign-off pending
+- [x] Sign-off: app icon (existing web icon) — decided by Dr D Nov 15 2026 (keep); included in the Nov 18 2026 9:09 PM ET sign-off
+- [x] Sign-off: contact email akd.nephrology@gmail.com (listing, privacy and support pages, in-app) — decided by Dr D Nov 15 2026; included in the Nov 18 2026 9:09 PM ET sign-off
+- [x] Sign-off: price Free — decided by Dr D Nov 15 2026; included in the Nov 18 2026 9:09 PM ET sign-off
+- [x] Sign-off: TestFlight only until content sign-off — decided by Dr D Nov 15 2026; content signed off Nov 18 2026 9:09 PM ET and the draft banner has been removed from the bundled app. No TestFlight or App Store upload in this update.
 - [ ] Sign-off: App Store name “PD Buddy” (fallbacks above) — not answered by Dr D; used provisionally, needs his OK
 
 ---
@@ -736,3 +738,5 @@ Dr D, Nov 15 2026, 2:38 PM ET, in his own words: “Build PD Buddy as an iOS app
 **Signed off.** Dr D (Amar Damodar), Nov 18 2026, 9:09 PM ET, in his own words in chat: “I sign off on all of P. D. Berle. Sign off on all of P. D. Berle.” (voice dictation; “P. D. Berle” = PD Buddy).
 
 `DRAFT=false`. Version 1.0.0. Service-worker cache `pd-buddy-v15`. Draft banner, noindex and robots `Disallow: /` have been removed; indexing is allowed.
+
+On branch `ios-wrap`, the wrap bundles this signed-off web app at marketing version 1.0 (1). Two listing items in §33 still need a specific OK: camera permission wording, and the App Store name “PD Buddy” (used provisionally). No TestFlight or App Store upload in this update.
